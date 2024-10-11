@@ -4,6 +4,7 @@ from PIL import Image
 from config.Config import Config
 
 s3 = boto3.client("s3")
+sts = boto3.client("sts")
 
 
 def download_image_from_s3(image_key):
@@ -17,3 +18,13 @@ def download_image_from_s3(image_key):
     print("Returning the PIL image.")
     return image
 
+
+def get_user_id():
+    user_id = sts.get_caller_identity()["UserId"]
+    return user_id
+
+
+def get_user_name():
+    arn = sts.get_caller_identity()["Arn"]
+    user_name = arn[arn.rfind("/") + 1:]
+    return user_name
