@@ -18,7 +18,7 @@ def resize_thumbnails(folder_path):
             img = Image.open(path)
             # img.thumbnail((160, 160))
 
-            new_path = path.replace("\\Foto", "\\").replace("F", "M")
+            new_path = path.replace("\\Foto", "\\")
             directory = os.path.dirname(new_path)
             if not os.path.exists(directory):
                 os.makedirs(directory)
@@ -57,4 +57,4 @@ def fix_csv(file_path):
 
 
 if __name__ == "__main__":
-    fix_csv("res/database/ALBUM.csv")
+    resize_thumbnails(Path(r"D:\Work\self\github\album-2\res\media"))

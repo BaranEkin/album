@@ -14,7 +14,7 @@ class MediaLoader:
         self.local_storage_enabled = Config.LOCAL_STORAGE_ENABLED
 
     def get_image(self, image_key):
-        if self.check_local_storage(image_key):
+        if self.check_local_storage(self.media_dir, image_key):
             print("Image is found on local storage.")
             try:
                 image = QImage(os.path.join(self.media_dir, image_key))
@@ -26,6 +26,7 @@ class MediaLoader:
 
         else:
             print("Image is not found on local storage.")
+            return QImage("D:/Work/self/github/album-2/res/blank.jpg")
             try:
                 pil_image = aws.download_image_from_s3(image_key)
                 print("Image retrieved from AWS S3 bucket.")
@@ -55,8 +56,37 @@ class MediaLoader:
                 print(f"Image retrieval failed on cloud storage: {e}")
                 pass
 
-    def check_local_storage(self, key):
-        return os.path.exists(os.path.join(self.media_dir, key))
+    def get_thumbnail(self, thumbnail_key):
+        if self.check_local_storage(self.thumbnails_dir, thumbnail_key):
+            try:
+                image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
+                return image
+            except OSError as e:
+                pass
+
+        else:
+            print(f"Thumbnail is not found on local storage: {thumbnail_key}")
+            return QImage("D:/Work/self/github/album-2/res/blank.jpg")
+
+
+            try:
+                pil_image = aws.download_image_from_s3(thumbnail_key)
+                try:
+                    self.save_thumbnail(pil_image, thumbnail_key)
+                    image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
+
+                except OSError as e:
+                    image = QImage(
+                        pil_image.tobytes(),
+                        pil_image.size[0],
+                        pil_image.size[1],
+                        QImage.Format_RGB888,
+                    )
+
+                return image
+
+            except Exception as e:
+                pass
 
     def save_image(self, image: Image, image_key):
         path = os.path.join(self.media_dir, image_key)
@@ -64,3 +94,14 @@ class MediaLoader:
         if not os.path.exists(directory):
             os.makedirs(directory)
         image.save(path, "JPEG")
+
+    def save_thumbnail(self, image: Image, thumbnail_key):
+        path = os.path.join(self.thumbnails_dir, thumbnail_key)
+        directory = os.path.dirname(path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        image.save(path, "JPEG")
+
+    @staticmethod
+    def check_local_storage(directory, key):
+        return os.path.exists(os.path.join(directory, key))

@@ -35,30 +35,31 @@ class WorkerSignals(QObject):
 
 
 class ThumbnailLoaderRunnable(QRunnable):
-    def __init__(self, row, image_path):
+    def __init__(self, row, thumbnail_key, media_loader):
         super().__init__()
         self.row = row
-        self.image_path = image_path
+        self.thumbnail_key = thumbnail_key
+        self.media_loader = media_loader
         self.signals = WorkerSignals()
 
     def run(self):
         # Load the image thumbnail
-        pixmap = QPixmap(self.image_path).scaled(
-            160, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation
-        )
+        q_image = self.media_loader.get_thumbnail(self.thumbnail_key)
+        pixmap = QPixmap.fromImage(q_image).scaled(160, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         # Emit the signal with the row and pixmap
         self.signals.finished.emit(self.row, pixmap)
 
 
 class ImageListModel(QAbstractListModel):
-    def __init__(self, image_paths, parent=None):
+    def __init__(self, thumbnail_keys, media_loader, parent=None):
         super().__init__(parent)
-        self.thumbnail_paths = image_paths  # Full list of image paths
-        self.image_paths = []  # Currently loaded image paths
+        self.media_loader = media_loader
+        self.thumbnail_keys = thumbnail_keys
+        self.thumbnail_keys_loaded = []
         self.thumbnails = {}  # Cache of loaded thumbnails
         self.threadpool = QThreadPool()
-        self.batch_size = 30000  # Adjust the batch size as needed
-        self.loaded_count = 0  # Number of items currently loaded
+        self.batch_size = 30000
+        self.loaded_count = 0
 
     def rowCount(self, parent=QModelIndex()):
         return self.loaded_count
@@ -79,22 +80,22 @@ class ImageListModel(QAbstractListModel):
                 placeholder.fill(Qt.gray)
                 return placeholder
         elif role == Qt.UserRole:
-            return self.image_paths[index.row()]
+            return self.thumbnail_keys_loaded[index.row()]
         elif role == Qt.SizeHintRole:
             return QSize(160, 100)
         return None
 
     def canFetchMore(self, parent=QModelIndex()):
-        return self.loaded_count < len(self.thumbnail_paths)
+        return self.loaded_count < len(self.thumbnail_keys)
 
     def fetchMore(self, parent=QModelIndex()):
-        remaining = len(self.thumbnail_paths) - self.loaded_count
+        remaining = len(self.thumbnail_keys) - self.loaded_count
         items_to_fetch = min(self.batch_size, remaining)
         self.beginInsertRows(
             QModelIndex(), self.loaded_count, self.loaded_count + items_to_fetch - 1
         )
-        self.image_paths.extend(
-            self.thumbnail_paths[self.loaded_count : self.loaded_count + items_to_fetch]
+        self.thumbnail_keys_loaded.extend(
+            self.thumbnail_keys[self.loaded_count: self.loaded_count + items_to_fetch]
         )
         self.loaded_count += items_to_fetch
         self.endInsertRows()
@@ -103,8 +104,8 @@ class ImageListModel(QAbstractListModel):
         if row in self.thumbnails:
             return  # Thumbnail already loaded
 
-        image_path = self.image_paths[row]
-        runnable = ThumbnailLoaderRunnable(row, image_path)
+        thumbnail_key = self.thumbnail_keys_loaded[row]
+        runnable = ThumbnailLoaderRunnable(row, thumbnail_key, self.media_loader)
         runnable.signals.finished.connect(self.on_thumbnail_loaded)
         self.threadpool.start(runnable)
 
@@ -113,6 +114,46 @@ class ImageListModel(QAbstractListModel):
         index = self.index(row)
         self.dataChanged.emit(index, index, [Qt.DecorationRole])
 
+
+class ZoomableLabel(QLabel):
+    def __init__(self, parent=None):
+        super(ZoomableLabel, self).__init__(parent)
+        self.initial_scale = 1.0
+        self.scale_modifier = 0
+        self.original_size = None
+        self.setScaledContents(True)  # Ensure the image scales with QLabel
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.zoom_in(event.pos())
+        elif event.button() == Qt.RightButton:
+            self.zoom_out(event.pos())
+
+    def zoom_in(self, click_pos):
+        if self.scale_modifier < 5.0:
+            self.scale_modifier += 0.50
+        self.update_image_size(click_pos)
+
+    def zoom_out(self, click_pos):
+        if self.scale_modifier > 0:
+            self.scale_modifier -= 0.50
+        self.update_image_size(click_pos)
+
+    def update_image_size(self, click_pos):
+        if not self.pixmap():
+            return
+
+        scaling_factor = self.initial_scale * (self.scale_modifier + 1)
+
+        # Scale the image based on the new scale factor
+        new_width = self.original_size.width() * scaling_factor
+        new_height = self.original_size.height() * scaling_factor
+
+        # Update QLabel size
+        self.setFixedSize(new_width, new_height)
+
+        # Adjust the scroll area to center on the click position
+        self.parentWidget().parentWidget().parentWidget().parentWidget().adjust_scroll_area(click_pos, scaling_factor)
 
 class ThumbnailDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -152,11 +193,12 @@ class ThumbnailDelegate(QStyledItemDelegate):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, thumbnail_paths, media_paths):
+    def __init__(self, data_manager, media_loader):
         super().__init__()
-        self.media_loader = MediaLoader()
-        self.thumbnail_paths = thumbnail_paths
-        self.media_paths = media_paths
+        self.data_manager = data_manager
+        self.media_loader = media_loader
+
+        self.media_data = self.data_manager.get_all_media()
 
         # Set window title and initial dimensions
         self.setWindowTitle("ALBUM 2.0")
@@ -198,7 +240,7 @@ class MainWindow(QMainWindow):
         self.scroll_area.setVisible(False)
 
         # Create a QLabel for the image and add it to the scroll area
-        self.image_label = QLabel()
+        self.image_label = ZoomableLabel()
         self.image_label.setBackgroundRole(QPalette.Base)
         self.image_label.setScaledContents(True)
         self.scroll_area.setWidget(self.image_label)
@@ -214,7 +256,8 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.frame_info)
 
         # Create and set the custom model
-        self.model = ImageListModel(self.thumbnail_paths)
+        thumbnail_keys = [media.thumbnail_key for media in self.media_data]
+        self.model = ImageListModel(thumbnail_keys, self.media_loader)
         self.thumbnail_list.setModel(self.model)
 
         # Set the custom delegate
@@ -250,16 +293,15 @@ class MainWindow(QMainWindow):
         """
         When a preview image is clicked, display it in the main image label.
         """
-        # Retrieve the image path from the model's data
-        selected_image_path = self.media_paths[index.row()]
-        self.load_image(selected_image_path)
+        selected_media = self.media_data[index.row()]
+        self.load_image(selected_media)
 
-    def load_image(self, image_path):
+    def load_image(self, media):
         """
         Load the selected image into the main display area.
         """
-        image_key = image_path[10:].replace("\\", "/")
-        q_image = self.media_loader.get_image(image_key)
+        self.image_label.scale_modifier = 0.0
+        q_image = self.media_loader.get_image(media.media_key)
         pixmap = QPixmap.fromImage(q_image)
         self.image_label.setPixmap(pixmap)
         self.fit_to_window()
@@ -280,7 +322,28 @@ class MainWindow(QMainWindow):
                 new_height = scroll_size.height()
                 new_width = new_height * img_aspect_ratio
 
-            self.image_label.resize(new_width, new_height)
+            self.image_label.setFixedSize(new_width, new_height)
+            self.image_label.initial_scale = new_width / img_size.width()
+            self.image_label.original_size = img_size
+            self.image_label.scale_modifier = 0.0
+
+
+    def adjust_scroll_area(self, click_pos, scale_factor):
+        # Get the current scroll positions
+        h_scroll = self.scroll_area.horizontalScrollBar()
+        v_scroll = self.scroll_area.verticalScrollBar()
+
+        # Get the relative click position in the image as a percentage
+        relative_x = click_pos.x() / self.image_label.width()
+        relative_y = click_pos.y() / self.image_label.height()
+
+        # Calculate the new scroll position based on the clicked point and zoom level
+        h_new_value = int(relative_x * h_scroll.maximum())
+        v_new_value = int(relative_y * v_scroll.maximum())
+
+        # Set the new scroll positions, adjusting as needed
+        h_scroll.setValue(h_new_value)
+        v_scroll.setValue(v_new_value)
 
     def resizeEvent(self, event):
         super(MainWindow, self).resizeEvent(event)
