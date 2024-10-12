@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication,
@@ -24,8 +23,10 @@ from PyQt5.QtCore import (
     QModelIndex,
     QAbstractListModel,
     QRect,
+    QPoint,
+    QDateTime
 )
-from PyQt5.QtGui import QPixmap, QImage, QPalette
+from PyQt5.QtGui import QPixmap, QImage, QPalette, QCursor
 from MediaLoader import MediaLoader
 
 
@@ -115,28 +116,68 @@ class ImageListModel(QAbstractListModel):
         self.dataChanged.emit(index, index, [Qt.DecorationRole])
 
 
-class ZoomableLabel(QLabel):
+class ImageViewerLabel(QLabel):
     def __init__(self, parent=None):
-        super(ZoomableLabel, self).__init__(parent)
+        super(ImageViewerLabel, self).__init__(parent)
         self.initial_scale = 1.0
         self.scale_modifier = 0
         self.original_size = None
-        self.setScaledContents(True)  # Ensure the image scales with QLabel
+        self.setScaledContents(True)
+
+        self.is_panning = False  
+        self.pan_start_position = QPoint()  
+        self.mouse_press_time = QDateTime.currentDateTime()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.zoom_in(event.pos())
+            # Record the time of mouse press to differentiate between click and drag
+            self.mouse_press_time = QDateTime.currentDateTime()
+            scroll_area = self.parentWidget().parentWidget().parentWidget().parentWidget().scroll_area
+
+            # Start the panning process if the image is large enough to be panned
+            if self.size().width() > scroll_area.width() or self.size().height() > scroll_area.height():
+                self.is_panning = True
+                self.pan_start_position = event.globalPos()
+                self.horizontal_scroll_start = scroll_area.horizontalScrollBar().value()
+                self.vertical_scroll_start = scroll_area.verticalScrollBar().value()
+
+        
         elif event.button() == Qt.RightButton:
             self.zoom_out(event.pos())
 
+    def mouseMoveEvent(self, event):
+        if self.is_panning:
+            self.setCursor(Qt.ClosedHandCursor)
+
+            # Calculate the distance the mouse moved
+            delta = event.globalPos() - self.pan_start_position
+
+            # Scroll the scroll area based on the delta
+            scroll_area = self.parentWidget().parentWidget().parentWidget().parentWidget().scroll_area
+            scroll_area.horizontalScrollBar().setValue(self.horizontal_scroll_start - delta.x())
+            scroll_area.verticalScrollBar().setValue(self.vertical_scroll_start - delta.y())
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.unsetCursor()
+            # If the time difference is short enough, consider it a click for zoom
+            time_diff = self.mouse_press_time.msecsTo(QDateTime.currentDateTime())
+            if time_diff < 200:
+                self.zoom_in(event.pos())  
+            
+            elif self.is_panning:
+                self.is_panning = False
+                
+
+
     def zoom_in(self, click_pos):
         if self.scale_modifier < 5.0:
-            self.scale_modifier += 0.50
+            self.scale_modifier += 0.5
         self.update_image_size(click_pos)
 
     def zoom_out(self, click_pos):
         if self.scale_modifier > 0:
-            self.scale_modifier -= 0.50
+            self.scale_modifier -= 0.5
         self.update_image_size(click_pos)
 
     def update_image_size(self, click_pos):
@@ -240,7 +281,7 @@ class MainWindow(QMainWindow):
         self.scroll_area.setVisible(False)
 
         # Create a QLabel for the image and add it to the scroll area
-        self.image_label = ZoomableLabel()
+        self.image_label = ImageViewerLabel()
         self.image_label.setBackgroundRole(QPalette.Base)
         self.image_label.setScaledContents(True)
         self.scroll_area.setWidget(self.image_label)
