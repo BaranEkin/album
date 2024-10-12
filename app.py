@@ -1,10 +1,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication
+from gui.MainWindow import MainWindow
 
 from config.Config import Config
 from MediaLoader import MediaLoader
 from data.DataManager import DataManager
-from gui.MainWindow import MainWindow
 
 # Main application execution
 if __name__ == "__main__":

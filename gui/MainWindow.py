@@ -1,236 +1,17 @@
-from pathlib import Path
 from PyQt5.QtWidgets import (
-    QApplication,
     QMainWindow,
     QVBoxLayout,
     QHBoxLayout,
-    QLabel,
     QFrame,
     QScrollArea,
     QWidget,
-    QListView,
-    QStyledItemDelegate,
-    QStyle,
-    QStyleOptionViewItem,
+    QListView
 )
-from PyQt5.QtCore import (
-    Qt,
-    QSize,
-    QThreadPool,
-    QRunnable,
-    pyqtSignal,
-    QObject,
-    QModelIndex,
-    QAbstractListModel,
-    QRect,
-    QPoint,
-    QDateTime
-)
-from PyQt5.QtGui import QPixmap, QImage, QPalette, QCursor
-from MediaLoader import MediaLoader
+from PyQt5.QtCore import Qt, QModelIndex
+from PyQt5.QtGui import QPixmap, QPalette
 
-
-class WorkerSignals(QObject):
-    # Signal to emit the row and loaded pixmap
-    finished = pyqtSignal(int, QPixmap)
-
-
-class ThumbnailLoaderRunnable(QRunnable):
-    def __init__(self, row, thumbnail_key, media_loader):
-        super().__init__()
-        self.row = row
-        self.thumbnail_key = thumbnail_key
-        self.media_loader = media_loader
-        self.signals = WorkerSignals()
-
-    def run(self):
-        # Load the image thumbnail
-        q_image = self.media_loader.get_thumbnail(self.thumbnail_key)
-        pixmap = QPixmap.fromImage(q_image).scaled(160, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        # Emit the signal with the row and pixmap
-        self.signals.finished.emit(self.row, pixmap)
-
-
-class ImageListModel(QAbstractListModel):
-    def __init__(self, thumbnail_keys, media_loader, parent=None):
-        super().__init__(parent)
-        self.media_loader = media_loader
-        self.thumbnail_keys = thumbnail_keys
-        self.thumbnail_keys_loaded = []
-        self.thumbnails = {}  # Cache of loaded thumbnails
-        self.threadpool = QThreadPool()
-        self.batch_size = 30000
-        self.loaded_count = 0
-
-    def rowCount(self, parent=QModelIndex()):
-        return self.loaded_count
-
-    def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
-            return None
-
-        if role == Qt.DecorationRole:
-            # Return the thumbnail image
-            if index.row() in self.thumbnails:
-                return self.thumbnails[index.row()]
-            else:
-                # Start loading the image asynchronously
-                self.load_thumbnail(index.row())
-                # Return a placeholder pixmap
-                placeholder = QPixmap(160, 80)
-                placeholder.fill(Qt.gray)
-                return placeholder
-        elif role == Qt.UserRole:
-            return self.thumbnail_keys_loaded[index.row()]
-        elif role == Qt.SizeHintRole:
-            return QSize(160, 100)
-        return None
-
-    def canFetchMore(self, parent=QModelIndex()):
-        return self.loaded_count < len(self.thumbnail_keys)
-
-    def fetchMore(self, parent=QModelIndex()):
-        remaining = len(self.thumbnail_keys) - self.loaded_count
-        items_to_fetch = min(self.batch_size, remaining)
-        self.beginInsertRows(
-            QModelIndex(), self.loaded_count, self.loaded_count + items_to_fetch - 1
-        )
-        self.thumbnail_keys_loaded.extend(
-            self.thumbnail_keys[self.loaded_count: self.loaded_count + items_to_fetch]
-        )
-        self.loaded_count += items_to_fetch
-        self.endInsertRows()
-
-    def load_thumbnail(self, row):
-        if row in self.thumbnails:
-            return  # Thumbnail already loaded
-
-        thumbnail_key = self.thumbnail_keys_loaded[row]
-        runnable = ThumbnailLoaderRunnable(row, thumbnail_key, self.media_loader)
-        runnable.signals.finished.connect(self.on_thumbnail_loaded)
-        self.threadpool.start(runnable)
-
-    def on_thumbnail_loaded(self, row, pixmap):
-        self.thumbnails[row] = pixmap
-        index = self.index(row)
-        self.dataChanged.emit(index, index, [Qt.DecorationRole])
-
-
-class ImageViewerLabel(QLabel):
-    def __init__(self, parent=None):
-        super(ImageViewerLabel, self).__init__(parent)
-        self.initial_scale = 1.0
-        self.scale_modifier = 0
-        self.original_size = None
-        self.setScaledContents(True)
-
-        self.is_panning = False  
-        self.pan_start_position = QPoint()  
-        self.mouse_press_time = QDateTime.currentDateTime()
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            # Record the time of mouse press to differentiate between click and drag
-            self.mouse_press_time = QDateTime.currentDateTime()
-            scroll_area = self.parentWidget().parentWidget().parentWidget().parentWidget().scroll_area
-
-            # Start the panning process if the image is large enough to be panned
-            if self.size().width() > scroll_area.width() or self.size().height() > scroll_area.height():
-                self.is_panning = True
-                self.pan_start_position = event.globalPos()
-                self.horizontal_scroll_start = scroll_area.horizontalScrollBar().value()
-                self.vertical_scroll_start = scroll_area.verticalScrollBar().value()
-
-        
-        elif event.button() == Qt.RightButton:
-            self.zoom_out(event.pos())
-
-    def mouseMoveEvent(self, event):
-        if self.is_panning:
-            self.setCursor(Qt.ClosedHandCursor)
-
-            # Calculate the distance the mouse moved
-            delta = event.globalPos() - self.pan_start_position
-
-            # Scroll the scroll area based on the delta
-            scroll_area = self.parentWidget().parentWidget().parentWidget().parentWidget().scroll_area
-            scroll_area.horizontalScrollBar().setValue(self.horizontal_scroll_start - delta.x())
-            scroll_area.verticalScrollBar().setValue(self.vertical_scroll_start - delta.y())
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.unsetCursor()
-            # If the time difference is short enough, consider it a click for zoom
-            time_diff = self.mouse_press_time.msecsTo(QDateTime.currentDateTime())
-            if time_diff < 200:
-                self.zoom_in(event.pos())  
-            
-            elif self.is_panning:
-                self.is_panning = False
-                
-
-
-    def zoom_in(self, click_pos):
-        if self.scale_modifier < 5.0:
-            self.scale_modifier += 0.5
-        self.update_image_size(click_pos)
-
-    def zoom_out(self, click_pos):
-        if self.scale_modifier > 0:
-            self.scale_modifier -= 0.5
-        self.update_image_size(click_pos)
-
-    def update_image_size(self, click_pos):
-        if not self.pixmap():
-            return
-
-        scaling_factor = self.initial_scale * (self.scale_modifier + 1)
-
-        # Scale the image based on the new scale factor
-        new_width = self.original_size.width() * scaling_factor
-        new_height = self.original_size.height() * scaling_factor
-
-        # Update QLabel size
-        self.setFixedSize(new_width, new_height)
-
-        # Adjust the scroll area to center on the click position
-        self.parentWidget().parentWidget().parentWidget().parentWidget().adjust_scroll_area(click_pos, scaling_factor)
-
-class ThumbnailDelegate(QStyledItemDelegate):
-    def paint(self, painter, option, index):
-        # Save the painter's state
-        painter.save()
-
-        # Draw the default item (background, selection, etc.)
-        if option.state & QStyle.State_Selected:
-            painter.fillRect(option.rect, option.palette.highlight())
-        else:
-            painter.fillRect(option.rect, option.palette.base())
-
-        # Get the pixmap from the model
-        pixmap = index.data(Qt.DecorationRole)
-        if pixmap:
-            # Calculate the position to center the pixmap
-            item_rect = option.rect
-            pixmap_size = pixmap.size()
-            x = item_rect.x() + (item_rect.width() - pixmap_size.width()) / 2
-            y = item_rect.y() + (item_rect.height() - pixmap_size.height()) / 2
-
-            # Draw the pixmap centered
-            painter.drawPixmap(int(x), int(y), pixmap)
-
-        # Draw focus rectangle if item has focus
-        if option.state & QStyle.State_HasFocus:
-            option_rect = QRect(
-                int(x), int(y), pixmap_size.width(), pixmap_size.height()
-            )
-            option.rect = option_rect
-            QApplication.style().drawPrimitive(
-                QStyle.PE_FrameFocusRect, option, painter
-            )
-
-        # Restore the painter's state
-        painter.restore()
+from gui.ThumbListModel import ThumbListModel, ThumbnailDelegate
+from gui.ImageViewerLabel import ImageViewerLabel
 
 
 class MainWindow(QMainWindow):
@@ -280,8 +61,8 @@ class MainWindow(QMainWindow):
         self.scroll_area.setBackgroundRole(QPalette.Dark)
         self.scroll_area.setVisible(False)
 
-        # Create a QLabel for the image and add it to the scroll area
-        self.image_label = ImageViewerLabel()
+        # Create a ImageViewerLabel for the image and add it to the scroll area
+        self.image_label = ImageViewerLabel(self.scroll_area)
         self.image_label.setBackgroundRole(QPalette.Base)
         self.image_label.setScaledContents(True)
         self.scroll_area.setWidget(self.image_label)
@@ -298,7 +79,7 @@ class MainWindow(QMainWindow):
 
         # Create and set the custom model
         thumbnail_keys = [media.thumbnail_key for media in self.media_data]
-        self.model = ImageListModel(thumbnail_keys, self.media_loader)
+        self.model = ThumbListModel(thumbnail_keys, self.media_loader)
         self.thumbnail_list.setModel(self.model)
 
         # Set the custom delegate
