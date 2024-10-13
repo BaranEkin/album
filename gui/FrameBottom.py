@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QFrame, QLabel, QGroupBox, QPushButton, QHBoxLayout,
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QSize
 from gui.FrameInfo import FrameInfo
+from gui.Constants import Constants
 
 
 class FrameBottom(QFrame):
@@ -29,7 +30,7 @@ class FrameBottom(QFrame):
         left_layout.addWidget(top_label, alignment=Qt.AlignTop) 
         
         # Create a group box at the bottom with a label saying "cloud"
-        group_box = QGroupBox("Bulut Sistemi")
+        group_box = QGroupBox(Constants.GROUP_BOX_CLOUD)
         group_box.setFixedSize(160, 70)
         
         # Create horizontal layout for the buttons inside the group box
@@ -40,18 +41,20 @@ class FrameBottom(QFrame):
         status_cloud = QLabel()
         status_cloud.setText("")
         status_cloud.setFixedSize(25, 25)
-        status_cloud.setPixmap(QPixmap("res/icons/Cloud-Warning--Streamline-Core.png"))
+        status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_SUCCESS)
+        status_cloud.setPixmap(QPixmap("res/icons/Cloud-Check--Streamline-Core.png"))
         status_cloud.setScaledContents(True)
         button_layout.addWidget(status_cloud)
 
         status_storage = QLabel()
         status_storage.setText("")
         status_storage.setFixedSize(25, 25)
-        status_storage.setPixmap(QPixmap("res/icons/Download-Computer--Streamline-Core.png"))
+        status_storage.setToolTip(Constants.TOOLTIP_STORAGE_ON)
+        status_storage.setPixmap(QPixmap("res/icons/Download-Computer--Streamline-Core-Green.png"))
         status_storage.setScaledContents(True)
         button_layout.addWidget(status_storage)
 
-        button_settings = QPushButton("Ayarlar")
+        button_settings = QPushButton(Constants.SETTINGS)
         button_settings.setFixedSize(80, 30)
         button_settings.setIcon(QIcon("res/icons/Setting--Streamline-Unicons.png"))
         button_layout.addWidget(button_settings)
@@ -77,6 +80,7 @@ class FrameBottom(QFrame):
         self.button_back.setIcon(QIcon("res/icons/Arrow-Fat-Left-Fill--Streamline-Phosphor-Fill.png"))
         self.button_back.setIconSize(QSize(30, 30))
         self.button_back.setText("")
+        self.button_back.setToolTip(Constants.TOOLTIP_BUTTON_BACK)
         #self.button_back.setStyleSheet("background-color: white;")
         right_layout.addWidget(self.button_back, 0, 0)
 
@@ -85,6 +89,7 @@ class FrameBottom(QFrame):
         self.button_forward.setIcon(QIcon("res/icons/Arrow-Fat-Right-Fill--Streamline-Phosphor-Fill.png"))
         self.button_forward.setIconSize(QSize(30, 30))
         self.button_forward.setText("")
+        self.button_forward.setToolTip(Constants.TOOLTIP_BUTTON_FORWARD)
         #self.button_forward.setStyleSheet("background-color: lightgray;")
         right_layout.addWidget(self.button_forward, 0, 1)
 
@@ -93,6 +98,7 @@ class FrameBottom(QFrame):
         self.button_slideshow.setIcon(QIcon("res/icons/Slide-Show-Play--Streamline-Sharp.png"))
         self.button_slideshow.setIconSize(QSize(30, 30))
         self.button_slideshow.setText("")
+        self.button_slideshow.setToolTip(Constants.TOOLTIP_BUTTON_SLIDESHOW)
         #self.button_slideshow.setStyleSheet("background-color: gray;")
         right_layout.addWidget(self.button_slideshow, 0, 2)
 
@@ -101,6 +107,7 @@ class FrameBottom(QFrame):
         self.button_notes.setIcon(QIcon("res/icons/Hand-Held-Tablet-Writing--Streamline-Core.png"))
         self.button_notes.setIconSize(QSize(30, 30))
         self.button_notes.setText("")
+        self.button_notes.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
         #self.button_notes.setStyleSheet("background-color: darkgray;")
         right_layout.addWidget(self.button_notes, 1, 0)
 
@@ -109,14 +116,16 @@ class FrameBottom(QFrame):
         self.button_people.setIcon(QIcon("res/icons/User-Profile-Focus--Streamline-Core.png"))
         self.button_people.setIconSize(QSize(30, 30))
         self.button_people.setText("")
+        self.button_people.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
         # self.button_people.setStyleSheet("background-color: lightgray;")
         right_layout.addWidget(self.button_people, 1, 1)
 
         self.button_slideway = QPushButton()
         self.button_slideway.setFixedSize(40, 40)
-        self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp.png"))
+        self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png"))
         self.button_slideway.setIconSize(QSize(30, 30))
         self.button_slideway.setText("")
+        self.button_slideway.setToolTip(Constants.TOOLTIP_BUTTON_SLIDEWAY)
         #self.button_slideway.setStyleSheet("background-color: trasparent;")
         right_layout.addWidget(self.button_slideway, 1, 2)
 
