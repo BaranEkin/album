@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QModelIndex
 from PyQt5.QtGui import QPixmap, QPalette
 
+from gui.FrameBottom import FrameBottom
 from gui.ThumbListModel import ThumbListModel, ThumbnailDelegate
 from gui.ImageViewerLabel import ImageViewerLabel
 
@@ -24,7 +25,7 @@ class MainWindow(QMainWindow):
 
         # Set window title and initial dimensions
         self.setWindowTitle("ALBUM 2.0")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1280, 720)
 
         # Main container widget
         main_widget = QWidget()
@@ -72,10 +73,9 @@ class MainWindow(QMainWindow):
         self.scroll_area.setVisible(True)
 
         # Create the frame for information at the bottom
-        self.frame_info = QFrame()
-        self.frame_info.setFrameShape(QFrame.StyledPanel)
-        self.frame_info.setFixedHeight(100)
-        main_layout.addWidget(self.frame_info)
+        self.frame_bottom = FrameBottom()
+        self.frame_bottom.setFixedHeight(110)
+        main_layout.addWidget(self.frame_bottom)
 
         # Create and set the custom model
         thumbnail_keys = [media.thumbnail_key for media in self.media_data]

@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QStyleFactory
 from gui.MainWindow import MainWindow
 
 from config.Config import Config
@@ -14,5 +14,7 @@ if __name__ == "__main__":
     data_manager = DataManager()
     app = QApplication(sys.argv)
     viewer = MainWindow(data_manager, media_loader)
-    viewer.show()
+    viewer.showMaximized()
+    print(QStyleFactory.keys())
+    app.setStyle("Fusion")
     sys.exit(app.exec_())
