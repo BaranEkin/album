@@ -5,11 +5,13 @@ from PyQt5.QtWidgets import (
     QFrame,
     QScrollArea,
     QWidget,
-    QListView
+    QListView,
+    QApplication
 )
-from PyQt5.QtCore import Qt, QModelIndex
-from PyQt5.QtGui import QPixmap, QPalette
+from PyQt5.QtCore import Qt, QModelIndex, QEvent
+from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent
 
+from data.Media import Media
 from gui.FrameBottom import FrameBottom
 from gui.ThumbListModel import ThumbListModel, ThumbnailDelegate
 from gui.ImageViewerLabel import ImageViewerLabel
@@ -61,6 +63,7 @@ class MainWindow(QMainWindow):
         horizontal_layout.addWidget(self.scroll_area)
         self.scroll_area.setBackgroundRole(QPalette.Dark)
         self.scroll_area.setVisible(False)
+        self.scroll_area.setFocusPolicy(Qt.NoFocus)
 
         # Create a ImageViewerLabel for the image and add it to the scroll area
         self.image_label = ImageViewerLabel(self.scroll_area)
@@ -79,8 +82,8 @@ class MainWindow(QMainWindow):
 
         # Create and set the custom model
         thumbnail_keys = [media.thumbnail_key for media in self.media_data]
-        self.model = ThumbListModel(thumbnail_keys, self.media_loader)
-        self.thumbnail_list.setModel(self.model)
+        self.thumbnail_model = ThumbListModel(thumbnail_keys, self.media_loader)
+        self.thumbnail_list.setModel(self.thumbnail_model)
 
         # Set the custom delegate
         self.thumbnail_list.setItemDelegate(ThumbnailDelegate())
@@ -88,6 +91,8 @@ class MainWindow(QMainWindow):
         # Connect the clicked signal to handle item selection
         self.thumbnail_list.clicked.connect(self.on_image_selected)
 
+        self.thumbnail_list.setFocus()
+    
     def keyPressEvent(self, event):
         """
         Handle key press events for navigating the thumbnails using the arrow keys.
@@ -99,15 +104,15 @@ class MainWindow(QMainWindow):
 
             # Handle the Right Arrow key (move to the next item)
             if event.key() == Qt.Key_Right:
-                if current_index + 1 < self.model.rowCount():
-                    next_index = self.model.index(current_index + 1)
+                if current_index + 1 < self.thumbnail_model.rowCount():
+                    next_index = self.thumbnail_model.index(current_index + 1)
                     self.thumbnail_list.setCurrentIndex(next_index)
                     self.on_image_selected(next_index)
 
             # Handle the Left Arrow key (move to the previous item)
             elif event.key() == Qt.Key_Left:
                 if current_index - 1 >= 0:
-                    prev_index = self.model.index(current_index - 1)
+                    prev_index = self.thumbnail_model.index(current_index - 1)
                     self.thumbnail_list.setCurrentIndex(prev_index)
                     self.on_image_selected(prev_index)
 
@@ -116,9 +121,13 @@ class MainWindow(QMainWindow):
         When a preview image is clicked, display it in the main image label.
         """
         selected_media = self.media_data[index.row()]
+        self.load_media_metadata(selected_media)
         self.load_image(selected_media)
 
-    def load_image(self, media):
+    def load_media_metadata(self, media: Media):
+        self.frame_bottom.set_media_info(media)
+
+    def load_image(self, media: Media):
         """
         Load the selected image into the main display area.
         """

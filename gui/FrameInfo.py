@@ -1,6 +1,10 @@
+import datetime
 from PyQt5.QtWidgets import (QFrame, QLabel, QTextBrowser, QPushButton,
                              QVBoxLayout, QHBoxLayout, QGridLayout, QSizePolicy)
 from PyQt5.QtCore import Qt
+
+from data.Media import Media
+from gui.CustomTextBrowser import CustomTextBrowser
 
 
 class FrameInfo(QFrame):
@@ -11,19 +15,19 @@ class FrameInfo(QFrame):
         self.setFixedHeight(100)
 
         # Create layout for the frame
-        main_layout = QVBoxLayout()
+        self.main_layout = QVBoxLayout()
 
         # Set a fixed width for the labels to ensure both labels have the same width
         label_width = 80
 
         # Create the first row for title
-        title_layout = QHBoxLayout()
-        title_label = QLabel("BAŞLIK")
-        title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
-        title_label.setFixedWidth(label_width)  # Set a fixed width for the label
-        title_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+        self.title_layout = QHBoxLayout()
+        self.title_label = QLabel("BAŞLIK")
+        self.title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        self.title_label.setFixedWidth(label_width)  # Set a fixed width for the label
+        self.title_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
-        self.title_browser = QTextBrowser()
+        self.title_browser = CustomTextBrowser()
         self.title_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
         self.title_browser.setFixedHeight(40)  # Set height for consistency
         self.title_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -33,19 +37,19 @@ class FrameInfo(QFrame):
         # Mock-up value for title
         self.title_browser.setHtml('<div style="line-height:27px;">BAŞLIK DENEME YAZISI BAŞLIK DENEME YAZISI</div>')
 
-        title_layout.addWidget(title_label)
-        title_layout.addWidget(self.title_browser)
+        self.title_layout.addWidget(self.title_label)
+        self.title_layout.addWidget(self.title_browser)
 
         # Create the second row for location and date
-        location_date_layout = QHBoxLayout()
+        self.location_date_layout = QHBoxLayout()
 
         # Location label and browser
-        location_label = QLabel("YER")
-        location_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
-        location_label.setFixedWidth(label_width)  # Set the same fixed width for label
-        location_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+        self.location_label = QLabel("YER")
+        self.location_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        self.location_label.setFixedWidth(label_width)  # Set the same fixed width for label
+        self.location_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
-        self.location_browser = QTextBrowser()
+        self.location_browser = CustomTextBrowser()
         self.location_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
         self.location_browser.setFixedHeight(40)  # Set height for consistency
         self.location_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -56,16 +60,16 @@ class FrameInfo(QFrame):
         # Mock-up value for location
         self.location_browser.setHtml('<div style="line-height:26px;">DENEME ŞEHRİ DENEME SEMTİ DENEME KÖYÜ DENEMELER</div>')
 
-        location_date_layout.addWidget(location_label)
-        location_date_layout.addWidget(self.location_browser)
+        self.location_date_layout.addWidget(self.location_label)
+        self.location_date_layout.addWidget(self.location_browser)
 
         # Date label and browser
-        date_label = QLabel("TARİH")
-        date_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
-        date_label.setFixedWidth(label_width)  # Set the same fixed width for label
-        date_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+        self.date_label = QLabel("TARİH")
+        self.date_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        self.date_label.setFixedWidth(label_width)  # Set the same fixed width for label
+        self.date_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
-        self.date_browser = QTextBrowser()
+        self.date_browser = CustomTextBrowser()
         self.date_browser.setAlignment(Qt.AlignHCenter)  # Align text to the left
         self.date_browser.setFixedHeight(40)  # Set height for consistency
         self.date_browser.setFixedWidth(250)  # Set the fixed width for the date
@@ -76,12 +80,19 @@ class FrameInfo(QFrame):
         # Mock-up value for date
         self.date_browser.setHtml('<div style="line-height:26px;">09 Ağustos 9999 Cumartesi</div>')
 
-        location_date_layout.addWidget(date_label)
-        location_date_layout.addWidget(self.date_browser)
+        self.location_date_layout.addWidget(self.date_label)
+        self.location_date_layout.addWidget(self.date_browser)
 
         # Add both rows to the main layout
-        main_layout.addLayout(title_layout)
-        main_layout.addLayout(location_date_layout)
+        self.main_layout.addLayout(self.title_layout)
+        self.main_layout.addLayout(self.location_date_layout)
 
         # Set the main layout to the frame
-        self.setLayout(main_layout)
+        self.setLayout(self.main_layout)
+
+    def set_info(self, media: Media):
+        self.title_browser.set_text(27, media.title)
+        self.location_browser.set_text(26, media.location)
+        self.date_browser.set_date(26, media.date_text, media.date_est)
+
+
