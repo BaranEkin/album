@@ -23,6 +23,7 @@ class MainWindow(QMainWindow):
         self.data_manager = data_manager
         self.media_loader = media_loader
 
+        self.data_manager.update_local_db()
         self.media_data = self.data_manager.get_all_media()
 
         # Set window title and initial dimensions

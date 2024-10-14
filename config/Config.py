@@ -6,6 +6,7 @@ class Config:
     THUMBNAILS_DIR = ""
     S3_BUCKET_NAME = ""
     LOCAL_STORAGE_ENABLED = True
+    DATABASE_DIR = ""
 
     @staticmethod
     def read_config():
