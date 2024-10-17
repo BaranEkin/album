@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QStyleFactory
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtCore import Qt
 from gui.MainWindow import MainWindow
+from gui.DialogAddMedia import DialogAddMedia  # For testing
 
 from config.Config import Config
 from MediaLoader import MediaLoader
@@ -25,7 +26,13 @@ def simulate_keypress(window, key):
 
 # Main application execution
 if __name__ == "__main__":
-
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    viewer = DialogAddMedia()
+    viewer.show()
+    sys.exit(app.exec_())
+    
+    """
     Config.read_config()
     media_loader = MediaLoader()
     data_manager = DataManager()
@@ -37,3 +44,4 @@ if __name__ == "__main__":
     simulate_keypress(viewer.thumbnail_list, Qt.Key_Right)
     simulate_keypress(viewer.thumbnail_list, Qt.Key_Left)
     sys.exit(app.exec_())
+    """

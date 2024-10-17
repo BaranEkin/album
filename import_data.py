@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 import aws
 from data.Media import Media
-from data.helpers import date_to_julian, legacy_time_in_unix_subsec
+from data.helpers import date_to_julian, legacy_time_in_unix_subsec, current_time_in_unix_subsec
 
 
 def make_entry(old_entry, user_name, user_id):
@@ -20,6 +20,7 @@ def make_entry(old_entry, user_name, user_id):
     private = old_entry["OZEL"]
     people = old_entry["KISILER"]
     people_count = old_entry["KISIADET"]
+    people_detect = "" # Face Detections
     notes = old_entry["NOTLAR"] or ""
     albums = old_entry["ALBUMS"]
     tags = ""  # GPT?
@@ -31,11 +32,29 @@ def make_entry(old_entry, user_name, user_id):
         media_id = f"{user_id}_{created_at}"
     MEDIA_IDS.append(media_id)
 
-    return Media(title=title, location=location, date=date, date_text=date_text,
-                 date_est=date_est, thumbnail_key=thumbnail_key, media_key=media_key,
-                 type=mtype, extension=extension, private=private, people=people,
-                 people_count=people_count, notes=notes, albums=albums, tags=tags,
-                 created_at=created_at, user_name=user_name, user_id=user_id, media_id=media_id)
+    modified_at = current_time_in_unix_subsec()
+
+    return Media(title=title, 
+                 location=location, 
+                 date=date, 
+                 date_text=date_text,
+                 date_est=date_est, 
+                 thumbnail_key=thumbnail_key, 
+                 media_key=media_key,
+                 type=mtype, 
+                 extension=extension, 
+                 private=private, 
+                 people=people,
+                 people_count=people_count, 
+                 people_detect=people_detect, 
+                 notes=notes, 
+                 albums=albums, 
+                 tags=tags,
+                 created_at=created_at, 
+                 modified_at = modified_at,
+                 user_name=user_name, 
+                 user_id=user_id, 
+                 media_id=media_id)
 
 
 if __name__ == "__main__":
@@ -50,7 +69,7 @@ if __name__ == "__main__":
     session = Session()
 
     # Read the CSV file
-    csv_file_path = "res/database/ALBUM_fixed.csv"
+    csv_file_path = "res/database/ALBUM_test.csv"
     df = pd.read_csv(csv_file_path, delimiter=";", encoding="utf-8")
 
     # Iterate over the rows of the CSV and insert them into the SQLite database
