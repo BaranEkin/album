@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import ( QDialog, QVBoxLayout,
 
 
 class DialogAssignPerson(QDialog):
-    def __init__(self, person, parent=None):
+    def __init__(self, person, people_list, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Kişiyi ekle...")
 
@@ -13,7 +13,7 @@ class DialogAssignPerson(QDialog):
         layout = QVBoxLayout(self)
 
         # Mock-up list of names for the list widget
-        self.name_list = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank']
+        self.people_list = people_list
 
         # Create the input field
         self.input_field = QLineEdit(self)
@@ -48,7 +48,7 @@ class DialogAssignPerson(QDialog):
 
         # Filter names based on a case-insensitive substring match
         filtered_names = [
-            name for name in self.name_list
+            name for name in self.people_list
             if text.lower() in name.lower()
         ]
 

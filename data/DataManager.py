@@ -20,6 +20,18 @@ class DataManager:
         finally:
             session.close()
 
+    def get_list_people(self):
+        media_list = self.get_all_media()
+        list_people = []
+        for media in media_list:
+            people = media.people.split(",")
+            if people[0] != "":
+                for person in people:
+                    if person not in list_people:
+                        list_people.append(person)
+        
+        return sorted(list_people)
+
     def update_local_db(self):
         session_local = sessionmaker(bind=self.engine_local)()
         session_cloud = sessionmaker(bind=self.engine_cloud)()

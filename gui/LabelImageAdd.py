@@ -6,10 +6,11 @@ from gui.DialogAssignPerson import DialogAssignPerson
 
 
 class LabelImageAdd(QLabel):
-    def __init__(self, parent=None):
+    def __init__(self, people_list, parent=None):
         super().__init__(parent)
         self.setMouseTracking(True)
-
+        self.people_list = people_list
+        self.start_pixel = None
         self.original_image_size = None
         self.displayed_pixmap_size = QSize(800, 600)
         self.detections_with_names = []
@@ -56,7 +57,7 @@ class LabelImageAdd(QLabel):
         
     def find_detection_index(self, x, y):
         for i, det in enumerate(self.detections_with_names):
-            det_x, det_y, det_w, det_h, _ = det
+            det_x, det_y, det_w, det_h, _, _ = det
             if det_x <= x and x <= det_x + det_w:
                 if det_y <= y and y <= det_y + det_h:
                     return i
@@ -65,6 +66,7 @@ class LabelImageAdd(QLabel):
 
     def mousePressEvent(self, event: QMouseEvent):
         if self.pixmap():
+            if event.button() == Qt.LeftButton:
                 clicked_pixel_coords = self.calculate_clicked_pixel(event.x(), event.y())
                 det_index = self.find_detection_index(
                     x=clicked_pixel_coords[0],
@@ -73,16 +75,30 @@ class LabelImageAdd(QLabel):
                 if det_index is not None:
                     person = self.detections_with_names[det_index][4]
 
-                    person = self.show_coordinate_dialog(event.globalPos(), person)
+                    person = self.show_assign_person_dialog(event.globalPos(), person)
                     self.detections_with_names[det_index][4] = person
                     self.parent().parent().update_identifications(self.detections_with_names)
+            elif event.button() == Qt.RightButton:
+                self.start_pixel = self.calculate_clicked_pixel(event.x(), event.y())
         else:
             # Click is outside the displayed image
             print("Clicked outside the image area.")
 
-    def show_coordinate_dialog(self, position, person):
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.RightButton:
+            x, y = self.start_pixel
+            release_x, release_y = self.calculate_clicked_pixel(event.x(), event.y())
+            w, h = release_x - x, release_y - y
+            if w > 0 and h > 0:
+                person = self.show_assign_person_dialog(event.globalPos(), "")
+                detection = [x, y, w, h, person, "manual"]
+                self.detections_with_names.append(detection)
+                self.parent().parent().update_identifications(self.detections_with_names)
+
+
+    def show_assign_person_dialog(self, position, person):
         
-        dialog = DialogAssignPerson(person, self)
+        dialog = DialogAssignPerson(person, self.people_list, self)
         dialog.move(position)
         previous_input = dialog.input_field.text()
         if dialog.exec_() != 0:

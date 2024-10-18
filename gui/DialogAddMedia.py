@@ -1,26 +1,30 @@
 import sys
 import os
-from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QVBoxLayout, 
+from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout, 
                              QTreeView, QListWidget, QFrame, QFileSystemModel)
 from PyQt5.QtCore import QDir, Qt
 from PIL import Image
 
 from gui.LabelImageAdd import LabelImageAdd
 from gui.FrameAddInfo import FrameAddInfo
+from gui.FrameAction import FrameAction
 
 import face_detection
 
 
 class DialogAddMedia(QDialog):
-    def __init__(self):
+    def __init__(self, data_manager):
         super().__init__()
 
+        self.data_manager = data_manager
+        self.people_list = self.data_manager.get_list_people()
         self.detections_with_names = []
         self.selected_media_path = ""
         self.setFixedSize(1450, 950)
 
         # Main layout of the dialog (horizontal layout for the 3 frames)
         main_layout = QHBoxLayout(self)
+        main_layout.setSpacing(0)
 
         # Create left frame: frame_navigation
         self.frame_navigation = QFrame(self)
@@ -30,12 +34,12 @@ class DialogAddMedia(QDialog):
         # Create and set up the folder tree view
         self.folder_tree = QTreeView(self.frame_navigation)
         self.file_system_model = QFileSystemModel(self.folder_tree)
-        self.file_system_model.setRootPath('')  # Set the root path to show the entire filesystem
+        self.file_system_model.setRootPath("")  # Set the root path to show the entire filesystem
         self.file_system_model.setFilter(QDir.NoDotAndDotDot | QDir.AllDirs)  # Show only directories
 
         self.folder_tree.setModel(self.file_system_model)
-        self.folder_tree.setRootIndex(self.file_system_model.index(''))  # Root path at the top
-        self.folder_tree.setColumnWidth(0, 250)  # Set column width for the tree
+        self.folder_tree.setRootIndex(self.file_system_model.index(""))
+        self.folder_tree.setColumnWidth(0, 250)
 
         # Create the scrollable list widget for media files
         self.media_list = QListWidget(self.frame_navigation)
@@ -49,35 +53,33 @@ class DialogAddMedia(QDialog):
 
         # Create middle frame: frame_media
         self.frame_media = QFrame(self)
-        self.frame_media.setFixedWidth(800)  # Set fixed width for frame_media
+        self.frame_media.setFixedWidth(800)
         self.frame_media_layout = QVBoxLayout(self.frame_media)
-        self.frame_media.setContentsMargins(0, 0, 0, 0)
+        #self.frame_media.setContentsMargins(0, 0, 0, 0)
 
         # Create the clickable image label (top part of frame_media)
-        self.image_label = LabelImageAdd(self.frame_media)
-        self.image_label.setAlignment(Qt.AlignCenter)  # Center the image
-        self.image_label.setFixedHeight(600)  # Set the fixed size for the image label
+        self.image_label = LabelImageAdd(self.people_list, self.frame_media)
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setFixedHeight(600)
         self.frame_media_layout.addWidget(self.image_label)
 
         # Create the frame_details (bottom part of frame_media)
-        self.frame_details = FrameAddInfo()
-        self.frame_details.setFrameShape(QFrame.StyledPanel)
-        self.frame_details.setFixedHeight(300)  # Set fixed height for frame_details
+        self.frame_details = FrameAddInfo(parent=self)
+        self.frame_details.setFixedHeight(300)
         self.frame_media_layout.addWidget(self.frame_details)
 
         # Add the frame_media to the main layout
         main_layout.addWidget(self.frame_media)
 
         # Create right frame: frame_action
-        self.frame_action = QFrame(self)
-        self.frame_action.setFixedWidth(300)  # Set fixed width for frame_action
-        self.frame_action.setFrameShape(QFrame.StyledPanel)
-        self.frame_action.setStyleSheet("background-color: red;")  # Set background color to red
+        self.frame_action = FrameAction(parent=self)
+        self.frame_action.setFixedWidth(300) 
+        # self.frame_action.setFrameShape(QFrame.StyledPanel)
         main_layout.addWidget(self.frame_action)
 
         # Set the layout for the dialog
         self.setLayout(main_layout)
-        self.setWindowTitle('Media Dialog')
+        self.setWindowTitle("Medya Ekleme")
 
         # Connect the tree view selection change to update the media list
         self.folder_tree.selectionModel().selectionChanged.connect(self.on_folder_selected)
@@ -128,8 +130,7 @@ class DialogAddMedia(QDialog):
 
     def detect_people(self):
         image = Image.open(self.selected_media_path)
-        detections = face_detection.detect_people(image)
-        self.detections_with_names = [det + [""] for det in detections]
+        self.detections_with_names = face_detection.detect_people(image)
         self.image_label.detections_with_names = self.detections_with_names
     
     def draw_identifications(self):
@@ -141,9 +142,3 @@ class DialogAddMedia(QDialog):
         self.detections_with_names = detections_with_names
         self.draw_identifications()
         self.image_label.set_image("temp.jpg")
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    dialog = DialogAddMedia()
-    dialog.show()
-    sys.exit(app.exec_())

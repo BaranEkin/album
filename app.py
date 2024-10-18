@@ -26,9 +26,11 @@ def simulate_keypress(window, key):
 
 # Main application execution
 if __name__ == "__main__":
+    Config.read_config()
+    data_manager = DataManager()
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-    viewer = DialogAddMedia()
+    app.setStyle("windowsvista")
+    viewer = DialogAddMedia(data_manager)
     viewer.show()
     sys.exit(app.exec_())
     
@@ -37,7 +39,7 @@ if __name__ == "__main__":
     media_loader = MediaLoader()
     data_manager = DataManager()
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")
+    app.setStyle("windowsvista")
     viewer = MainWindow(data_manager, media_loader)
     viewer.showMaximized()
     simulate_keypress(viewer.thumbnail_list, Qt.Key_Left)
@@ -45,3 +47,4 @@ if __name__ == "__main__":
     simulate_keypress(viewer.thumbnail_list, Qt.Key_Left)
     sys.exit(app.exec_())
     """
+    

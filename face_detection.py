@@ -18,9 +18,10 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             # Create a draw object from PIL
             draw = ImageDraw.Draw(image, "RGBA")
 
+            detections_with_names = preprocess_detections(detections_with_names)
             # Loop through each detection
             for box in detections_with_names:
-                x, y, w, h, name = box
+                x, y, w, h, name, _ = box
 
                 # Define top-left and bottom-right corners of the rectangle
                 top_left = (x, y)
@@ -89,7 +90,7 @@ def detect_people(image: Image, return_str=False):
             for det in detection_results:
                 box = det.facial_area
                 if box.left_eye or box.right_eye:
-                    detections.append([box.x, box.y, box.w, box.h])
+                    detections.append([box.x, box.y, box.w, box.h, "", "auto"])
 
             sorted_detections = sorted(detections, key=lambda x: x[0])
             
@@ -99,13 +100,17 @@ def detect_people(image: Image, return_str=False):
                 return sorted_detections
         except:
             return []
+        
+def preprocess_detections(detections_with_names):
+    # Remove manually added detections with no name
+    detections_with_names = [det for det in detections_with_names if not (det[4] == "" and det[5] == "manual")]
+    
+    # Sort detections on x
+    detections_with_names = sorted(detections_with_names, key=lambda x: x[0])
+    return detections_with_names
+
     
     
 def covert_detections_to_str(detections):
-    detections_str = ",".join(['-'.join(map(str, det)) for det in detections])
+    detections_str = ",".join(['-'.join(map(str, det[:4])) for det in detections])
     return detections_str
-
-
-def convert_str_to_detections(detections_str):
-    detections = [list(map(int, det_str.split('-'))) for det_str in detections_str.split(",")]
-    return detections
