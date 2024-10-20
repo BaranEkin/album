@@ -8,19 +8,25 @@ from PIL import Image
 from gui.LabelImageAdd import LabelImageAdd
 from gui.FrameAddInfo import FrameAddInfo
 from gui.FrameAction import FrameAction
+from data.DataManager import DataManager
 
 import face_detection
+import file_operations
 
 
 class DialogAddMedia(QDialog):
-    def __init__(self, data_manager):
+    def __init__(self, data_manager: DataManager):
         super().__init__()
 
         self.data_manager = data_manager
         self.people_list = self.data_manager.get_list_people()
+        self.album_list = self.data_manager.get_all_album_paths_with_tags()
         self.detections_with_names = []
         self.selected_media_path = ""
-        self.setFixedSize(1450, 950)
+        self.media_to_be_added = {}
+        
+        
+        self.setFixedSize(1350, 900)
 
         # Main layout of the dialog (horizontal layout for the 3 frames)
         main_layout = QHBoxLayout(self)
@@ -28,8 +34,9 @@ class DialogAddMedia(QDialog):
 
         # Create left frame: frame_navigation
         self.frame_navigation = QFrame(self)
-        self.frame_navigation.setFixedWidth(300)  # Set fixed width for frame_navigation
+        self.frame_navigation.setFixedWidth(250)  # Set fixed width for frame_navigation
         self.frame_navigation_layout = QVBoxLayout(self.frame_navigation)
+        self.frame_navigation.setContentsMargins(0,0,0,0)
 
         # Create and set up the folder tree view
         self.folder_tree = QTreeView(self.frame_navigation)
@@ -55,26 +62,29 @@ class DialogAddMedia(QDialog):
         self.frame_media = QFrame(self)
         self.frame_media.setFixedWidth(800)
         self.frame_media_layout = QVBoxLayout(self.frame_media)
-        #self.frame_media.setContentsMargins(0, 0, 0, 0)
+        self.frame_media.setContentsMargins(0, 0, 0, 0)
 
         # Create the clickable image label (top part of frame_media)
-        self.image_label = LabelImageAdd(self.people_list, self.frame_media)
+        self.image_label = LabelImageAdd(self.people_list, parent=self.frame_media)
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setFixedHeight(600)
+        self.image_label.setFixedHeight(500)
         self.frame_media_layout.addWidget(self.image_label)
 
         # Create the frame_details (bottom part of frame_media)
-        self.frame_details = FrameAddInfo(parent=self)
-        self.frame_details.setFixedHeight(300)
-        self.frame_media_layout.addWidget(self.frame_details)
+        self.frame_add_info = FrameAddInfo(parent=self)
+        self.frame_add_info.setFixedHeight(350)
+        self.frame_add_info.setFrameStyle(QFrame.StyledPanel)
+        self.frame_add_info.radio_date_from_filename.toggled.connect(self.set_auto_date)
+        self.frame_add_info.radio_date_from_filedate.toggled.connect(self.set_auto_date)
+        self.frame_media_layout.addWidget(self.frame_add_info)
 
         # Add the frame_media to the main layout
         main_layout.addWidget(self.frame_media)
 
         # Create right frame: frame_action
-        self.frame_action = FrameAction(parent=self)
-        self.frame_action.setFixedWidth(300) 
-        # self.frame_action.setFrameShape(QFrame.StyledPanel)
+        self.frame_action = FrameAction(self.album_list, parent=self)
+        self.frame_action.button_add.clicked.connect(self.on_media_add)
+        self.frame_action.setFixedWidth(250) 
         main_layout.addWidget(self.frame_action)
 
         # Set the layout for the dialog
@@ -114,12 +124,17 @@ class DialogAddMedia(QDialog):
 
     def on_media_selected(self, item):
 
+        self.clear_fields_for_new_media()
+
         media_file_name = item.text()
         self.selected_media_path = os.path.join(self.current_folder_path, media_file_name)
+
+        self.set_auto_date()
         
         # Selected media is an image
-        if media_file_name.lower().endswith((".png", ".jpg", ".jpeg",)):
+        if file_operations.get_file_type(self.selected_media_path) == 1:
             
+            self.frame_add_info.set_people_enable(False)
             self.detect_people()
             self.draw_identifications()
             self.image_label.set_image("temp.jpg")
@@ -127,6 +142,7 @@ class DialogAddMedia(QDialog):
         # Selected media is a video
         else:
             self.image_label.clear()
+            self.frame_add_info.set_people_enable(True)
 
     def detect_people(self):
         image = Image.open(self.selected_media_path)
@@ -139,6 +155,67 @@ class DialogAddMedia(QDialog):
         image.save("temp.jpg")
 
     def update_identifications(self, detections_with_names):
-        self.detections_with_names = detections_with_names
+        self.detections_with_names = face_detection.preprocess_detections(detections_with_names)
         self.draw_identifications()
+        self.frame_add_info.set_people(self.get_people())
         self.image_label.set_image("temp.jpg")
+
+    def get_people_detect(self):
+        people_detect = ",".join(['-'.join(map(str, det[:4])) for det in self.detections_with_names if det[4] != ""])
+        return people_detect
+
+    def get_people(self):
+        people = ",".join([det[4] for det in self.detections_with_names if det[4] != ""])
+        return people
+    
+    def get_people_count(self):
+        return len([det for det in self.detections_with_names if det[4] != ""])
+
+    def on_media_add(self):
+        title = self.frame_add_info.get_title()
+        location = self.frame_add_info.get_location()
+        date = self.frame_add_info.get_date()
+        date_est = self.frame_add_info.get_date_est()
+        tags = self.frame_add_info.get_tags()
+        notes = self.frame_add_info.get_notes()
+
+        people = self.get_people()
+        people_detect = self.get_people_detect()
+        people_count = self.get_people_count()
+
+        media_path = self.selected_media_path
+        albums = "".join(self.frame_action.get_selected_album_tags())
+
+        self.data_manager.build_media(
+            path=media_path,
+            title=title,
+            location=location,
+            date_text=date,
+            date_est=date_est,
+            albums=albums,
+            tags=tags,
+            notes=notes,
+            people=people,
+            people_detect=people_detect,
+            people_count=people_count
+        )
+
+    def clear_fields_for_new_media(self):
+        self.frame_add_info.set_people("")
+
+        if self.frame_add_info.get_date_option() != 3:
+            self.frame_add_info.set_date("")
+
+    def set_auto_date(self):
+        date_option = self.frame_add_info.get_date_option()
+        if date_option == 1:
+            auto_date = file_operations.get_date_from_filename(self.selected_media_path)
+            self.frame_add_info.set_date(auto_date)
+            self.frame_add_info.set_date_est(7)
+        
+        elif date_option == 2:
+            auto_date = file_operations.get_date_from_file_metadata(self.selected_media_path)
+            self.frame_add_info.set_date(auto_date)
+            self.frame_add_info.set_date_est(7)
+        
+

@@ -50,7 +50,7 @@ class MainWindow(QMainWindow):
         # Set a layout for the frame_menu
         menu_layout = QVBoxLayout(self.frame_menu)
         # Remove margins for full use of space
-        menu_layout.setContentsMargins(0, 100, 0, 0)
+        menu_layout.setContentsMargins(0, 0, 0, 0)
 
         # Replace QListWidget with QListView
         self.thumbnail_list = QListView(self.frame_menu)

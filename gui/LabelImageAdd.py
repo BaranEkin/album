@@ -12,7 +12,7 @@ class LabelImageAdd(QLabel):
         self.people_list = people_list
         self.start_pixel = None
         self.original_image_size = None
-        self.displayed_pixmap_size = QSize(800, 600)
+        self.displayed_pixmap_size = QSize(800, 500)
         self.detections_with_names = []
     
     def set_image(self, image_path: str):

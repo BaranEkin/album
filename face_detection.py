@@ -94,10 +94,7 @@ def detect_people(image: Image, return_str=False):
 
             sorted_detections = sorted(detections, key=lambda x: x[0])
             
-            if return_str:
-                return covert_detections_to_str(sorted_detections)
-            else:
-                return sorted_detections
+            return sorted_detections
         except:
             return []
         
@@ -109,8 +106,3 @@ def preprocess_detections(detections_with_names):
     detections_with_names = sorted(detections_with_names, key=lambda x: x[0])
     return detections_with_names
 
-    
-    
-def covert_detections_to_str(detections):
-    detections_str = ",".join(['-'.join(map(str, det[:4])) for det in detections])
-    return detections_str

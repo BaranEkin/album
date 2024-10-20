@@ -4,6 +4,10 @@ from sqlalchemy.orm import sessionmaker
 
 from config.Config import Config
 from data.Media import Media
+from data.Album import Album
+from data.helpers import date_to_julian, current_time_in_unix_subsec
+import aws
+import file_operations
 
 
 class DataManager:
@@ -31,6 +35,44 @@ class DataManager:
                         list_people.append(person)
         
         return sorted(list_people)
+    
+    def get_all_album_paths_with_tags(self):
+        session = sessionmaker(bind=self.engine_local)()
+
+        try:
+            # Query the Album table
+            album_list = session.execute(select(Album)).scalars().all()
+        finally:
+            session.close()
+
+        if album_list:
+            # Create a mapping from tags to nodes for easy access
+            tag_to_album = {item.tag: item for item in album_list}
+            
+            # Create a list to store all paths with tags
+            paths = []
+
+            def build_path(album):
+                path_elements = []
+                current_album = album
+
+                # Traverse up to the root node, building the path
+                while current_album:
+                    path_elements.insert(0, current_album.name)  # Insert at the beginning to reverse the order
+                    # Find the parent tag by truncating the current node's path
+                    parent_path = current_album.path[:-len(current_album.tag)]
+                    parent_tag = parent_path[-3:] if parent_path else None
+                    current_album = tag_to_album.get(parent_tag)
+
+                # Join the path elements to form the full path
+                return "/".join(path_elements)
+
+            # Generate paths for all nodes in the data
+            for album in album_list:
+                full_path = build_path(album)
+                paths.append((full_path, album.tag))
+
+            return sorted(paths, key=lambda x: x[0])
 
     def update_local_db(self):
         session_local = sessionmaker(bind=self.engine_local)()
@@ -43,6 +85,69 @@ class DataManager:
             session_local.close()
             session_cloud.close()
 
+    def build_media(
+            self,
+            path,
+            title,
+            location,
+            date_text,
+            date_est,
+            albums,
+            tags,
+            notes,
+            people,
+            people_detect,
+            people_count
+    ):
+        user_id = aws.get_user_id()
+        user_name = aws.get_user_name()
+        date = date_to_julian(date_text)
+
+        created_at = current_time_in_unix_subsec()
+        media_id = str(created_at).replace(".", "_")
+
+        media_key, thumbnail_key = file_operations.add_image(media_id=media_id,
+                                                             media_path=path,
+                                                             date_text=date_text)
+
+
+        media = Media()
+        media.media_id = media_id
+        media.created_at = created_at
+        media.modified_at = created_at
+        media.user_id = user_id
+        media.user_name =user_name
+        media.media_key = media_key
+        media.thumbnail_key = thumbnail_key
+        media.title = title
+        media.location = location
+        media.date = date
+        media.date_text = date_text
+        media.date_est = date_est
+        media.tags = tags
+        media.notes = notes
+        media.albums = albums
+        media.people = people
+        media.people_detect = people_detect
+        media.people_count = people_count
+        media.extension = file_operations.get_file_extension(path)
+        media.type = file_operations.get_file_type(path)
+        media.private = 0
+
+        self.insert_media_to_local([media])
+        print("MEDIA ADDED!!!")
+        
+
+    def insert_media_to_local(self, media_list):
+        session = sessionmaker(bind=self.engine_local)()
+        try:
+            for media in media_list:
+                session.add(media)
+            session.commit()
+        finally:
+            session.close()
+
+    
     @staticmethod
     def _get_new_rows_from_cloud(session_cloud, session_local):
         local_media_ids = session_local.query(Media.media_id).all()

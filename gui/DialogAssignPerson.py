@@ -2,12 +2,12 @@ from PyQt5.QtWidgets import ( QDialog, QVBoxLayout,
                              QListWidget, QDialogButtonBox, 
                              QLineEdit, QListWidgetItem)
 
-
+from gui.Constants import Constants
 
 class DialogAssignPerson(QDialog):
     def __init__(self, person, people_list, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Kişiyi ekle...")
+        self.setWindowTitle(Constants.WINDOW_DIALOG_ASSIGN_PERSON)
 
         # Layout for the dialog
         layout = QVBoxLayout(self)
