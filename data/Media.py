@@ -11,7 +11,6 @@ class Media(Base):
     created_at = Column(REAL, nullable=False)
     modified_at = Column(REAL, nullable=False)
     user_name = Column(TEXT, nullable=False)
-    user_id = Column(TEXT, nullable=False)
     title = Column(TEXT, nullable=False)
     location = Column(TEXT, nullable=False)
     date = Column(REAL, nullable=False)

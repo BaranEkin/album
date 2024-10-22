@@ -26,9 +26,8 @@ class MediaLoader:
 
         else:
             print("Image is not found on local storage.")
-            return QImage("D:/Work/self/github/album-2/res/blank.jpg")
             try:
-                pil_image = aws.download_image_from_s3(image_key)
+                pil_image = aws.get_image_from_cloudfront(image_key, prefix="media/")
                 print("Image retrieved from AWS S3 bucket.")
                 if self.local_storage_enabled:
                     try:
@@ -66,11 +65,8 @@ class MediaLoader:
 
         else:
             print(f"Thumbnail is not found on local storage: {thumbnail_key}")
-            return QImage("D:/Work/self/github/album-2/res/blank.jpg")
-
-
             try:
-                pil_image = aws.download_image_from_s3(thumbnail_key)
+                pil_image = aws.get_image_from_cloudfront(thumbnail_key, prefix="thumbnails/")
                 try:
                     self.save_thumbnail(pil_image, thumbnail_key)
                     image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))

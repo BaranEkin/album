@@ -24,7 +24,7 @@ def add_image(media_id, media_path, date_text):
 
     shutil.copy2(media_path, destination_path)
 
-    thumbnail_key = f"{year}/T{year}{month}{day}_{media_id}.jpg"
+    thumbnail_key = f"{year}/P{year}{month}{day}_{media_id}.jpg"
     thumbnail_key = create_image_thumbnail(media_key, thumbnail_key)
 
     return media_key, thumbnail_key
@@ -48,26 +48,31 @@ def get_file_extension(file_path):
 def get_file_type(file_path):
     
     image_extensions = [".png", ".jpg", ".jpeg"]
-    video_extensions = [".mp4", ".avi", ".mov"]
+    video_extensions = [".mp4", ".avi", ".mov", ".mpg", ".wmv", ".3gp", ".asf"]
+    sound_extensions = [".mp3", ".wav"]
     extension = get_file_extension(file_path)
     if extension in image_extensions:
         return 1
     elif extension in video_extensions:
         return 2
+    elif extension in sound_extensions:
+        return 3
     
 def get_date_from_file_metadata(file_path):
-    
-    if get_file_type(file_path) == 1:
-        image = Image.open(file_path)
-        exif_data = image._getexif()
-        
-        if exif_data is not None:
-            for tag_id, value in exif_data.items():
-                tag = TAGS.get(tag_id, tag_id)
-                if tag == 'DateTimeOriginal':
-                    exif_date =  value
-                    return convert_exif_date_to_date_text(exif_date)
-    return ""
+    try:
+        if get_file_type(file_path) == 1:
+            image = Image.open(file_path)
+            exif_data = image._getexif()
+            
+            if exif_data is not None:
+                for tag_id, value in exif_data.items():
+                    tag = TAGS.get(tag_id, tag_id)
+                    if tag == 'DateTimeOriginal':
+                        exif_date =  value
+                        return convert_exif_date_to_date_text(exif_date)
+        return ""
+    except:
+        return ""
 
 def get_date_from_filename(file_path):
     

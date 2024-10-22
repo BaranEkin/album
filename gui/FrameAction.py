@@ -61,6 +61,7 @@ class FrameAction(QFrame):
         self.button_upload = QPushButton(Constants.LABEL_BUTTON_UPLOAD)
         self.button_upload.setFixedSize(220, 40)
         self.button_upload.setIcon(QIcon("res/icons/Upload-Cloud-2-Fill--Streamline-Remix-Fill.png"))
+        self.update_button_upload(0)
         self.bottom_layout.addWidget(self.button_upload)
 
         # Add scrollable area and bottom frame to main layout
@@ -79,5 +80,15 @@ class FrameAction(QFrame):
     def clear_selected_album_tags(self):
         for checkbox, tag in self.checkbox_to_album_tag.items():
             checkbox.setChecked(False)
+
+    def update_button_upload(self, media_count: int):
+        self.button_upload.setText(f"{media_count} {Constants.LABEL_BUTTON_UPLOAD}")
+        self.button_upload.setEnabled(True if media_count > 0 else False)
+
+    def set_button_upload_enabled(self, bool):
+        self.button_upload.setEnabled(bool)
+
+    def set_button_add_enabled(self, bool):
+        self.button_add.setEnabled(bool)
     
 

@@ -6,15 +6,21 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QWidget,
     QListView,
-    QApplication
+    QPushButton,
+    QGridLayout,
+    QMenu,
+    QAction
 )
-from PyQt5.QtCore import Qt, QModelIndex, QEvent
-from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent
+from PyQt5.QtCore import Qt, QModelIndex, QEvent, QSize
+from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon
 
 from data.Media import Media
 from gui.FrameBottom import FrameBottom
 from gui.ThumbListModel import ThumbListModel, ThumbnailDelegate
 from gui.ImageViewerLabel import ImageViewerLabel
+from gui.DialogAddMedia import DialogAddMedia
+
+import aws
 
 
 class MainWindow(QMainWindow):
@@ -23,12 +29,23 @@ class MainWindow(QMainWindow):
         self.data_manager = data_manager
         self.media_loader = media_loader
 
-        self.data_manager.update_local_db()
+        if aws.check_s3():
+            success = self.data_manager.update_local_db()
+            if not success:
+                pass
+        else:
+            pass
+
         self.media_data = self.data_manager.get_all_media()
 
         # Set window title and initial dimensions
         self.setWindowTitle("ALBUM 2.0")
         self.setGeometry(100, 100, 1280, 720)
+
+        #self.file_menu = QMenu("&Dosya", self)
+        #self.file_menu.addAction(QAction("&Aç...", self))
+        #self.menuBar().addMenu(self.file_menu)
+        #self.menuBar().setFixedWidth(50)
 
         # Main container widget
         main_widget = QWidget()
@@ -41,9 +58,8 @@ class MainWindow(QMainWindow):
         horizontal_layout = QHBoxLayout()
         main_layout.addLayout(horizontal_layout)
 
-        # Create the frame for the menu on the left side (to hold the preview roll)
+        # Create the frame for the menu on the left side 
         self.frame_menu = QFrame()
-        self.frame_menu.setFrameShape(QFrame.StyledPanel)
         self.frame_menu.setFixedWidth(160)
         horizontal_layout.addWidget(self.frame_menu)
 
@@ -51,6 +67,84 @@ class MainWindow(QMainWindow):
         menu_layout = QVBoxLayout(self.frame_menu)
         # Remove margins for full use of space
         menu_layout.setContentsMargins(0, 0, 0, 0)
+
+
+        # Create right QFrame with fixed width and height, and add buttons in a grid
+        self.frame_features_area = QFrame()
+        self.frame_features_area.setFixedWidth(160)
+        self.frame_features_area.setFixedHeight(160)
+
+        # Create a grid layout for the buttons inside the right frame
+        self.layout_features_area = QGridLayout()
+        self.layout_features_area.setContentsMargins(0,0,10,10)
+
+        self.button_upload_media = QPushButton()
+        self.button_upload_media.setFixedSize(50, 50)
+        self.button_upload_media.setIcon(QIcon("res/icons/Image--Add.png"))
+        self.button_upload_media.setIconSize(QSize(30, 30))
+        self.button_upload_media.setText("")
+        self.button_upload_media.clicked.connect(self.show_add_media_dialog)
+        #self.button_upload_media.setToolTip(Constants.TOOLTIP_BUTTON_BACK)
+        self.layout_features_area.addWidget(self.button_upload_media, 0, 0)
+
+        self.button_filter = QPushButton()
+        self.button_filter.setFixedSize(50, 50)
+        self.button_filter.setIcon(QIcon("res/icons/Filter-2--Streamline-Sharp-Gradient--Free.png"))
+        self.button_filter.setIconSize(QSize(30, 30))
+        self.button_filter.setText("")
+        #self.button_filter.setToolTip(Constants.TOOLTIP_BUTTON_FORWARD)
+        self.layout_features_area.addWidget(self.button_filter, 0, 1)
+
+        self.button_same_date_location = QPushButton()
+        self.button_same_date_location.setFixedSize(50, 50)
+        self.button_same_date_location.setIcon(QIcon("res/icons/Date--Location.png"))
+        self.button_same_date_location.setIconSize(QSize(30, 30))
+        self.button_same_date_location.setText("")
+        #self.button_same_date_location.setToolTip(Constants.TOOLTIP_BUTTON_SLIDESHOW)
+        self.layout_features_area.addWidget(self.button_same_date_location, 0, 2)
+
+        self.button_export_media = QPushButton()
+        self.button_export_media.setFixedSize(50, 50)
+        self.button_export_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
+        self.button_export_media.setIconSize(QSize(30, 30))
+        self.button_export_media.setText("")
+        #self.button_export_media.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
+        self.layout_features_area.addWidget(self.button_export_media, 1, 0)
+
+        self.button_edit_media = QPushButton()
+        self.button_edit_media.setFixedSize(50, 50)
+        self.button_edit_media.setIcon(QIcon("res/icons/Task-List-Edit--Streamline-Plump-Gradient.png"))
+        self.button_edit_media.setIconSize(QSize(30, 30))
+        self.button_edit_media.setText("")
+        #self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
+        self.layout_features_area.addWidget(self.button_edit_media, 1, 1)
+
+        self.button_placeholder1 = QPushButton()
+        self.button_placeholder1.setFixedSize(50, 50)
+        self.button_placeholder1.setText("")
+        self.button_placeholder1.setEnabled(False)
+        self.layout_features_area.addWidget(self.button_placeholder1, 1, 2)
+
+        self.button_placeholder2 = QPushButton()
+        self.button_placeholder2.setFixedSize(50, 50)
+        self.button_placeholder2.setText("")
+        self.button_placeholder2.setEnabled(False)
+        self.layout_features_area.addWidget(self.button_placeholder2, 2, 0)
+
+        self.button_placeholder3 = QPushButton()
+        self.button_placeholder3.setFixedSize(50, 50)
+        self.button_placeholder3.setText("")
+        self.button_placeholder3.setEnabled(False)
+        self.layout_features_area.addWidget(self.button_placeholder3, 2, 1)
+
+        self.button_placeholder4 = QPushButton()
+        self.button_placeholder4.setFixedSize(50, 50)
+        self.button_placeholder4.setText("")
+        self.button_placeholder4.setEnabled(False)
+        self.layout_features_area.addWidget(self.button_placeholder4, 2, 2)
+
+        self.frame_features_area.setLayout(self.layout_features_area)
+        menu_layout.addWidget(self.frame_features_area)
 
         # Replace QListWidget with QListView
         self.thumbnail_list = QListView(self.frame_menu)
@@ -180,3 +274,9 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         super(MainWindow, self).resizeEvent(event)
         self.fit_to_window()
+
+    def show_add_media_dialog(self):
+        if not aws.check_s3():
+            pass
+        dialog = DialogAddMedia(self.data_manager)
+        dialog.exec_()

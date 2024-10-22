@@ -1,5 +1,13 @@
+import os
 import boto3
 from botocore.signers import CloudFrontSigner
+from botocore.exceptions import (
+    NoCredentialsError, 
+    PartialCredentialsError, 
+    ClientError, 
+    EndpointConnectionError, 
+    ConnectionClosedError)
+
 from io import BytesIO
 from PIL import Image
 from urllib import request
@@ -10,11 +18,7 @@ from cryptography.hazmat.primitives import serialization
 from config.Config import Config
 
 sts = boto3.client("sts")
-
-
-def get_user_id():
-    user_id = sts.get_caller_identity()["UserId"]
-    return user_id
+s3 = boto3.client("s3")
 
 
 def get_user_name():
@@ -47,9 +51,9 @@ def create_signed_url(url, expiration_date):
     )
 
 
-def get_image_from_cloudfront(image_key):
+def get_image_from_cloudfront(image_key, prefix):
 
-    url = f"https://{Config.CLOUDFRONT_DOMAIN}/{image_key}"
+    url = f"https://{Config.CLOUDFRONT_DOMAIN}/{prefix}{image_key}"
     expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
     signed_url = create_signed_url(url, expiration)
 
@@ -61,3 +65,93 @@ def get_image_from_cloudfront(image_key):
             return image
     except Exception as e:
         print(f"Error occurred: {e}")
+        raise e
+    
+
+def check_s3():
+    try:
+        s3.head_bucket(Bucket=Config.S3_BUCKET_NAME)
+        return True
+    
+    except ClientError as e:
+        print(f"Unable to reach bucket: {Config.S3_BUCKET_NAME}. Error: {e}")
+        return False
+
+
+def upload_to_s3_bucket(path, key, prefix=""):
+    if not os.path.isfile(path):
+        print(f"The file '{path}' does not exist.")
+        return
+
+    try:
+        s3.upload_file(path, Config.S3_BUCKET_NAME, f"{prefix}{key}")
+        print(f"File {path} uploaded successfully to {prefix}{key}")
+
+    except NoCredentialsError as e:
+        print("Credentials not available for AWS. Please check your AWS credentials.")
+        raise e
+    
+    except PartialCredentialsError as e:
+        print("Incomplete AWS credentials provided. Please check your AWS credentials.")
+        raise e
+    
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDenied':
+            print(f"Access denied to the bucket. Please check your permissions.")
+        
+        elif e.response['Error']['Code'] == 'NoSuchBucket':
+            print(f"The specified bucket does not exist.")
+
+        else:
+            print(f"Client error occurred: {e}")
+        raise e
+    
+    except FileNotFoundError as e:
+        print(f"The specified file was not found: {path}.")
+        raise e
+    
+    except PermissionError as e:
+        print(f"Permission denied: Unable to read '{path}'. Check your file system permissions.")
+        raise e
+    
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        raise e
+    
+
+def dowload_from_s3_bucket(key, path):
+    try:
+        s3.download_file(Config.S3_BUCKET_NAME, key, path)
+        print(f"File downloaded successfully to {path}")
+        return True
+
+    except (EndpointConnectionError, ConnectionClosedError) as e:
+        print("Network error: Connection issue encountered. Please check your internet connection.")
+        return False
+    
+    except NoCredentialsError as e:
+        print("Credentials not available for AWS. Please check your AWS credentials.")
+        raise e
+    
+    except PartialCredentialsError as e:
+        print("Incomplete AWS credentials provided. Please check your AWS credentials.")
+        raise e
+    
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDenied':
+            print(f"Access denied to the bucket or object.")
+        
+        elif e.response['Error']['Code'] == 'NoSuchKey':
+            print(f"The specified object key does not exist: {key}.")
+        
+        else:
+            print(f"Client error occurred: {e}")
+        raise e
+    
+    except PermissionError as e:
+        print(f"Permission denied: Unable to write to {path}. Check your file system permissions.")
+        raise e
+    
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        raise e

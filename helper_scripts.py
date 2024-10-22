@@ -16,15 +16,17 @@ def resize_thumbnails(folder_path):
     for i, path in enumerate(thumbnail_paths):
         try:
             img = Image.open(path)
-            # img.thumbnail((160, 160))
+            w, h = img.size
+            if not (w == 320 and h == 240):
+                img.thumbnail((160, 160))
 
             new_path = path.replace("\\Foto", "\\")
             directory = os.path.dirname(new_path)
             if not os.path.exists(directory):
                 os.makedirs(directory)
             img.save(new_path, "JPEG")
-            os.remove(path)
-            print(i)
+            #os.remove(path)
+            # print(i)
 
         except Exception as e:
             print(e)
@@ -57,4 +59,4 @@ def fix_csv(file_path):
 
 
 if __name__ == "__main__":
-    resize_thumbnails(Path(r"D:\Work\self\github\album-2\res\media"))
+    resize_thumbnails(Path(r"D:\Work\self\github\album-2\res\thumbnails"))

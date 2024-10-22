@@ -7,13 +7,13 @@ from data.Media import Media
 from data.helpers import date_to_julian, legacy_time_in_unix_subsec, current_time_in_unix_subsec
 
 
-def make_entry(old_entry, user_name, user_id):
+def make_entry(old_entry, user_name):
     title = old_entry["BASLIK"]
     location = old_entry["YER"]
     date = date_to_julian(old_entry["ZAMAN"])
     date_text = old_entry["ZAMAN"]
     date_est = old_entry["YAKTARIH"]
-    thumbnail_key = old_entry["GORUNTU"][1:].replace("\\", "/").replace("P", "T")
+    thumbnail_key = old_entry["GORUNTU"][1:].replace("\\", "/")
     media_key = old_entry["DOSYAADI"][5:].replace("\\", "/")
     mtype = old_entry["DOSYATIPI"]
     extension = old_entry["UZANTI"]
@@ -26,10 +26,11 @@ def make_entry(old_entry, user_name, user_id):
     tags = ""  # GPT?
 
     created_at = legacy_time_in_unix_subsec(old_entry["KAYITZAMAN"])
-    media_id = f"{user_id}_{created_at}"
+    media_id = str(created_at).replace(".", "_")
     if media_id in MEDIA_IDS:
         created_at += 0.1
-        media_id = f"{user_id}_{created_at}"
+        media_id = str(created_at).replace(".", "_")
+
     MEDIA_IDS.append(media_id)
 
     modified_at = current_time_in_unix_subsec()
@@ -53,14 +54,12 @@ def make_entry(old_entry, user_name, user_id):
                  created_at=created_at, 
                  modified_at = modified_at,
                  user_name=user_name, 
-                 user_id=user_id, 
                  media_id=media_id)
 
 
 if __name__ == "__main__":
     MEDIA_IDS = []
     user_name = aws.get_user_name()
-    user_id = aws.get_user_id()
 
     # Create an SQLite database engine (or connect to the existing one)
     engine = create_engine("sqlite:///res/database/album.db")
@@ -74,7 +73,7 @@ if __name__ == "__main__":
 
     # Iterate over the rows of the CSV and insert them into the SQLite database
     for i, row in df.iterrows():
-        media_entry = make_entry(row, user_name, user_id)
+        media_entry = make_entry(row, user_name)
         session.add(media_entry)
 
     session.commit()

@@ -13,7 +13,6 @@ import file_operations
 class DataManager:
     def __init__(self):
         self.engine_local = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album.db")
-        self.engine_cloud = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album_cloud.db")
 
     def get_all_media(self):
         session = sessionmaker(bind=self.engine_local)()
@@ -28,11 +27,12 @@ class DataManager:
         media_list = self.get_all_media()
         list_people = []
         for media in media_list:
-            people = media.people.split(",")
-            if people[0] != "":
-                for person in people:
-                    if person not in list_people:
-                        list_people.append(person)
+            if media.people is not None:
+                people = media.people.split(",")
+                if people[0] != "":
+                    for person in people:
+                        if person not in list_people:
+                            list_people.append(person)
         
         return sorted(list_people)
     
@@ -75,12 +75,19 @@ class DataManager:
             return sorted(paths, key=lambda x: x[0])
 
     def update_local_db(self):
+
+        connect_success = aws.dowload_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album_cloud.db")
+        if not connect_success:
+            return False
+        
+        engine_cloud = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album_cloud.db")
         session_local = sessionmaker(bind=self.engine_local)()
-        session_cloud = sessionmaker(bind=self.engine_cloud)()
+        session_cloud = sessionmaker(bind=engine_cloud)()
         try:
             new_rows_to_insert = DataManager._get_new_rows_from_cloud(session_cloud, session_local)
             DataManager._insert_rows(session_local, new_rows_to_insert)
             session_local.commit()
+            return True
         finally:
             session_local.close()
             session_cloud.close()
@@ -99,10 +106,8 @@ class DataManager:
             people_detect,
             people_count
     ):
-        user_id = aws.get_user_id()
-        user_name = aws.get_user_name()
-        date = date_to_julian(date_text)
 
+        date = date_to_julian(date_text)
         created_at = current_time_in_unix_subsec()
         media_id = str(created_at).replace(".", "_")
 
@@ -115,8 +120,6 @@ class DataManager:
         media.media_id = media_id
         media.created_at = created_at
         media.modified_at = created_at
-        media.user_id = user_id
-        media.user_name =user_name
         media.media_key = media_key
         media.thumbnail_key = thumbnail_key
         media.title = title
@@ -134,14 +137,15 @@ class DataManager:
         media.type = file_operations.get_file_type(path)
         media.private = 0
 
-        self.insert_media_to_local([media])
-        print("MEDIA ADDED!!!")
+        return media
         
 
-    def insert_media_to_local(self, media_list):
+    def insert_media_list_to_local(self, media_list):
         session = sessionmaker(bind=self.engine_local)()
+        user_name = aws.get_user_name()
         try:
             for media in media_list:
+                media.user_name = user_name
                 session.add(media)
             session.commit()
         finally:

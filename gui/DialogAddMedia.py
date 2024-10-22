@@ -1,17 +1,21 @@
 import sys
 import os
-from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout, 
+from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout,
                              QTreeView, QListWidget, QFrame, QFileSystemModel)
 from PyQt5.QtCore import QDir, Qt
+from PyQt5.QtGui import QIcon
 from PIL import Image
 
 from gui.LabelImageAdd import LabelImageAdd
 from gui.FrameAddInfo import FrameAddInfo
 from gui.FrameAction import FrameAction
+from gui.DialogUpload import DialogUpload
 from data.DataManager import DataManager
+from config.Config import Config
 
 import face_detection
 import file_operations
+import aws
 
 
 class DialogAddMedia(QDialog):
@@ -21,11 +25,15 @@ class DialogAddMedia(QDialog):
         self.data_manager = data_manager
         self.people_list = self.data_manager.get_list_people()
         self.album_list = self.data_manager.get_all_album_paths_with_tags()
-        self.detections_with_names = []
+        self.media_to_be_uploaded = []
+        self.media_data_to_be_uploaded = []
+        self.media_paths_to_be_uploaded = []
+        self.media_paths_uploaded = []
+
         self.selected_media_path = ""
-        self.media_to_be_added = {}
-        
-        
+        self.detections_with_names = []
+
+
         self.setFixedSize(1350, 900)
 
         # Main layout of the dialog (horizontal layout for the 3 frames)
@@ -84,12 +92,14 @@ class DialogAddMedia(QDialog):
         # Create right frame: frame_action
         self.frame_action = FrameAction(self.album_list, parent=self)
         self.frame_action.button_add.clicked.connect(self.on_media_add)
+        self.frame_action.button_upload.clicked.connect(self.on_media_upload)
         self.frame_action.setFixedWidth(250) 
         main_layout.addWidget(self.frame_action)
 
         # Set the layout for the dialog
         self.setLayout(main_layout)
         self.setWindowTitle("Medya Ekleme")
+        self.setWindowIcon(QIcon("res/icons/Image--Add.png"))
 
         # Connect the tree view selection change to update the media list
         self.folder_tree.selectionModel().selectionChanged.connect(self.on_folder_selected)
@@ -100,7 +110,7 @@ class DialogAddMedia(QDialog):
         # Variable to store the current folder path
         self.current_folder_path = ""
 
-    def on_folder_selected(self, selected, deselected):
+    def on_folder_selected(self):
         # Get the currently selected folder
         index = self.folder_tree.selectionModel().currentIndex()
         folder_path = self.file_system_model.filePath(index)
@@ -112,15 +122,19 @@ class DialogAddMedia(QDialog):
 
         # Define the media file extensions
         image_extensions = [".png", ".jpg", ".jpeg"]
-        video_extensions = [".mp4", ".avi", ".mov"]
+        video_extensions = [".mp4", ".avi", ".mov", ".mpg", ".wmv", ".3gp", ".asf"]
+        sound_extensions = [".mp3", ".wav"]
 
         # List files from the selected directory and filter for images and videos
         if os.path.isdir(folder_path):
             for file_name in os.listdir(folder_path):
                 file_path = os.path.join(folder_path, file_name)
-                if os.path.isfile(file_path):
-                    if any(file_name.lower().endswith(ext) for ext in image_extensions + video_extensions):
-                        self.media_list.addItem(file_name)
+                # Exclude already selected paths
+                if file_path not in self.media_paths_to_be_uploaded + self.media_paths_uploaded:
+
+                    if os.path.isfile(file_path):
+                        if any(file_name.lower().endswith(ext) for ext in image_extensions + video_extensions + sound_extensions):
+                            self.media_list.addItem(file_name)
 
     def on_media_selected(self, item):
 
@@ -143,6 +157,13 @@ class DialogAddMedia(QDialog):
         else:
             self.image_label.clear()
             self.frame_add_info.set_people_enable(True)
+
+    def select_next_media(self):
+        next_row = self.media_list.currentRow() + 1
+        if next_row < self.media_list.count():
+            self.media_list.setCurrentRow(next_row)
+            next_item = self.media_list.item(next_row)
+            self.on_media_selected(next_item)
 
     def detect_people(self):
         image = Image.open(self.selected_media_path)
@@ -172,39 +193,91 @@ class DialogAddMedia(QDialog):
         return len([det for det in self.detections_with_names if det[4] != ""])
 
     def on_media_add(self):
-        title = self.frame_add_info.get_title()
-        location = self.frame_add_info.get_location()
-        date = self.frame_add_info.get_date()
-        date_est = self.frame_add_info.get_date_est()
-        tags = self.frame_add_info.get_tags()
-        notes = self.frame_add_info.get_notes()
 
-        people = self.get_people()
-        people_detect = self.get_people_detect()
-        people_count = self.get_people_count()
+        self.frame_action.set_button_add_enabled(False)
 
-        media_path = self.selected_media_path
-        albums = "".join(self.frame_action.get_selected_album_tags())
+        media_data = {
+            "media_path": self.selected_media_path,
+            "title": self.frame_add_info.get_title(),
+            "location": self.frame_add_info.get_location(),
+            "date_text": self.frame_add_info.get_date(),
+            "date_est": self.frame_add_info.get_date_est(),
+            "tags": self.frame_add_info.get_tags(),
+            "notes": self.frame_add_info.get_notes(),
+            "people": self.get_people(),
+            "people_detect": self.get_people_detect(),
+            "people_count": self.get_people_count(),
+            "albums": "".join(self.frame_action.get_selected_album_tags()),
+        }
 
-        self.data_manager.build_media(
-            path=media_path,
-            title=title,
-            location=location,
-            date_text=date,
-            date_est=date_est,
-            albums=albums,
-            tags=tags,
-            notes=notes,
-            people=people,
-            people_detect=people_detect,
-            people_count=people_count
+        self.media_paths_to_be_uploaded.append(self.selected_media_path)
+        self.media_data_to_be_uploaded.append(media_data)
+
+        self.on_folder_selected()
+        self.select_next_media()
+
+        self.frame_action.update_button_upload(len(self.media_data_to_be_uploaded))
+        self.frame_action.set_button_add_enabled(True)
+
+    def on_media_upload(self):
+
+        self.frame_action.set_button_add_enabled(False)
+        self.frame_action.set_button_upload_enabled(False)
+
+        for media_data in self.media_data_to_be_uploaded:
+            media = self.data_manager.build_media(
+                path=media_data["media_path"],
+                title=media_data["title"],
+                location=media_data["location"],
+                date_text=media_data["date_text"],
+                date_est=media_data["date_est"],
+                albums=media_data["albums"],
+                tags=media_data["tags"],
+                notes=media_data["notes"],
+                people=media_data["people"],
+                people_detect=media_data["people_detect"],
+                people_count=media_data["people_count"]
+            )
+
+            self.media_to_be_uploaded.append(media)
+
+        assert len(self.media_paths_to_be_uploaded) == len(self.media_to_be_uploaded)
+        
+        dialog_upload = DialogUpload(
+            self.media_paths_to_be_uploaded, 
+            self.media_to_be_uploaded, 
+            self.data_manager
         )
 
+        if dialog_upload.exec_() == QDialog.Accepted:
+            self.media_paths_uploaded.extend(self.media_paths_to_be_uploaded)
+            self.media_paths_to_be_uploaded = []
+            self.media_data_to_be_uploaded = []
+            
+        self.media_to_be_uploaded = []
+        self.clear_fields_for_new_media()
+
+        self.select_next_media()
+
+        self.frame_action.set_button_add_enabled(True)
+        self.frame_action.update_button_upload(0)
+
+    
     def clear_fields_for_new_media(self):
         self.frame_add_info.set_people("")
 
         if self.frame_add_info.get_date_option() != 3:
             self.frame_add_info.set_date("")
+
+    def clear_all_fields(self):
+        self.frame_add_info.set_title("")
+        self.frame_add_info.set_location("")
+        self.frame_add_info.set_date("")
+        self.frame_add_info.set_date_est(7)
+        self.frame_add_info.set_people("")
+        self.frame_add_info.set_notes("")
+        self.frame_add_info.set_tags("")
+        self.frame_action.clear_selected_album_tags()
 
     def set_auto_date(self):
         date_option = self.frame_add_info.get_date_option()
