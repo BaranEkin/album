@@ -1,10 +1,40 @@
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from PIL import Image
 
 import aws
+import face_detection
+from MediaLoader import MediaLoader
+
+from config.Config import Config
 from data.Media import Media
 from data.helpers import date_to_julian, legacy_time_in_unix_subsec, current_time_in_unix_subsec
+
+Config.read_config()
+media_loader = MediaLoader()
+
+def get_people_detect_str(image_key, people):
+    if not isinstance(people, str):
+        return None
+    
+    image = media_loader.get_image(image_key)
+    if Image is None:
+        return None
+    image.save("detect.jpg", "JPEG")
+    image = Image.open("detect.jpg")
+    people_list = people.split(",")
+    if len(people_list) < 1:
+        return None
+
+    detections = face_detection.detect_people(image)
+    
+    if len(detections) == len(people_list):
+        detections_str = ",".join(['-'.join(map(str, det[:4])) for det in detections])
+        return detections_str
+    
+    return None
+
 
 
 def make_entry(old_entry, user_name):
@@ -20,10 +50,10 @@ def make_entry(old_entry, user_name):
     private = old_entry["OZEL"]
     people = old_entry["KISILER"]
     people_count = old_entry["KISIADET"]
-    people_detect = "" # Face Detections
-    notes = old_entry["NOTLAR"] or ""
+    people_detect = get_people_detect_str(media_key, people) if int(mtype) == 1 else None
+    notes = old_entry["NOTLAR"]
     albums = old_entry["ALBUMS"]
-    tags = ""  # GPT?
+    tags = None
 
     created_at = legacy_time_in_unix_subsec(old_entry["KAYITZAMAN"])
     media_id = str(created_at).replace(".", "_")
@@ -62,7 +92,7 @@ if __name__ == "__main__":
     user_name = aws.get_user_name()
 
     # Create an SQLite database engine (or connect to the existing one)
-    engine = create_engine("sqlite:///res/database/album.db")
+    engine = create_engine("sqlite:///res/database/album_detect.db")
 
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -73,6 +103,7 @@ if __name__ == "__main__":
 
     # Iterate over the rows of the CSV and insert them into the SQLite database
     for i, row in df.iterrows():
+        print(f"ROW: {i}_______")
         media_entry = make_entry(row, user_name)
         session.add(media_entry)
 
