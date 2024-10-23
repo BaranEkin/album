@@ -2,11 +2,18 @@ import shutil
 import os
 import ffmpeg
 import re
+import platform
+import subprocess
 
 from config.Config import Config
 from PIL import Image
 from PIL.ExifTags import TAGS
 from datetime import datetime
+
+
+def check_file_exists(directory, key):
+        return os.path.exists(os.path.join(directory, key))
+
 
 def add_image(media_id, media_path, date_text):
     
@@ -92,5 +99,28 @@ def get_date_from_filename(file_path):
 def convert_exif_date_to_date_text(exif_date):
     date_obj = datetime.strptime(exif_date, "%Y:%m:%d %H:%M:%S")
     return date_obj.strftime("%d.%m.%Y") 
+
+
+def save_video_audio(media_data, path):
+    
+    directory = os.path.dirname(path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    with open(path, "wb") as media_file:
+        media_file.write(media_data)
+
+
+def play_video_audio(file_path):
+    file_path = os.path.normpath(file_path)
+
+    if platform.system() == "Windows":
+        subprocess.run(f'start "" "{file_path}"', shell=True)
+    
+    elif platform.system() == "Darwin":
+        subprocess.run(["open", file_path])
+    
+    else:
+        subprocess.run(["xdg-open", file_path])
 
 

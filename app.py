@@ -48,5 +48,3 @@ if __name__ == "__main__":
     simulate_keypress(viewer.thumbnail_list, Qt.Key_Left)
     sys.exit(app.exec_())
     
-    
-    

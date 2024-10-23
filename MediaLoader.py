@@ -1,8 +1,11 @@
 import os
+import sys
+import subprocess
 
 from PyQt5.QtGui import QImage
 
 import aws
+import file_operations
 from config.Config import Config
 from PIL import Image
 
@@ -14,7 +17,7 @@ class MediaLoader:
         self.local_storage_enabled = Config.LOCAL_STORAGE_ENABLED
 
     def get_image(self, image_key):
-        if self.check_local_storage(self.media_dir, image_key):
+        if file_operations.check_file_exists(self.media_dir, image_key):
             print("Image is found on local storage.")
             try:
                 image = QImage(os.path.join(self.media_dir, image_key))
@@ -56,7 +59,7 @@ class MediaLoader:
                 pass
 
     def get_thumbnail(self, thumbnail_key):
-        if self.check_local_storage(self.thumbnails_dir, thumbnail_key):
+        if file_operations.check_file_exists(self.thumbnails_dir, thumbnail_key):
             try:
                 image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
                 return image
@@ -84,12 +87,35 @@ class MediaLoader:
             except Exception as e:
                 pass
 
+    
+    def check_video_audio(self, media_key):
+        return file_operations.check_file_exists(self.media_dir, media_key)
+    
+    
+    def play_video_audio_from_cloud(self, media_key):
+        media_data = aws.get_video_audio_from_cloudfront(media_key, "media/")
+        
+        if self.local_storage_enabled:
+            path = os.path.join(self.media_dir, media_key)
+        else:
+            path = "temp/media" + file_operations.get_file_extension(media_key)
+        
+        file_operations.save_video_audio(media_data, path)
+        file_operations.play_video_audio(path)
+
+    
+    def play_video_audio_from_local(self, media_key):
+        path = os.path.join(self.media_dir, media_key)
+        file_operations.play_video_audio(path)
+
+
     def save_image(self, image: Image, image_key):
         path = os.path.join(self.media_dir, image_key)
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
         image.save(path, "JPEG")
+
 
     def save_thumbnail(self, image: Image, thumbnail_key):
         path = os.path.join(self.thumbnails_dir, thumbnail_key)
@@ -98,6 +124,3 @@ class MediaLoader:
             os.makedirs(directory)
         image.save(path, "JPEG")
 
-    @staticmethod
-    def check_local_storage(directory, key):
-        return os.path.exists(os.path.join(directory, key))

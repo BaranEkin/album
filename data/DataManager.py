@@ -166,7 +166,6 @@ class DataManager:
                 media_id=row.media_id,
                 created_at=row.created_at,
                 user_name=row.user_name,
-                user_id=row.user_id,
                 title=row.title,
                 location=row.location,
                 date=row.date,

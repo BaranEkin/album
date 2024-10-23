@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction
 )
-from PyQt5.QtCore import Qt, QModelIndex, QEvent, QSize
+from PyQt5.QtCore import Qt, QModelIndex, QEvent, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon
 
 from data.Media import Media
@@ -21,6 +21,7 @@ from gui.ImageViewerLabel import ImageViewerLabel
 from gui.DialogAddMedia import DialogAddMedia
 
 import aws
+import file_operations
 
 
 class MainWindow(QMainWindow):
@@ -29,12 +30,14 @@ class MainWindow(QMainWindow):
         self.data_manager = data_manager
         self.media_loader = media_loader
 
+        """
         if aws.check_s3():
             success = self.data_manager.update_local_db()
             if not success:
                 pass
         else:
             pass
+        """
 
         self.media_data = self.data_manager.get_all_media()
 
@@ -79,6 +82,7 @@ class MainWindow(QMainWindow):
         self.layout_features_area.setContentsMargins(0,0,10,10)
 
         self.button_upload_media = QPushButton()
+        self.button_upload_media.setFocusPolicy(Qt.NoFocus)
         self.button_upload_media.setFixedSize(50, 50)
         self.button_upload_media.setIcon(QIcon("res/icons/Image--Add.png"))
         self.button_upload_media.setIconSize(QSize(30, 30))
@@ -88,6 +92,7 @@ class MainWindow(QMainWindow):
         self.layout_features_area.addWidget(self.button_upload_media, 0, 0)
 
         self.button_filter = QPushButton()
+        self.button_filter.setFocusPolicy(Qt.NoFocus)
         self.button_filter.setFixedSize(50, 50)
         self.button_filter.setIcon(QIcon("res/icons/Filter-2--Streamline-Sharp-Gradient--Free.png"))
         self.button_filter.setIconSize(QSize(30, 30))
@@ -96,6 +101,7 @@ class MainWindow(QMainWindow):
         self.layout_features_area.addWidget(self.button_filter, 0, 1)
 
         self.button_same_date_location = QPushButton()
+        self.button_same_date_location.setFocusPolicy(Qt.NoFocus)
         self.button_same_date_location.setFixedSize(50, 50)
         self.button_same_date_location.setIcon(QIcon("res/icons/Date--Location.png"))
         self.button_same_date_location.setIconSize(QSize(30, 30))
@@ -104,6 +110,7 @@ class MainWindow(QMainWindow):
         self.layout_features_area.addWidget(self.button_same_date_location, 0, 2)
 
         self.button_export_media = QPushButton()
+        self.button_export_media.setFocusPolicy(Qt.NoFocus)
         self.button_export_media.setFixedSize(50, 50)
         self.button_export_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
         self.button_export_media.setIconSize(QSize(30, 30))
@@ -112,6 +119,7 @@ class MainWindow(QMainWindow):
         self.layout_features_area.addWidget(self.button_export_media, 1, 0)
 
         self.button_edit_media = QPushButton()
+        self.button_edit_media.setFocusPolicy(Qt.NoFocus)
         self.button_edit_media.setFixedSize(50, 50)
         self.button_edit_media.setIcon(QIcon("res/icons/Task-List-Edit--Streamline-Plump-Gradient.png"))
         self.button_edit_media.setIconSize(QSize(30, 30))
@@ -161,7 +169,7 @@ class MainWindow(QMainWindow):
         self.scroll_area.setFocusPolicy(Qt.NoFocus)
 
         # Create a ImageViewerLabel for the image and add it to the scroll area
-        self.image_label = ImageViewerLabel(self.scroll_area)
+        self.image_label = ImageViewerLabel(self.scroll_area, self.media_loader)
         self.image_label.setBackgroundRole(QPalette.Base)
         self.image_label.setScaledContents(True)
         self.scroll_area.setWidget(self.image_label)
@@ -173,6 +181,16 @@ class MainWindow(QMainWindow):
         # Create the frame for information at the bottom
         self.frame_bottom = FrameBottom()
         self.frame_bottom.setFixedHeight(110)
+        self.frame_bottom.setFocusPolicy(Qt.NoFocus)
+
+        self.frame_bottom.button_back.clicked.connect(self.go_to_previous_media)
+        self.frame_bottom.button_forward.clicked.connect(self.go_to_next_media)
+        
+        self.frame_bottom.button_slideshow.clicked.connect(self.on_slideshow_clicked)
+        self.slideshow_timer = QTimer(self)
+        self.slideshow_timer.setInterval(5000)
+        self.slideshow_timer.timeout.connect(self.run_slideshow)
+
         main_layout.addWidget(self.frame_bottom)
 
         # Create and set the custom model
@@ -184,7 +202,7 @@ class MainWindow(QMainWindow):
         self.thumbnail_list.setItemDelegate(ThumbnailDelegate())
 
         # Connect the clicked signal to handle item selection
-        self.thumbnail_list.clicked.connect(self.on_image_selected)
+        self.thumbnail_list.clicked.connect(self.on_media_selected)
 
         self.thumbnail_list.setFocus()
     
@@ -192,32 +210,60 @@ class MainWindow(QMainWindow):
         """
         Handle key press events for navigating the thumbnails using the arrow keys.
         """
+        if event.key() == Qt.Key_Right:
+            self.go_to_next_media()
+
+        elif event.key() == Qt.Key_Left:
+            self.go_to_previous_media()
+
+    def go_to_next_media(self):
+       
         selected_indexes = self.thumbnail_list.selectedIndexes()
 
         if selected_indexes:
             current_index = selected_indexes[0].row()
+        
+        if current_index + 1 < self.thumbnail_model.rowCount():
+            next_index = self.thumbnail_model.index(current_index + 1)
+            self.thumbnail_list.setCurrentIndex(next_index)
+            self.on_media_selected(next_index)
 
-            # Handle the Right Arrow key (move to the next item)
-            if event.key() == Qt.Key_Right:
-                if current_index + 1 < self.thumbnail_model.rowCount():
-                    next_index = self.thumbnail_model.index(current_index + 1)
-                    self.thumbnail_list.setCurrentIndex(next_index)
-                    self.on_image_selected(next_index)
+    def go_to_previous_media(self):
 
-            # Handle the Left Arrow key (move to the previous item)
-            elif event.key() == Qt.Key_Left:
-                if current_index - 1 >= 0:
-                    prev_index = self.thumbnail_model.index(current_index - 1)
-                    self.thumbnail_list.setCurrentIndex(prev_index)
-                    self.on_image_selected(prev_index)
+        selected_indexes = self.thumbnail_list.selectedIndexes()
 
-    def on_image_selected(self, index: QModelIndex):
-        """
-        When a preview image is clicked, display it in the main image label.
-        """
+        if selected_indexes:
+            current_index = selected_indexes[0].row()
+        
+        if current_index - 1 >= 0:
+            prev_index = self.thumbnail_model.index(current_index - 1)
+            self.thumbnail_list.setCurrentIndex(prev_index)
+            self.on_media_selected(prev_index)
+
+    def run_slideshow(self):
+        current_direction = self.frame_bottom.get_slideway_direction()
+        if current_direction == "F":
+            self.go_to_next_media()
+        else:
+            self.go_to_previous_media()
+
+    def on_slideshow_clicked(self, checked):
+        if checked:
+            self.slideshow_timer.start()
+        else:
+            self.slideshow_timer.stop()
+    
+    def on_media_selected(self, index: QModelIndex):
         selected_media = self.media_data[index.row()]
         self.load_media_metadata(selected_media)
-        self.load_image(selected_media)
+
+        # Image
+        if selected_media.type == 1:
+            self.load_image(selected_media)
+        
+        # Video or Audio
+        else:
+            self.load_video_audio_thumbnail(selected_media)
 
     def load_media_metadata(self, media: Media):
         self.frame_bottom.set_media_info(media)
@@ -226,11 +272,23 @@ class MainWindow(QMainWindow):
         """
         Load the selected image into the main display area.
         """
+        self.image_label.is_image = True
+        self.image_label.current_media_key = media.media_key
         self.image_label.scale_modifier = 0.0
         q_image = self.media_loader.get_image(media.media_key)
         pixmap = QPixmap.fromImage(q_image)
         self.image_label.setPixmap(pixmap)
         self.fit_to_window()
+
+    def load_video_audio_thumbnail(self, media: Media):
+        self.image_label.is_image = False
+        self.image_label.current_media_key = media.media_key
+        self.image_label.scale_modifier = 0.0
+        q_image = self.media_loader.get_thumbnail(media.thumbnail_key)
+        pixmap = QPixmap.fromImage(q_image)
+        self.image_label.setPixmap(pixmap)
+        self.fit_to_window()
+
 
     def fit_to_window(self):
         if self.image_label.pixmap():

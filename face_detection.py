@@ -80,7 +80,7 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             return original_image
 
 
-def detect_people(image: Image, return_str=False):
+def detect_people(image: Image):
         
         try:
             image = np.array(image)
@@ -95,7 +95,8 @@ def detect_people(image: Image, return_str=False):
             sorted_detections = sorted(detections, key=lambda x: x[0])
             
             return sorted_detections
-        except:
+        except Exception as e:
+            print(e)
             return []
         
 def preprocess_detections(detections_with_names):
