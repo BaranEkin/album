@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QDialog
 from PyQt5.QtCore import Qt, QPoint, QDateTime
 from MediaLoader import MediaLoader
+from gui.DialogDownload import DialogDownload
 
 
 class ImageViewerLabel(QLabel):
@@ -41,7 +42,7 @@ class ImageViewerLabel(QLabel):
             if self.media_loader.check_video_audio(self.current_media_key):
                 self.media_loader.play_video_audio_from_local(self.current_media_key)
             else:
-                pass
+                self.show_download_dialog(self.media_loader, self.current_media_key)
 
     def mouseMoveEvent(self, event):
         if self.is_image:
@@ -78,6 +79,11 @@ class ImageViewerLabel(QLabel):
         elif self.scale_modifier > 0:
             self.scale_modifier = 0
         self.update_image_size(click_pos)
+
+    def show_download_dialog(self, media_loader, media_key):
+        dialog = DialogDownload(media_loader, media_key)
+        dialog.exec_()
+
 
     def update_image_size(self, click_pos):
         if not self.pixmap():

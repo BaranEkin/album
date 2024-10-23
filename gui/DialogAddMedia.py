@@ -151,7 +151,7 @@ class DialogAddMedia(QDialog):
             self.frame_add_info.set_people_enable(False)
             self.detect_people()
             self.draw_identifications()
-            self.image_label.set_image("temp.jpg")
+            self.image_label.set_image("temp/detections.jpg")
         
         # Selected media is a video
         else:
@@ -173,13 +173,13 @@ class DialogAddMedia(QDialog):
     def draw_identifications(self):
         image = Image.open(self.selected_media_path)
         image = face_detection.draw_identifications(image, self.detections_with_names)
-        image.save("temp.jpg")
+        image.save("temp/detections.jpg")
 
     def update_identifications(self, detections_with_names):
         self.detections_with_names = face_detection.preprocess_detections(detections_with_names)
         self.draw_identifications()
         self.frame_add_info.set_people(self.get_people())
-        self.image_label.set_image("temp.jpg")
+        self.image_label.set_image("temp/detections.jpg")
 
     def get_people_detect(self):
         people_detect = ",".join(['-'.join(map(str, det[:4])) for det in self.detections_with_names if det[4] != ""])
