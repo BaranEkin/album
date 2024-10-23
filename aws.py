@@ -67,6 +67,20 @@ def get_image_from_cloudfront(image_key, prefix):
         print(f"Error occurred: {e}")
         raise e
     
+def get_video_audio_from_cloudfront(media_key, prefix):
+    
+    url = f"https://{Config.CLOUDFRONT_DOMAIN}/{prefix}{media_key}"
+    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+    signed_url = create_signed_url(url, expiration)
+
+    try:
+        with request.urlopen(signed_url) as response:
+            data = response.read()
+            return data
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        raise e
+    
 
 def check_s3():
     try:
