@@ -25,11 +25,13 @@ from gui.FrameBottom import FrameBottom
 from gui.ThumbListModel import ThumbListModel, ThumbnailDelegate
 from gui.ImageViewerLabel import ImageViewerLabel
 from gui.DialogAddMedia import DialogAddMedia
+from gui.DialogPeople import DialogPeople
+from gui.DialogNotes import DialogNotes
 
 import aws
 import file_operations
 import face_detection
-import time
+
 
 
 class MainWindow(QMainWindow):
@@ -123,7 +125,8 @@ class MainWindow(QMainWindow):
         self.button_export_media = QPushButton()
         self.button_export_media.setFocusPolicy(Qt.NoFocus)
         self.button_export_media.setFixedSize(50, 50)
-        self.button_export_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
+        #self.button_export_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
+        self.button_export_media.setEnabled(False)
         self.button_export_media.setIconSize(QSize(30, 30))
         self.button_export_media.setText("")
         #self.button_export_media.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
@@ -132,7 +135,8 @@ class MainWindow(QMainWindow):
         self.button_edit_media = QPushButton()
         self.button_edit_media.setFocusPolicy(Qt.NoFocus)
         self.button_edit_media.setFixedSize(50, 50)
-        self.button_edit_media.setIcon(QIcon("res/icons/Task-List-Edit--Streamline-Plump-Gradient.png"))
+        #self.button_edit_media.setIcon(QIcon("res/icons/Task-List-Edit--Streamline-Plump-Gradient.png"))
+        self.button_edit_media.setEnabled(False)
         self.button_edit_media.setIconSize(QSize(30, 30))
         self.button_edit_media.setText("")
         #self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
@@ -197,6 +201,7 @@ class MainWindow(QMainWindow):
         self.frame_bottom.top_label.setText(str(len(self.media_data)))
 
         self.frame_bottom.button_people.clicked.connect(self.on_button_people_clicked)
+        self.frame_bottom.button_notes.clicked.connect(self.on_button_notes_clicked)
         self.frame_bottom.button_back.clicked.connect(self.go_to_previous_media)
         self.frame_bottom.button_forward.clicked.connect(self.go_to_next_media)
         
@@ -220,6 +225,9 @@ class MainWindow(QMainWindow):
         self.thumbnail_model.signal.loaded.connect(self.try_select_first_item)
 
         self.thumbnail_list.setFocus()
+
+        # Warmup detection to load YOLOv8 model
+        face_detection.detect_people(Image.new('RGB', (200, 200), color='white'))
     
     def keyPressEvent(self, event):
         """
@@ -306,12 +314,22 @@ class MainWindow(QMainWindow):
                 pixmap = QPixmap.fromImage(q_image)
                 self.image_label.setPixmap(pixmap)
                 self.fit_to_window()
-        else:
+            
+            dialog_people = DialogPeople(people or "", parent=self)
+            dialog_people.exec_()
+            self.frame_bottom.button_people.setChecked(False)
+            
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
                 current_index = selected_indexes[0].row()
                 item = self.thumbnail_model.index(current_index)
                 self.on_media_selected(item)
+    
+    def on_button_notes_clicked(self, checked):
+        if checked:
+            dialog_notes = DialogNotes(self.selected_media.notes or "", parent=self)
+            dialog_notes.exec_()
+            self.frame_bottom.button_notes.setChecked(False)
     
     def on_media_selected(self, index: QModelIndex):
         self.selected_media = self.media_data[index.row()]
@@ -401,11 +419,19 @@ class MainWindow(QMainWindow):
             pass
         dialog = DialogAddMedia(self.data_manager)
         dialog.exec_()
+        self.media_data = self.data_manager.get_all_media()
+        self.refresh_media_data()
 
     def show_filter_dialog(self):
         if self.dialog_filter.exec_() == QDialog.Accepted:
 
             self.media_data = self.dialog_filter.media_list
+            self.refresh_media_data()
+        
+        else:
+            pass
+
+    def refresh_media_data(self):
             
             # Create and set the custom model
             thumbnail_keys = [media.thumbnail_key for media in self.media_data]
@@ -414,10 +440,7 @@ class MainWindow(QMainWindow):
             self.thumbnail_model.signal.loaded.connect(self.try_select_first_item)
 
             self.frame_bottom.top_label.setText(str(len(self.media_data)))
-        
-        else:
-            pass
-
+    
     def simulate_keypress(self, window, key):
         """Simulates a keypress event."""
         # Create a QKeyEvent for the keypress (KeyPress event)

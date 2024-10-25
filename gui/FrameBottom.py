@@ -112,6 +112,7 @@ class FrameBottom(QFrame):
         self.button_notes.setIconSize(QSize(30, 30))
         self.button_notes.setText("")
         self.button_notes.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
+        self.button_notes.setCheckable(True)
         self.layout_button_area.addWidget(self.button_notes, 1, 0)
 
         self.button_people = QPushButton()
@@ -149,6 +150,10 @@ class FrameBottom(QFrame):
 
     def set_media_info(self, media: Media):
         self.frame_info.set_info(media)
+        if media.notes:
+            self.button_notes.setEnabled(True)
+        else:
+            self.button_notes.setEnabled(False)
 
     def get_slideway_direction(self):
         return self.slideway_direction

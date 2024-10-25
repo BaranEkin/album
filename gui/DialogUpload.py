@@ -32,7 +32,7 @@ class UploadThread(QThread):
                 media = self.media_list[i]
                 thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, media.thumbnail_key)
                 
-                self.current_operation.emit(f"Medya bulut sistemine yükleniyor: {media_path}")
+                self.current_operation.emit(f"Medya bulut sistemine yükleniyor:\n\n{media_path}")
                 try:
                     aws.upload_to_s3_bucket(path=media_path, key=media.media_key, prefix="media/")
                     aws.upload_to_s3_bucket(path=thumbnail_path, key=media.thumbnail_key, prefix="thumbnails/")

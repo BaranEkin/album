@@ -1,4 +1,5 @@
 import os
+import argparse
 import boto3
 from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm
@@ -47,4 +48,8 @@ def upload_directory_to_s3(root_dir):
 
 
 if __name__ == "__main__":
-    upload_directory_to_s3("D:\\ALBUM\\FOTO\\upload_root")
+    parser = argparse.ArgumentParser(description="Upload a local directory to an S3 bucket.")
+    parser.add_argument("root_dir", type=str, help="The local path of the directory to upload.")
+    args = parser.parse_args()
+
+    upload_directory_to_s3(args.root_dir)

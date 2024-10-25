@@ -54,7 +54,7 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
 
             # If text goes above the image, move it below the box
             if text_y < 0:
-                text_y = y + h + 2.5 * font_size 
+                text_y = y + h + 0.5 * font_size 
             
             # If text goes to the right of the image, move it to the left
             if text_x + background_width > image_width:
