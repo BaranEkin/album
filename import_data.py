@@ -15,25 +15,28 @@ Config.read_config()
 media_loader = MediaLoader()
 
 def get_people_detect_str(image_key, people):
-    if not isinstance(people, str):
-        return None
-    
-    image = media_loader.get_image(image_key)
-    if Image is None:
-        return None
-    image.save("detect.jpg", "JPEG")
-    image = Image.open("detect.jpg")
-    people_list = people.split(",")
-    if len(people_list) < 1:
-        return None
+    try:
+        if not isinstance(people, str):
+            return None
+        
+        image = media_loader.get_image(image_key)
+        if Image is None:
+            return None
+        image.save("detect.jpg", "JPEG")
+        image = Image.open("detect.jpg")
+        people_list = people.split(",")
+        if len(people_list) < 1:
+            return None
 
-    detections = face_detection.detect_people(image)
-    
-    if len(detections) == len(people_list):
-        detections_str = ",".join(['-'.join(map(str, det[:4])) for det in detections])
-        return detections_str
-    
-    return None
+        detections = face_detection.detect_people(image)
+        
+        if len(detections) == len(people_list):
+            detections_str = ",".join(['-'.join(map(str, det[:4])) for det in detections])
+            return detections_str
+        
+        return None
+    except Exception as e:
+        return None
 
 
 
@@ -92,13 +95,13 @@ if __name__ == "__main__":
     user_name = aws.get_user_name()
 
     # Create an SQLite database engine (or connect to the existing one)
-    engine = create_engine("sqlite:///res/database/album_detect.db")
+    engine = create_engine("sqlite:///res/database/album.db")
 
     Session = sessionmaker(bind=engine)
     session = Session()
 
     # Read the CSV file
-    csv_file_path = "res/database/ALBUM_test.csv"
+    csv_file_path = "res/database/ALBUM_fixed.csv"
     df = pd.read_csv(csv_file_path, delimiter=";", encoding="utf-8")
 
     # Iterate over the rows of the CSV and insert them into the SQLite database

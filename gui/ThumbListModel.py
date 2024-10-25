@@ -7,13 +7,17 @@ from PyQt5.QtCore import (
     QObject,
     QModelIndex,
     QAbstractListModel,
-    QRect
+    QRect,
 )
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QApplication, QStyledItemDelegate, QStyle
 
 
+class ThumbnailSignal(QObject):
+    loaded = pyqtSignal()
+
 class ThumbListModel(QAbstractListModel):
+
     def __init__(self, thumbnail_keys, media_loader, parent=None):
         super().__init__(parent)
         self.media_loader = media_loader
@@ -23,6 +27,10 @@ class ThumbListModel(QAbstractListModel):
         self.threadpool = QThreadPool()
         self.batch_size = 30000
         self.loaded_count = 0
+        self.placeholder_pixmap = QPixmap(160, 80)
+        self.placeholder_pixmap.fill(Qt.gray)
+        self.signal = ThumbnailSignal()
+        
 
     def rowCount(self, parent=QModelIndex()):
         return self.loaded_count
@@ -39,9 +47,7 @@ class ThumbListModel(QAbstractListModel):
                 # Start loading the image asynchronously
                 self.load_thumbnail(index.row())
                 # Return a placeholder pixmap
-                placeholder = QPixmap(160, 80)
-                placeholder.fill(Qt.gray)
-                return placeholder
+                return self.placeholder_pixmap
         elif role == Qt.UserRole:
             return self.thumbnail_keys_loaded[index.row()]
         elif role == Qt.SizeHintRole:
@@ -62,6 +68,7 @@ class ThumbListModel(QAbstractListModel):
         )
         self.loaded_count += items_to_fetch
         self.endInsertRows()
+        self.signal.loaded.emit()
 
     def load_thumbnail(self, row):
         if row in self.thumbnails:
@@ -93,9 +100,14 @@ class ThumbnailLoaderRunnable(QRunnable):
     def run(self):
         # Load the image thumbnail
         q_image = self.media_loader.get_thumbnail(self.thumbnail_key)
-        pixmap = QPixmap.fromImage(q_image).scaled(160, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        # Emit the signal with the row and pixmap
-        self.signals.finished.emit(self.row, pixmap)
+        if q_image is not None:
+            pixmap = QPixmap.fromImage(q_image).scaled(160, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            # Emit the signal with the row and pixmap
+            self.signals.finished.emit(self.row, pixmap)
+        else:
+            placeholder_pixmap = QPixmap(160, 80)
+            placeholder_pixmap.fill(Qt.gray)
+            self.signals.finished.emit(self.row, placeholder_pixmap)
 
 class ThumbnailDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):

@@ -1,11 +1,13 @@
 import re
+from typing import List
 from sqlalchemy import create_engine, and_, or_, select
 from sqlalchemy.orm import sessionmaker
 
 from config.Config import Config
 from data.Media import Media
 from data.Album import Album
-from data.helpers import date_to_julian, current_time_in_unix_subsec
+from data.MediaFilter import MediaFilter
+from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_date, date_includes
 import aws
 import file_operations
 
@@ -36,14 +38,18 @@ class DataManager:
         
         return sorted(list_people)
     
-    def get_all_album_paths_with_tags(self):
+    def get_all_albums(self):
         session = sessionmaker(bind=self.engine_local)()
 
         try:
-            # Query the Album table
             album_list = session.execute(select(Album)).scalars().all()
+            return album_list
         finally:
             session.close()
+
+    
+    def get_all_album_paths_with_tags(self):
+        album_list = self.get_all_albums()
 
         if album_list:
             # Create a mapping from tags to nodes for easy access
@@ -152,6 +158,28 @@ class DataManager:
             session.close()
 
     
+    def get_filtered_media(self, media_filter: MediaFilter):
+        
+        session = sessionmaker(bind=self.engine_local)()
+        try:
+            # Query the Media table, ordering by the 'date' column
+            media_list = session.execute(DataManager._build_selection(media_filter)).scalars().all()
+            
+            if media_list:
+                if media_filter.days:
+                    media_list = DataManager._apply_date_filter(media_list, media_filter.days, mode="day")
+                if media_filter.months:
+                    media_list = DataManager._apply_date_filter(media_list, media_filter.months, mode="month")
+                if media_filter.years:
+                    media_list = DataManager._apply_date_filter(media_list, media_filter.years, mode="year")
+                if media_filter.days_of_week:
+                    media_list = DataManager._apply_date_filter(media_list, media_filter.days_of_week, mode="weekday")
+
+            return media_list
+        finally:
+            session.close()
+
+    
     @staticmethod
     def _get_new_rows_from_cloud(session_cloud, session_local):
         local_media_ids = session_local.query(Media.media_id).all()
@@ -185,12 +213,100 @@ class DataManager:
             session.add(new_media_copy)
 
     
-    def _parse_filter_string(expr: str):
+    @staticmethod
+    def _build_selection(media_filter: MediaFilter):
+        selection = select(Media)
 
-        def name_in_list(name: str):
-            """Search for name in Media.people using SQLite GLOB. (Partial and case-senstive.)"""
+        if media_filter.title:
+            filter_condition = DataManager._build_filter_condition(
+                media_filter.title,
+                "search_title"
+            )
+            selection = selection.where(filter_condition)
 
-            return Media.people.op('GLOB')(f'*{name}*')
+        if media_filter.location:
+            filter_condition = DataManager._build_filter_condition(
+                media_filter.location,
+                "search_location"
+            )
+            selection = selection.where(filter_condition)
+
+        if media_filter.people:
+            filter_condition = DataManager._build_filter_condition(
+                media_filter.people,
+                "search_people"
+            )
+            selection = selection.where(filter_condition)
+
+        if media_filter.tags:
+            filter_condition = DataManager._build_filter_condition(
+                media_filter.tags,
+                "search_tags"
+            )
+            selection = selection.where(filter_condition)
+
+        if media_filter.file_ext:
+            selection = selection.where(Media.extension.ilike(f"%{media_filter.file_ext}%"))
+
+        if media_filter.date_range[0]:
+            date_start = date_to_julian(normalize_date(media_filter.date_range[0]))
+            if date_start:
+                if media_filter.date_range[1]:
+                    date_end = date_to_julian(normalize_date(media_filter.date_range[1]))
+                    if date_end:
+                        selection = selection.where(Media.date >= date_start, Media.date <= date_end)
+                else:
+                    selection = selection.where(Media.date >= date_start)
+
+        if media_filter.people_count_range[0] != -1:
+            count_min = media_filter.people_count_range[0]
+            if media_filter.people_count_range[1] != -1:
+                count_max = media_filter.people_count_range[1]
+                selection = selection.where(Media.people_count >= count_min, Media.people_count <= count_max)
+            else:
+                selection = selection.where(Media.people_count == count_min)
+
+        if media_filter.sort:
+            column_mapping = {
+                0: Media.date,
+                1: Media.title,
+                2: Media.location,
+                3: Media.type,
+                4: Media.people,
+                5: Media.extension
+            }
+            selection = selection.order_by(column_mapping[media_filter.sort[0]], column_mapping[media_filter.sort[1]])
+            
+        return selection
+
+    @staticmethod
+    def _build_select_people(filter_string: str):
+        filter_condition = DataManager._build_filter_condition(filter_string, "search_people") 
+        return select(Media).where(filter_condition)
+    
+    @staticmethod
+    def _apply_date_filter(result: List[Media], days: str, mode: str):
+        filtered_results = [media for media in result if date_includes(media.date_text, media.date_est, days.split(","), mode=mode)]
+        return filtered_results
+
+
+    @staticmethod
+    def _parse_filter_string(expr: str, function_name: str):
+
+        def search_people(key: str):
+            return Media.people.op('GLOB')(f'*{key}*')
+        
+        
+        def search_tags(key: str):
+            return Media.tags.op('GLOB')(f'*{key}*')
+        
+        
+        def search_title(key: str):
+            return Media.title.op('GLOB')(f'*{key}*')
+        
+        
+        def search_location(key: str):
+            return Media.location.op('GLOB')(f'*{key}*')
         
         # Handle + (AND) operator first (higher precedence)
         open_parens = 0
@@ -203,8 +319,8 @@ class DataManager:
             elif open_parens == 0 and char == '+':
                 parts = expr.split('+', 1)
                 return and_(
-                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", "")), 
-                    DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", "")))
+                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name), 
+                    DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
 
         # Handle , (OR) operator second (lower precedence)
         open_parens = 0
@@ -217,41 +333,31 @@ class DataManager:
             elif open_parens == 0 and char == ',':
                 parts = expr.split(',', 1)
                 return or_(
-                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", "")), 
-                    DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", "")))
+                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name), 
+                    DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
         
         # If no AND/OR, this is a base condition
-        return eval(expr, {"name_in_list": name_in_list})
+        return eval(expr, {f"{function_name}": locals().get(function_name)})
+
 
     @staticmethod
-    def _build_people_filter_condition(filter_string: str):
-        """Build SQLAlchemy filter condition for Media.people from filter string."""
+    def _build_filter_condition(filter_string: str, function_name: str):
         
         def preprocess_expression(expr: str) -> str:
             """Replace custom operators with Python logical operators and wrap words in quotes"""
             
-            # Wrap all names (words) with name_in_list()
-            expr = re.sub(r'([a-zA-ZıİğĞüÜşŞöÖçÇ_][a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_ ]*)', r'name_in_list("\1")', expr)
+            # Wrap all names (words) with function_name()
+            expr = re.sub(r'([a-zA-ZıİğĞüÜşŞöÖçÇ_][a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_ ]*)', rf'{function_name}("\1")', expr)
 
             return expr
         
         # Process the expression to replace the custom operators
         filter_string = preprocess_expression(filter_string)
         try:
-            result_filter = DataManager._parse_filter_string(filter_string)
+            result_filter = DataManager._parse_filter_string(filter_string, function_name)
         except Exception as e:
             raise ValueError(f"Invalid expression: {e}")
         
         return result_filter
     
-    @staticmethod
-    def _build_select_people(filter_string: str):
-        filter_condition = DataManager._build_people_filter_condition(filter_string) 
-        return select(Media).where(filter_condition)
-    
-    def filter_test(self, filter_string: str):
-        session = sessionmaker(bind=self.engine_local)()
-        select_people = DataManager._build_select_people(filter_string).order_by(Media.date)
-        results = session.execute(select_people).scalars().all()
-        return results
 

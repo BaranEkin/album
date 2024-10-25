@@ -24,7 +24,7 @@ class FrameBottom(QFrame):
         self.layout_cloud.setSpacing(0)  # Remove spacing
         
         # Create and center the QLabel, setting alignment to the top of the frame
-        self.top_label = QLabel("99999 / 99999")
+        self.top_label = QLabel("")
         self.top_label.setAlignment(Qt.AlignCenter)
         
         # Ensure that the label starts at y=0 by setting alignment and margins
@@ -121,6 +121,7 @@ class FrameBottom(QFrame):
         self.button_people.setIconSize(QSize(30, 30))
         self.button_people.setText("")
         self.button_people.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
+        self.button_people.setCheckable(True)
         self.layout_button_area.addWidget(self.button_people, 1, 1)
 
         self.button_slideway = QPushButton()

@@ -9,12 +9,18 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QGridLayout,
     QMenu,
-    QAction
+    QAction,
+    QDialog, 
+    QApplication
 )
 from PyQt5.QtCore import Qt, QModelIndex, QEvent, QSize, QTimer
-from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon
+from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
+from PIL import Image
 
+from MediaLoader import MediaLoader
 from data.Media import Media
+from data.DataManager import DataManager
+from gui.DialogFilter import DialogFilter
 from gui.FrameBottom import FrameBottom
 from gui.ThumbListModel import ThumbListModel, ThumbnailDelegate
 from gui.ImageViewerLabel import ImageViewerLabel
@@ -22,10 +28,12 @@ from gui.DialogAddMedia import DialogAddMedia
 
 import aws
 import file_operations
+import face_detection
+import time
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, data_manager, media_loader):
+    def __init__(self, data_manager: DataManager, media_loader: MediaLoader):
         super().__init__()
         self.data_manager = data_manager
         self.media_loader = media_loader
@@ -40,6 +48,7 @@ class MainWindow(QMainWindow):
         """
 
         self.media_data = self.data_manager.get_all_media()
+        self.selected_media = None
 
         # Set window title and initial dimensions
         self.setWindowTitle("ALBUM 2.0")
@@ -99,6 +108,8 @@ class MainWindow(QMainWindow):
         self.button_filter.setText("")
         #self.button_filter.setToolTip(Constants.TOOLTIP_BUTTON_FORWARD)
         self.layout_features_area.addWidget(self.button_filter, 0, 1)
+        self.dialog_filter = DialogFilter(self.data_manager)
+        self.button_filter.clicked.connect(self.show_filter_dialog)
 
         self.button_same_date_location = QPushButton()
         self.button_same_date_location.setFocusPolicy(Qt.NoFocus)
@@ -183,6 +194,9 @@ class MainWindow(QMainWindow):
         self.frame_bottom.setFixedHeight(110)
         self.frame_bottom.setFocusPolicy(Qt.NoFocus)
 
+        self.frame_bottom.top_label.setText(str(len(self.media_data)))
+
+        self.frame_bottom.button_people.clicked.connect(self.on_button_people_clicked)
         self.frame_bottom.button_back.clicked.connect(self.go_to_previous_media)
         self.frame_bottom.button_forward.clicked.connect(self.go_to_next_media)
         
@@ -203,6 +217,7 @@ class MainWindow(QMainWindow):
 
         # Connect the clicked signal to handle item selection
         self.thumbnail_list.clicked.connect(self.on_media_selected)
+        self.thumbnail_model.signal.loaded.connect(self.try_select_first_item)
 
         self.thumbnail_list.setFocus()
     
@@ -216,14 +231,30 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_Left:
             self.go_to_previous_media()
 
+    
+    def try_select_first_item(self):
+        # Check if the model has any loaded items
+        if self.thumbnail_model.rowCount() > 0:
+            index = self.thumbnail_model.index(0, 0)
+
+            self.thumbnail_list.setCurrentIndex(index)
+            self.thumbnail_list.scrollTo(index)
+            self.thumbnail_list.setFocus()
+
+            self.thumbnail_list.clicked.emit(index)
+
+
+
     def go_to_next_media(self):
        
         selected_indexes = self.thumbnail_list.selectedIndexes()
 
         if selected_indexes:
             current_index = selected_indexes[0].row()
+            print(f"Current_index: {current_index}")
         
         if current_index + 1 < self.thumbnail_model.rowCount():
+            print(f"Going to: {current_index + 1}")
             next_index = self.thumbnail_model.index(current_index + 1)
             self.thumbnail_list.setCurrentIndex(next_index)
             self.on_media_selected(next_index)
@@ -234,8 +265,10 @@ class MainWindow(QMainWindow):
 
         if selected_indexes:
             current_index = selected_indexes[0].row()
+            print(f"Current_index: {current_index}")
         
         if current_index - 1 >= 0:
+            print(f"Going to: {current_index - 1}")
             prev_index = self.thumbnail_model.index(current_index - 1)
             self.thumbnail_list.setCurrentIndex(prev_index)
             self.on_media_selected(prev_index)
@@ -253,38 +286,68 @@ class MainWindow(QMainWindow):
         else:
             self.slideshow_timer.stop()
     
+    def on_button_people_clicked(self, checked):
+        if checked:
+            q_image = self.media_loader.get_image(self.selected_media.media_key)
+            if q_image is None:
+                pass
+            q_image.save("temp/detections.jpg", "JPEG")
+            pil_image = Image.open("temp/detections.jpg")
+            
+            people = self.selected_media.people
+            people_detect = self.selected_media.people_detect
+            
+            if people is not None and people_detect is not None:
+                
+                dwn = face_detection.build_detections_with_names(people_detect, people)
+                pil_image = face_detection.draw_identifications(pil_image, dwn)
+                pil_image.save("temp/detections.jpg", "JPEG")
+                q_image = QImage("temp/detections.jpg")
+                pixmap = QPixmap.fromImage(q_image)
+                self.image_label.setPixmap(pixmap)
+                self.fit_to_window()
+        else:
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+            if selected_indexes:
+                current_index = selected_indexes[0].row()
+                item = self.thumbnail_model.index(current_index)
+                self.on_media_selected(item)
+    
     def on_media_selected(self, index: QModelIndex):
-        selected_media = self.media_data[index.row()]
-        self.load_media_metadata(selected_media)
+        self.selected_media = self.media_data[index.row()]
+        
+        self.load_media_metadata()
 
         # Image
-        if selected_media.type == 1:
-            self.load_image(selected_media)
+        if self.selected_media.type == 1:
+            self.load_image()
         
         # Video or Audio
         else:
-            self.load_video_audio_thumbnail(selected_media)
+            self.load_video_audio_thumbnail()
 
-    def load_media_metadata(self, media: Media):
-        self.frame_bottom.set_media_info(media)
+    def load_media_metadata(self):
+        self.frame_bottom.set_media_info(self.selected_media)
 
-    def load_image(self, media: Media):
+    def load_image(self):
         """
         Load the selected image into the main display area.
         """
         self.image_label.is_image = True
-        self.image_label.current_media_key = media.media_key
+        self.image_label.current_media_key = self.selected_media.media_key
         self.image_label.scale_modifier = 0.0
-        q_image = self.media_loader.get_image(media.media_key)
-        pixmap = QPixmap.fromImage(q_image)
-        self.image_label.setPixmap(pixmap)
-        self.fit_to_window()
+        q_image = self.media_loader.get_image(self.selected_media.media_key)
+        
+        if q_image is not None:
+            pixmap = QPixmap.fromImage(q_image)
+            self.image_label.setPixmap(pixmap)
+            self.fit_to_window()
 
-    def load_video_audio_thumbnail(self, media: Media):
+    def load_video_audio_thumbnail(self):
         self.image_label.is_image = False
-        self.image_label.current_media_key = media.media_key
+        self.image_label.current_media_key = self.selected_media.media_key
         self.image_label.scale_modifier = 0.0
-        q_image = self.media_loader.get_thumbnail(media.thumbnail_key)
+        q_image = self.media_loader.get_thumbnail(self.selected_media.thumbnail_key)
         pixmap = QPixmap.fromImage(q_image)
         self.image_label.setPixmap(pixmap)
         self.fit_to_window()
@@ -338,3 +401,33 @@ class MainWindow(QMainWindow):
             pass
         dialog = DialogAddMedia(self.data_manager)
         dialog.exec_()
+
+    def show_filter_dialog(self):
+        if self.dialog_filter.exec_() == QDialog.Accepted:
+
+            self.media_data = self.dialog_filter.media_list
+            
+            # Create and set the custom model
+            thumbnail_keys = [media.thumbnail_key for media in self.media_data]
+            self.thumbnail_model = ThumbListModel(thumbnail_keys, self.media_loader)
+            self.thumbnail_list.setModel(self.thumbnail_model)
+            self.thumbnail_model.signal.loaded.connect(self.try_select_first_item)
+
+            self.frame_bottom.top_label.setText(str(len(self.media_data)))
+        
+        else:
+            pass
+
+    def simulate_keypress(self, window, key):
+        """Simulates a keypress event."""
+        # Create a QKeyEvent for the keypress (KeyPress event)
+        event = QKeyEvent(QKeyEvent.KeyPress, key, Qt.NoModifier)
+        
+        # Post the event directly to the QLineEdit widget
+        QApplication.postEvent(window, event)
+        
+        # Create a QKeyEvent for the key release (KeyRelease event)
+        release_event = QKeyEvent(QKeyEvent.KeyRelease, key, Qt.NoModifier)
+        
+        # Post the key release event
+        QApplication.postEvent(window, release_event)
