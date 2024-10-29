@@ -1,4 +1,5 @@
 import re
+import uuid
 from typing import List
 from sqlalchemy import create_engine, and_, or_, select
 from sqlalchemy.orm import sessionmaker
@@ -115,7 +116,9 @@ class DataManager:
 
         date = date_to_julian(date_text)
         created_at = current_time_in_unix_subsec()
-        media_id = str(created_at).replace(".", "_")
+
+        # UUID/GUID (Universally/Globally Unique Identifier) using UUID-4 Standard (Random)
+        media_id = str(uuid.uuid4().hex)
 
         media_key, thumbnail_key = file_operations.add_image(media_id=media_id,
                                                              media_path=path,
