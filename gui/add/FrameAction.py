@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon
 
-from gui.Constants import Constants
+from gui.constants import Constants
 
 
 class FrameAction(QFrame):

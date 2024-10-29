@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QComboBox, QGroupBox, QTextEdit, QRadioButton, QButtonGroup, QCompleter
 )
 from PyQt5.QtCore import Qt
-from gui.Constants import Constants
+from gui.constants import Constants
 
 
 class FrameAddInfo(QFrame):

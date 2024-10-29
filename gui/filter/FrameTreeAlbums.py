@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QTreeWidget, QTreeWidgetItem, QFrame, 
 from data.orm import Album
 
 
-class FrameTree(QFrame):
+class FrameTreeAlbums(QFrame):
     def __init__(self, albums: List[Album]):
         super().__init__()
 

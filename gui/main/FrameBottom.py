@@ -2,8 +2,8 @@ from PyQt5.QtWidgets import QFrame, QLabel, QGroupBox, QPushButton, QHBoxLayout,
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QSize
 from data.orm import Media
-from gui.MainWindow.FrameInfo import FrameInfo
-from gui.Constants import Constants
+from gui.main.FrameInfo import FrameInfo
+from gui.constants import Constants
 
 
 class FrameBottom(QFrame):

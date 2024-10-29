@@ -4,9 +4,9 @@ from media_loader import MediaLoader
 from gui.main.DialogDownload import DialogDownload
 
 
-class ImageViewerLabel(QLabel):
+class LabelImageViewer(QLabel):
     def __init__(self, scroll_area, media_loader: MediaLoader, parent=None):
-        super(ImageViewerLabel, self).__init__(parent)
+        super(LabelImageViewer, self).__init__(parent)
         self.scroll_area = scroll_area
         self.initial_scale = 1.0
         self.scale_modifier = 0

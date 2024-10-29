@@ -3,8 +3,8 @@ from PyQt5.QtGui import QIcon
 
 from data.data_manager import DataManager
 from data.media_filter import MediaFilter
-from gui.FilterMedia.FrameFilter import FrameFilter
-from gui.FilterMedia.FrameTree import FrameTree
+from gui.filter.FrameFilter import FrameFilter
+from gui.filter.FrameTreeAlbums import FrameTreeAlbums
 
 
 class DialogFilter(QDialog):
@@ -15,7 +15,7 @@ class DialogFilter(QDialog):
         self.albums = self.data_manager.get_all_albums()
         self.media_list = []
 
-        self.frame_tree = FrameTree(self.albums)
+        self.frame_tree = FrameTreeAlbums(self.albums)
         self.frame_filter = FrameFilter()
         self.frame_filter.search_button.clicked.connect(self.filter_media)
         

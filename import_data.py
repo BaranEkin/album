@@ -5,10 +5,10 @@ from PIL import Image
 
 import aws
 import face_detection
-from MediaLoader import MediaLoader
+from media_loader import MediaLoader
 
-from config.Config import Config
-from data.Media import Media
+from config.config import Config
+from data.orm import Media
 from data.helpers import date_to_julian, legacy_time_in_unix_subsec, current_time_in_unix_subsec
 
 Config.read_config()

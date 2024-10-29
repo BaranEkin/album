@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 import aws
-from config.Config import Config
+from config.config import Config
 from data.data_manager import DataManager
 
 

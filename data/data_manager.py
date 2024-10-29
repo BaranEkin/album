@@ -6,10 +6,9 @@ from sqlalchemy import create_engine, and_, or_, select
 
 import aws
 import file_operations
-from config.Config import Config
-from data.Media import Media
-from data.Album import Album
-from data.MediaFilter import MediaFilter
+from config.config import Config
+from data.orm import Album, Media
+from data.media_filter import MediaFilter
 from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_date, date_includes
 
 
@@ -84,7 +83,7 @@ class DataManager:
 
     def update_local_db(self) -> bool:
 
-        connect_success = aws.dowload_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album_cloud.db")
+        connect_success = aws.download_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album_cloud.db")
         if not connect_success:
             return False
         

@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import ( QDialog, QVBoxLayout,
                              QListWidget, QDialogButtonBox, 
                              QLineEdit, QListWidgetItem)
 
-from gui.Constants import Constants
+from gui.constants import Constants
 
 class DialogAssignPerson(QDialog):
     def __init__(self, person, people_list, parent=None):

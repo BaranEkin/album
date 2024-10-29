@@ -1,10 +1,12 @@
 import datetime
-from PyQt5.QtWidgets import QTextBrowser
-from PyQt5.QtCore import Qt
 
-class CustomTextBrowser(QTextBrowser):
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QTextBrowser
+
+
+class TextBrowserDate(QTextBrowser):
     def __init__(self, parent=None):
-        super(CustomTextBrowser, self).__init__(parent)
+        super(TextBrowserDate, self).__init__(parent)
         self.setFocusPolicy(Qt.NoFocus)
 
     # Override the contextMenuEvent method to do nothing
@@ -15,7 +17,7 @@ class CustomTextBrowser(QTextBrowser):
         self.setHtml(f'<div style="line-height:{line_height}px;">{text}</div>')
     
     def set_date(self, line_height, date_text, date_est):
-        self.set_text(line_height, CustomTextBrowser.date_to_display(date_text, date_est))
+        self.set_text(line_height, TextBrowserDate.date_to_display(date_text, date_est))
 
     @staticmethod
     def date_to_display(date_str, precision=7):

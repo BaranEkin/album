@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QMessageBox
-from MediaLoader import MediaLoader
+from media_loader import MediaLoader
 
 import os
 import aws

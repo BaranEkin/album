@@ -1,33 +1,51 @@
 import os
+import datetime
 import boto3
-from botocore.signers import CloudFrontSigner
-from botocore.exceptions import (
-    NoCredentialsError, 
-    PartialCredentialsError, 
-    ClientError, 
-    EndpointConnectionError, 
-    ConnectionClosedError)
 
 from io import BytesIO
 from PIL import Image
 from urllib import request
-import datetime
+
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
-from config.Config import Config
+
+from botocore.signers import CloudFrontSigner
+from botocore.exceptions import (
+    NoCredentialsError,
+    PartialCredentialsError,
+    ClientError,
+    EndpointConnectionError,
+    ConnectionClosedError)
+
+from config.config import Config
 
 sts = boto3.client("sts")
 s3 = boto3.client("s3")
 
 
-def get_user_name():
+def get_user_name() -> str:
+    """Retrieve the AWS IAM username of the current user.
+
+    Returns:
+        str: The IAM username extracted from the caller's ARN.
+    """
+
     arn = sts.get_caller_identity()["Arn"]
     user_name = arn[arn.rfind("/") + 1:]
     return user_name
 
 
-def rsa_signer(message):
+def rsa_signer(message) -> bytes:
+    """Sign a message using an RSA private key.
+
+    Args:
+        message (bytes): The message to be signed.
+
+    Returns:
+        bytes: The RSA signature of the message.
+    """
+
     # Load the private key from the .pem file
     with open(Config.CLOUDFRONT_KEY_PATH, "rb") as key_file:
         private_key = serialization.load_pem_private_key(
@@ -44,18 +62,40 @@ def rsa_signer(message):
     return signature
 
 
-def create_signed_url(url, expiration_date):
+def generate_signed_url(url: str, expiration_date) -> str:
+    """Generate a signed URL with an expiration date for AWS CloudFront using private key (res/cloudfront.pem).
+
+    Args:
+        url (str): The URL to be signed.
+        expiration_date (datetime): The expiration date and time for the signed URL.
+
+    Returns:
+        str: The signed URL with expiration constraints.
+    """
+
     cloudfront_signer = CloudFrontSigner(Config.CLOUDFRONT_KEY_ID, rsa_signer)
     return cloudfront_signer.generate_presigned_url(
         url, date_less_than=expiration_date
     )
 
 
-def get_image_from_cloudfront(image_key, prefix):
+def get_image_from_cloudfront(image_key: str, prefix: str) -> Image:
+    """Retrieve an image from CloudFront using a signed URL.
+
+    Args:
+        image_key (str): Media key of the image.
+        prefix (str): The prefix path to the image (media/ or thumbnail/).
+
+    Returns:
+        PIL.Image: The retrieved image in RGB format.
+
+    Raises:
+        Exception: If an error occurs while fetching or processing the image.
+    """
 
     url = f"https://{Config.CLOUDFRONT_DOMAIN}/{prefix}{image_key}"
     expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
-    signed_url = create_signed_url(url, expiration)
+    signed_url = generate_signed_url(url, expiration)
 
     try:
         with request.urlopen(signed_url) as response:
@@ -66,12 +106,25 @@ def get_image_from_cloudfront(image_key, prefix):
     except Exception as e:
         print(f"Error occurred: {e}")
         raise e
-    
-def get_video_audio_from_cloudfront(media_key, prefix):
-    
+
+
+def get_video_audio_from_cloudfront(media_key: str, prefix: str) -> bytes:
+    """Retrieve video or audio data from CloudFront using a signed URL.
+
+    Args:
+        media_key (str): Media key of the video or audio.
+        prefix (str): The prefix path to the image (media/ or thumbnail/).
+
+    Returns:
+        bytes: The binary data of the retrieved media file.
+
+    Raises:
+        Exception: If an error occurs while fetching the media data.
+    """
+
     url = f"https://{Config.CLOUDFRONT_DOMAIN}/{prefix}{media_key}"
     expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
-    signed_url = create_signed_url(url, expiration)
+    signed_url = generate_signed_url(url, expiration)
 
     try:
         with request.urlopen(signed_url) as response:
@@ -80,19 +133,41 @@ def get_video_audio_from_cloudfront(media_key, prefix):
     except Exception as e:
         print(f"Error occurred: {e}")
         raise e
-    
 
-def check_s3():
+
+def check_s3() -> bool:
+    """Check if the S3 bucket is accessible.
+
+    Returns:
+        bool: True if the S3 bucket is reachable, False otherwise.
+    """
+
     try:
         s3.head_bucket(Bucket=Config.S3_BUCKET_NAME)
         return True
-    
+
     except ClientError as e:
         print(f"Unable to reach bucket: {Config.S3_BUCKET_NAME}. Error: {e}")
         return False
 
 
 def upload_to_s3_bucket(path, key, prefix=""):
+    """Upload a file to a specified S3 bucket path with optional prefix.
+
+    Args:
+        path (str): The local path of the file to upload.
+        key (str): The name of the file in the S3 bucket.
+        prefix (str, optional): Optional prefix path in the S3 bucket. Defaults to "".
+
+    Raises:
+        NoCredentialsError: If AWS credentials are missing.
+        PartialCredentialsError: If AWS credentials are incomplete.
+        ClientError: For AWS client-related issues such as access or bucket existence.
+        FileNotFoundError: If the specified local file is not found.
+        PermissionError: If there are insufficient permissions to read the file.
+        Exception: For any other unexpected errors during upload.
+    """
+
     if not os.path.isfile(path):
         print(f"The file '{path}' does not exist.")
         return
@@ -104,36 +179,53 @@ def upload_to_s3_bucket(path, key, prefix=""):
     except NoCredentialsError as e:
         print("Credentials not available for AWS. Please check your AWS credentials.")
         raise e
-    
+
     except PartialCredentialsError as e:
         print("Incomplete AWS credentials provided. Please check your AWS credentials.")
         raise e
-    
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDenied':
             print(f"Access denied to the bucket. Please check your permissions.")
-        
+
         elif e.response['Error']['Code'] == 'NoSuchBucket':
             print(f"The specified bucket does not exist.")
 
         else:
             print(f"Client error occurred: {e}")
         raise e
-    
+
     except FileNotFoundError as e:
         print(f"The specified file was not found: {path}.")
         raise e
-    
+
     except PermissionError as e:
         print(f"Permission denied: Unable to read '{path}'. Check your file system permissions.")
         raise e
-    
+
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         raise e
-    
 
-def dowload_from_s3_bucket(key, path):
+
+def download_from_s3_bucket(key, path) -> bool:
+    """Download a file from an S3 bucket to a specified local path.
+
+    Args:
+        key (str): The name of the file in the S3 bucket.
+        path (str): The local destination path for the downloaded file.
+
+    Returns:
+        bool: True if the download is successful, False if a network error occurs.
+
+    Raises:
+        NoCredentialsError: If AWS credentials are missing.
+        PartialCredentialsError: If AWS credentials are incomplete.
+        ClientError: For AWS client-related issues, such as access or key existence.
+        PermissionError: If there are insufficient permissions to write to the destination path.
+        Exception: For any other unexpected errors during download.
+    """
+
     try:
         s3.download_file(Config.S3_BUCKET_NAME, key, path)
         print(f"File downloaded successfully to {path}")
@@ -142,30 +234,30 @@ def dowload_from_s3_bucket(key, path):
     except (EndpointConnectionError, ConnectionClosedError) as e:
         print("Network error: Connection issue encountered. Please check your internet connection.")
         return False
-    
+
     except NoCredentialsError as e:
         print("Credentials not available for AWS. Please check your AWS credentials.")
         raise e
-    
+
     except PartialCredentialsError as e:
         print("Incomplete AWS credentials provided. Please check your AWS credentials.")
         raise e
-    
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDenied':
             print(f"Access denied to the bucket or object.")
-        
+
         elif e.response['Error']['Code'] == 'NoSuchKey':
             print(f"The specified object key does not exist: {key}.")
-        
+
         else:
             print(f"Client error occurred: {e}")
         raise e
-    
+
     except PermissionError as e:
         print(f"Permission denied: Unable to write to {path}. Check your file system permissions.")
         raise e
-    
+
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         raise e

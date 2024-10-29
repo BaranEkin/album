@@ -1,10 +1,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QStyleFactory
-from gui.MainWindow import MainWindow
+from gui.main.MainWindow import MainWindow
 
-from config.Config import Config
-from MediaLoader import MediaLoader
-from data.DataManager import DataManager
+from config.config import Config
+from media_loader import MediaLoader
+from data.data_manager import DataManager
 
 
 # Main application execution

@@ -1,4 +1,4 @@
-class MediaFilter():
+class MediaFilter:
     def __init__(
             self, 
             albums: tuple[str, ...], 

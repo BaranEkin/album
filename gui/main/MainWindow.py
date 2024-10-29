@@ -15,19 +15,18 @@ from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
-from MediaLoader import MediaLoader
+from media_loader import MediaLoader
 from data.data_manager import DataManager
-from gui.FilterMedia.DialogFilter import DialogFilter
-from gui.MainWindow.FrameBottom import FrameBottom
-from gui.MainWindow.ThumbListModel import ThumbListModel, ThumbnailDelegate
-from gui.MainWindow.ImageViewerLabel import ImageViewerLabel
-from gui.AddMedia.DialogAddMedia import DialogAddMedia
-from gui.MainWindow.DialogPeople import DialogPeople
-from gui.MainWindow.DialogNotes import DialogNotes
+from gui.filter.DialogFilter import DialogFilter
+from gui.main.FrameBottom import FrameBottom
+from gui.main.ListModelThumbnail import ListModelThumbnail, ThumbnailDelegate
+from gui.main.LabelImageViewer import LabelImageViewer
+from gui.add.DialogAddMedia import DialogAddMedia
+from gui.main.DialogPeople import DialogPeople
+from gui.main.DialogNotes import DialogNotes
 
 import aws
 import face_detection
-
 
 
 class MainWindow(QMainWindow):
@@ -180,7 +179,7 @@ class MainWindow(QMainWindow):
         self.scroll_area.setFocusPolicy(Qt.NoFocus)
 
         # Create a ImageViewerLabel for the image and add it to the scroll area
-        self.image_label = ImageViewerLabel(self.scroll_area, self.media_loader)
+        self.image_label = LabelImageViewer(self.scroll_area, self.media_loader)
         self.image_label.setBackgroundRole(QPalette.Base)
         self.image_label.setScaledContents(True)
         self.scroll_area.setWidget(self.image_label)
@@ -210,7 +209,7 @@ class MainWindow(QMainWindow):
 
         # Create and set the custom model
         thumbnail_keys = [media.thumbnail_key for media in self.media_data]
-        self.thumbnail_model = ThumbListModel(thumbnail_keys, self.media_loader)
+        self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
         self.thumbnail_list.setModel(self.thumbnail_model)
 
         # Set the custom delegate
@@ -431,7 +430,7 @@ class MainWindow(QMainWindow):
             
             # Create and set the custom model
             thumbnail_keys = [media.thumbnail_key for media in self.media_data]
-            self.thumbnail_model = ThumbListModel(thumbnail_keys, self.media_loader)
+            self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
             self.thumbnail_list.setModel(self.thumbnail_model)
             self.thumbnail_model.signal.loaded.connect(self.try_select_first_item)
 

@@ -5,10 +5,10 @@ from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtGui import QIcon
 from PIL import Image
 
-from gui.AddMedia.LabelImageAdd import LabelImageAdd
-from gui.AddMedia.FrameAddInfo import FrameAddInfo
-from gui.AddMedia.FrameAction import FrameAction
-from gui.AddMedia.DialogUpload import DialogUpload
+from gui.add.LabelImageAdd import LabelImageAdd
+from gui.add.FrameAddInfo import FrameAddInfo
+from gui.add.FrameAction import FrameAction
+from gui.add.DialogUpload import DialogUpload
 from data.data_manager import DataManager
 
 import face_detection

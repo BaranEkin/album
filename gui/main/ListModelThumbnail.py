@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QApplication, QStyledItemDelegate, QStyle
 class ThumbnailSignal(QObject):
     loaded = pyqtSignal()
 
-class ThumbListModel(QAbstractListModel):
+class ListModelThumbnail(QAbstractListModel):
 
     def __init__(self, thumbnail_keys, media_loader, parent=None):
         super().__init__(parent)

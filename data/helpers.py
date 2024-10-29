@@ -1,5 +1,7 @@
+from typing import Literal
 from datetime import datetime
 from time import time_ns
+
 
 turkish_months = {
     "ocak": 1,
@@ -79,7 +81,7 @@ def legacy_time_in_unix_subsec(legacy_time_str: str) -> float:
     return dt.timestamp()
 
 
-def normalize_date(date_str: str):
+def normalize_date(date_str: str) -> str:
 
     date_str = date_str.strip().lower()
     
@@ -116,7 +118,7 @@ def normalize_date(date_str: str):
     return ""
 
 
-def date_includes(date_str, precision, input_list, mode):
+def date_includes(date_str: str, precision: int, input_list: list[str], mode: Literal["day", "month", "year", "weekday"]):
     """
     Check if a given date includes at least one of the specified values based on precision and mode.
 
