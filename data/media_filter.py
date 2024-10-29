@@ -1,5 +1,3 @@
-
-
 class MediaFilter():
     def __init__(
             self, 

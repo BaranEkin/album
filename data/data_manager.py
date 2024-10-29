@@ -1,23 +1,24 @@
 import re
 import uuid
-from typing import List
-from sqlalchemy import create_engine, and_, or_, select
-from sqlalchemy.orm import sessionmaker
 
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, and_, or_, select
+
+import aws
+import file_operations
 from config.Config import Config
 from data.Media import Media
 from data.Album import Album
 from data.MediaFilter import MediaFilter
 from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_date, date_includes
-import aws
-import file_operations
+
 
 
 class DataManager:
     def __init__(self):
         self.engine_local = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album.db")
 
-    def get_all_media(self):
+    def get_all_media(self) -> list[Media]:
         session = sessionmaker(bind=self.engine_local)()
         try:
             # Query the Media table, ordering by the 'date' column
@@ -26,7 +27,7 @@ class DataManager:
         finally:
             session.close()
 
-    def get_list_people(self):
+    def get_list_people(self) -> list[str]:
         media_list = self.get_all_media()
         list_people = []
         for media in media_list:
@@ -39,7 +40,7 @@ class DataManager:
         
         return sorted(list_people)
     
-    def get_all_albums(self):
+    def get_all_albums(self) -> list[Album]:
         session = sessionmaker(bind=self.engine_local)()
 
         try:
@@ -49,7 +50,7 @@ class DataManager:
             session.close()
 
     
-    def get_all_album_paths_with_tags(self):
+    def get_all_album_paths_with_tags(self) -> list[tuple[str, str]]:
         album_list = self.get_all_albums()
 
         if album_list:
@@ -81,7 +82,7 @@ class DataManager:
 
             return sorted(paths, key=lambda x: x[0])
 
-    def update_local_db(self):
+    def update_local_db(self) -> bool:
 
         connect_success = aws.dowload_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album_cloud.db")
         if not connect_success:
@@ -112,7 +113,7 @@ class DataManager:
             people,
             people_detect,
             people_count
-    ):
+    ) -> Media:
 
         date = date_to_julian(date_text)
         created_at = current_time_in_unix_subsec()
@@ -149,7 +150,7 @@ class DataManager:
         return media
         
 
-    def insert_media_list_to_local(self, media_list):
+    def insert_media_list_to_local(self, media_list: list[Media]):
         session = sessionmaker(bind=self.engine_local)()
         user_name = aws.get_user_name()
         try:
@@ -161,7 +162,7 @@ class DataManager:
             session.close()
 
     
-    def get_filtered_media(self, media_filter: MediaFilter):
+    def get_filtered_media(self, media_filter: MediaFilter) -> list[Media]:
         
         session = sessionmaker(bind=self.engine_local)()
         try:
@@ -288,7 +289,7 @@ class DataManager:
         return select(Media).where(filter_condition)
     
     @staticmethod
-    def _apply_date_filter(result: List[Media], days: str, mode: str):
+    def _apply_date_filter(result: list[Media], days: str, mode: str):
         filtered_results = [media for media in result if date_includes(media.date_text, media.date_est, days.split(","), mode=mode)]
         return filtered_results
 

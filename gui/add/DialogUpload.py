@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 import aws
 from config.Config import Config
-from data.DataManager import DataManager
+from data.data_manager import DataManager
 
 
 class UploadThread(QThread):

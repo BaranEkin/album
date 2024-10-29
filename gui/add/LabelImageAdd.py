@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtGui import QPixmap, QImage, QMouseEvent
 from PyQt5.QtCore import  Qt, QSize
 
-from gui.DialogAssignPerson import DialogAssignPerson
+from gui.AddMedia.DialogAssignPerson import DialogAssignPerson
 
 
 class LabelImageAdd(QLabel):

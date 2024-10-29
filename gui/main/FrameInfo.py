@@ -1,10 +1,8 @@
-import datetime
-from PyQt5.QtWidgets import (QFrame, QLabel, QTextBrowser, QPushButton,
-                             QVBoxLayout, QHBoxLayout, QGridLayout, QSizePolicy)
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QFrame, QLabel, QVBoxLayout, QHBoxLayout, QSizePolicy)
 
-from data.Media import Media
-from gui.CustomTextBrowser import CustomTextBrowser
+from data.orm import Media
+from gui.MainWindow.DateTextBrowser import DateTextBrowser
 
 
 class FrameInfo(QFrame):
@@ -27,7 +25,7 @@ class FrameInfo(QFrame):
         self.title_label.setFixedWidth(label_width)  # Set a fixed width for the label
         self.title_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
-        self.title_browser = CustomTextBrowser()
+        self.title_browser = DateTextBrowser()
         self.title_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
         self.title_browser.setFixedHeight(40)  # Set height for consistency
         self.title_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -49,7 +47,7 @@ class FrameInfo(QFrame):
         self.location_label.setFixedWidth(label_width)  # Set the same fixed width for label
         self.location_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
-        self.location_browser = CustomTextBrowser()
+        self.location_browser = DateTextBrowser()
         self.location_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
         self.location_browser.setFixedHeight(40)  # Set height for consistency
         self.location_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -69,7 +67,7 @@ class FrameInfo(QFrame):
         self.date_label.setFixedWidth(label_width)  # Set the same fixed width for label
         self.date_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
-        self.date_browser = CustomTextBrowser()
+        self.date_browser = DateTextBrowser()
         self.date_browser.setAlignment(Qt.AlignHCenter)  # Align text to the left
         self.date_browser.setFixedHeight(40)  # Set height for consistency
         self.date_browser.setFixedWidth(250)  # Set the fixed width for the date

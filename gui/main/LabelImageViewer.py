@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import QLabel, QDialog
+from PyQt5.QtWidgets import QLabel
 from PyQt5.QtCore import Qt, QPoint, QDateTime
-from MediaLoader import MediaLoader
-from gui.DialogDownload import DialogDownload
+from media_loader import MediaLoader
+from gui.main.DialogDownload import DialogDownload
 
 
 class ImageViewerLabel(QLabel):

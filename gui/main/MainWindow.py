@@ -8,28 +8,24 @@ from PyQt5.QtWidgets import (
     QListView,
     QPushButton,
     QGridLayout,
-    QMenu,
-    QAction,
-    QDialog, 
+    QDialog,
     QApplication
 )
-from PyQt5.QtCore import Qt, QModelIndex, QEvent, QSize, QTimer
+from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
 from MediaLoader import MediaLoader
-from data.Media import Media
-from data.DataManager import DataManager
-from gui.DialogFilter import DialogFilter
-from gui.FrameBottom import FrameBottom
-from gui.ThumbListModel import ThumbListModel, ThumbnailDelegate
-from gui.ImageViewerLabel import ImageViewerLabel
-from gui.DialogAddMedia import DialogAddMedia
-from gui.DialogPeople import DialogPeople
-from gui.DialogNotes import DialogNotes
+from data.data_manager import DataManager
+from gui.FilterMedia.DialogFilter import DialogFilter
+from gui.MainWindow.FrameBottom import FrameBottom
+from gui.MainWindow.ThumbListModel import ThumbListModel, ThumbnailDelegate
+from gui.MainWindow.ImageViewerLabel import ImageViewerLabel
+from gui.AddMedia.DialogAddMedia import DialogAddMedia
+from gui.MainWindow.DialogPeople import DialogPeople
+from gui.MainWindow.DialogNotes import DialogNotes
 
 import aws
-import file_operations
 import face_detection
 
 

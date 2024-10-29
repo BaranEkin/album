@@ -1,4 +1,3 @@
-import sys
 import os
 from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout,
                              QTreeView, QListWidget, QFrame, QFileSystemModel)
@@ -6,16 +5,14 @@ from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtGui import QIcon
 from PIL import Image
 
-from gui.LabelImageAdd import LabelImageAdd
-from gui.FrameAddInfo import FrameAddInfo
-from gui.FrameAction import FrameAction
-from gui.DialogUpload import DialogUpload
-from data.DataManager import DataManager
-from config.Config import Config
+from gui.AddMedia.LabelImageAdd import LabelImageAdd
+from gui.AddMedia.FrameAddInfo import FrameAddInfo
+from gui.AddMedia.FrameAction import FrameAction
+from gui.AddMedia.DialogUpload import DialogUpload
+from data.data_manager import DataManager
 
 import face_detection
 import file_operations
-import aws
 
 
 class DialogAddMedia(QDialog):

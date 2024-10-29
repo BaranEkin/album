@@ -1,21 +1,10 @@
-import sys
-import os
-from typing import List
-from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout,
-                             QTreeView, QListWidget, QFrame, QFileSystemModel, QWidget)
-from PyQt5.QtCore import QDir, Qt
+from PyQt5.QtWidgets import (QDialog, QVBoxLayout)
 from PyQt5.QtGui import QIcon
-from PIL import Image
 
-from data.DataManager import DataManager
-from data.MediaFilter import MediaFilter
-from gui.FrameFilter import FrameFilter
-from gui.FrameTree import FrameTree
-from config.Config import Config
-
-import face_detection
-import file_operations
-import aws
+from data.data_manager import DataManager
+from data.media_filter import MediaFilter
+from gui.FilterMedia.FrameFilter import FrameFilter
+from gui.FilterMedia.FrameTree import FrameTree
 
 
 class DialogFilter(QDialog):

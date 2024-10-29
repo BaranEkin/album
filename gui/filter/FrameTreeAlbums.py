@@ -2,7 +2,7 @@ from typing import List
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QTreeWidget, QTreeWidgetItem, QFrame, QWidget, QVBoxLayout, QCheckBox
 
-from data.Album import Album
+from data.orm import Album
 
 
 class FrameTree(QFrame):

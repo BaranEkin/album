@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QFrame, QLabel, QGroupBox, QPushButton, QHBoxLayout, QVBoxLayout, QGridLayout
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QSize
-from data.Media import Media
-from gui.FrameInfo import FrameInfo
+from data.orm import Media
+from gui.MainWindow.FrameInfo import FrameInfo
 from gui.Constants import Constants
 
 
