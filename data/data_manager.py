@@ -212,6 +212,9 @@ class DataManager:
     def _build_selection(media_filter: MediaFilter):
         selection = select(Media)
 
+        if media_filter.albums[0]:
+            selection = selection.where(or_(*[Media.albums.contains(album) for album in media_filter.albums]))
+
         if media_filter.title:
             filter_condition = DataManager._build_filter_condition(
                 media_filter.title,
@@ -240,6 +243,9 @@ class DataManager:
             )
             selection = selection.where(filter_condition)
 
+        if media_filter.location_exact:
+            selection = selection.where(Media.location == media_filter.location_exact)
+
         if media_filter.file_ext:
             selection = selection.where(Media.extension.ilike(f"%{media_filter.file_ext}%"))
 
@@ -251,7 +257,7 @@ class DataManager:
                     if date_end:
                         selection = selection.where(Media.date >= date_start, Media.date <= date_end)
                 else:
-                    selection = selection.where(Media.date >= date_start)
+                    selection = selection.where(Media.date == date_start)
 
         if media_filter.people_count_range[0] != -1:
             count_min = media_filter.people_count_range[0]

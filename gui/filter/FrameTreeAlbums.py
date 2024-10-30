@@ -12,6 +12,7 @@ class FrameTreeAlbums(QFrame):
         self.layout = QVBoxLayout(self)
 
         self.albums = albums
+        self.selected_album_tags = []
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
 
@@ -45,21 +46,36 @@ class FrameTreeAlbums(QFrame):
             # Store this item in the dictionary for potential child nodes
             node_items[tag] = tree_item
 
-        self.tree.itemSelectionChanged.connect(self.get_selected_albums)
+        self.tree.itemSelectionChanged.connect(self.on_select_albums)
         self.layout.addWidget(self.tree)
         self.layout.addWidget(self.checkbox_include_child)
 
     def get_selected_albums(self):
+        return tuple(self.selected_album_tags)
+        
+    def on_select_albums(self):
         selected_items = self.tree.selectedItems()
         if selected_items:
             selected_item = selected_items[0]
-            if self.checkbox_include_child.isChecked():
-                return (selected_item.text(0),)
+            if not self.checkbox_include_child.isChecked():
+                self.selected_album_tags = [self.get_album_tag(selected_item.text(0))]
 
-            with_child = []
-            current_item = selected_item
-            while current_item:
-                with_child.append(current_item.text(0))
-                current_item = current_item.child()
+            # Gather text for the selected item and its children
+            with_children = [selected_item.text(0)]
 
-            return tuple(with_child)
+            def collect_children(item):
+                for i in range(item.childCount()):
+                    child = item.child(i)
+                    with_children.append(child.text(0))
+                    collect_children(child)  # Recursive call to collect nested children
+
+            # Start collecting children from the selected item
+            collect_children(selected_item)
+
+            self.selected_album_tags = [self.get_album_tag(album_name) for album_name in with_children]
+        
+    def get_album_tag(self, album_name):
+        for album in self.albums:
+            if album.name == album_name:
+                return album.tag
+            

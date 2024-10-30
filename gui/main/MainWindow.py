@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
+from data.media_filter import MediaFilter
 from media_loader import MediaLoader
 from data.data_manager import DataManager
 from gui.filter.DialogFilter import DialogFilter
@@ -45,7 +46,9 @@ class MainWindow(QMainWindow):
         """
 
         self.media_data = self.data_manager.get_all_media()
+        self.previous_media_data = self.media_data.copy()
         self.selected_media = None
+        self.previous_index = None
 
         # Set window title and initial dimensions
         self.setWindowTitle("ALBUM 2.0")
@@ -114,6 +117,8 @@ class MainWindow(QMainWindow):
         self.button_same_date_location.setIcon(QIcon("res/icons/Date--Location.png"))
         self.button_same_date_location.setIconSize(QSize(30, 30))
         self.button_same_date_location.setText("")
+        self.button_same_date_location.clicked.connect(self.on_same_date_location)
+        self.button_same_date_location.setCheckable(True)
         #self.button_same_date_location.setToolTip(Constants.TOOLTIP_BUTTON_SLIDESHOW)
         self.layout_features_area.addWidget(self.button_same_date_location, 0, 2)
 
@@ -217,7 +222,7 @@ class MainWindow(QMainWindow):
 
         # Connect the clicked signal to handle item selection
         self.thumbnail_list.clicked.connect(self.on_media_selected)
-        self.thumbnail_model.signal.loaded.connect(self.try_select_first_item)
+        self.thumbnail_model.signal.loaded.connect(self.try_select_item)
 
         self.thumbnail_list.setFocus()
 
@@ -235,18 +240,16 @@ class MainWindow(QMainWindow):
             self.go_to_previous_media()
 
     
-    def try_select_first_item(self):
+    def try_select_item(self, i=0):
         # Check if the model has any loaded items
         if self.thumbnail_model.rowCount() > 0:
-            index = self.thumbnail_model.index(0, 0)
+            index = self.thumbnail_model.index(i, 0)
 
             self.thumbnail_list.setCurrentIndex(index)
             self.thumbnail_list.scrollTo(index)
             self.thumbnail_list.setFocus()
 
             self.thumbnail_list.clicked.emit(index)
-
-
 
     def go_to_next_media(self):
        
@@ -426,13 +429,37 @@ class MainWindow(QMainWindow):
         else:
             pass
 
-    def refresh_media_data(self):
+    def on_same_date_location(self, checked):
+        
+        if checked:
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+
+            if selected_indexes:
+                self.previous_index = selected_indexes[0].row()
+
+            self.previous_media_data = self.media_data.copy()
+
+            date = self.selected_media.date_text
+            location = self.selected_media.location
+
+            media_filter = MediaFilter(date_range=(date, ""), location_exact=location)
+            self.media_data = self.data_manager.get_filtered_media(media_filter)
+            self.refresh_media_data()
+        
+        elif self.previous_media_data is not None:
+            self.media_data = self.previous_media_data.copy()
+
+            if self.previous_index is not None:
+                self.refresh_media_data(self.previous_index)
+
+
+    def refresh_media_data(self, index=0):
             
             # Create and set the custom model
             thumbnail_keys = [media.thumbnail_key for media in self.media_data]
             self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
             self.thumbnail_list.setModel(self.thumbnail_model)
-            self.thumbnail_model.signal.loaded.connect(self.try_select_first_item)
+            self.thumbnail_model.signal.loaded.connect(lambda: self.try_select_item(index))
 
             self.frame_bottom.top_label.setText(str(len(self.media_data)))
     

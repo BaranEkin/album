@@ -1,23 +1,25 @@
 class MediaFilter:
     def __init__(
             self,
-            albums: tuple[str, ...],
-            title: str,
-            location: str,
-            people: str,
-            people_count_range: tuple[int, int],
-            file_type: int,
-            file_ext: str,
-            tags: str,
-            date_range: tuple[str, str],
-            days: str,
-            months: str,
-            years: str,
-            days_of_week: str,
-            sort: tuple[int, int]):
+            albums: tuple[str, ...] = ("",),
+            title: str = "",
+            location: str = "",
+            location_exact: str = "",
+            people: str = "",
+            people_count_range: tuple[int, int] = (-1, -1),
+            file_type: int = 0,
+            file_ext: str = "",
+            tags: str = "",
+            date_range: tuple[str, str] = ("", ""),
+            days: str = "",
+            months: str = "",
+            years: str = "",
+            days_of_week: str = "",
+            sort: tuple[int, int] = (0, 0)):
         self.albums = albums
         self.title = title
         self.location = location
+        self.location_exact = location_exact
         self.people = people
         self.people_count_range = people_count_range
         self.file_type = file_type
