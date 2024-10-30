@@ -1,15 +1,14 @@
-from typing import List
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QTreeWidget, QTreeWidgetItem, QFrame, QWidget, QVBoxLayout, QCheckBox
+from typing import Sequence
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QFrame, QVBoxLayout, QCheckBox
 
 from data.orm import Album
 
 
 class FrameTreeAlbums(QFrame):
-    def __init__(self, albums: List[Album]):
+    def __init__(self, albums: Sequence[Album]):
         super().__init__()
 
-        self.setFixedSize(550,350)
+        self.setFixedSize(550, 350)
         self.layout = QVBoxLayout(self)
 
         self.albums = albums
@@ -17,7 +16,7 @@ class FrameTreeAlbums(QFrame):
         self.tree.setHeaderHidden(True)
 
         self.checkbox_include_child = QCheckBox("Alt albümleri dahil et")
-        
+
         # Create a dictionary to store the QTreeWidgetItem references by their tags
         node_items = {}
 
@@ -50,20 +49,17 @@ class FrameTreeAlbums(QFrame):
         self.layout.addWidget(self.tree)
         self.layout.addWidget(self.checkbox_include_child)
 
-
     def get_selected_albums(self):
-            selected_items = self.tree.selectedItems()
-            if selected_items:
-                selected_item = selected_items[0]
-                if self.checkbox_include_child.isChecked():
-                    return (selected_item.text(0),)
-                
-                with_child = []
-                current_item = selected_item
-                while current_item:
-                    with_child.append(current_item.text(0))  
-                    current_item = current_item.child()
+        selected_items = self.tree.selectedItems()
+        if selected_items:
+            selected_item = selected_items[0]
+            if self.checkbox_include_child.isChecked():
+                return (selected_item.text(0),)
 
-                return tuple(with_child)
+            with_child = []
+            current_item = selected_item
+            while current_item:
+                with_child.append(current_item.text(0))
+                current_item = current_item.child()
 
-
+            return tuple(with_child)

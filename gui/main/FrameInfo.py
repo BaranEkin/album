@@ -45,7 +45,8 @@ class FrameInfo(QFrame):
         self.location_label = QLabel("YER")
         self.location_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
         self.location_label.setFixedWidth(label_width)  # Set the same fixed width for label
-        self.location_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+        self.location_label.setStyleSheet(
+            "font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
         self.location_browser = TextBrowserDate()
         self.location_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
@@ -56,7 +57,8 @@ class FrameInfo(QFrame):
         self.location_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # Mock-up value for location
-        self.location_browser.setHtml('<div style="line-height:26px;">DENEME ŞEHRİ DENEME SEMTİ DENEME KÖYÜ DENEMELER</div>')
+        self.location_browser.setHtml(
+            '<div style="line-height:26px;">DENEME ŞEHRİ DENEME SEMTİ DENEME KÖYÜ DENEMELER</div>')
 
         self.location_date_layout.addWidget(self.location_label)
         self.location_date_layout.addWidget(self.location_browser)
@@ -92,5 +94,3 @@ class FrameInfo(QFrame):
         self.title_browser.set_text(27, media.title)
         self.location_browser.set_text(26, media.location)
         self.date_browser.set_date(26, media.date_text, media.date_est)
-
-

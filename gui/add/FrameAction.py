@@ -10,7 +10,7 @@ from gui.constants import Constants
 class FrameAction(QFrame):
     def __init__(self, album_list, parent=None):
         super().__init__()
-        
+
         self.parent = parent
         self.album_list = album_list
         # Main layout for the frame
@@ -76,7 +76,7 @@ class FrameAction(QFrame):
                 selected_album_tags.append(tag)
 
         return sorted(selected_album_tags)
-    
+
     def clear_selected_album_tags(self):
         for checkbox, tag in self.checkbox_to_album_tag.items():
             checkbox.setChecked(False)
@@ -85,10 +85,8 @@ class FrameAction(QFrame):
         self.button_upload.setText(f"{media_count} {Constants.LABEL_BUTTON_UPLOAD}")
         self.button_upload.setEnabled(True if media_count > 0 else False)
 
-    def set_button_upload_enabled(self, bool):
-        self.button_upload.setEnabled(bool)
+    def set_button_upload_enabled(self, val: bool):
+        self.button_upload.setEnabled(val)
 
-    def set_button_add_enabled(self, bool):
-        self.button_add.setEnabled(bool)
-    
-
+    def set_button_add_enabled(self, val: bool):
+        self.button_add.setEnabled(val)

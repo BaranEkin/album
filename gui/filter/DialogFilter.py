@@ -18,8 +18,7 @@ class DialogFilter(QDialog):
         self.frame_tree = FrameTreeAlbums(self.albums)
         self.frame_filter = FrameFilter()
         self.frame_filter.search_button.clicked.connect(self.filter_media)
-        
-        
+
         layout = QVBoxLayout()
         layout.addWidget(self.frame_tree)
         layout.addWidget(self.frame_filter)
@@ -27,10 +26,9 @@ class DialogFilter(QDialog):
         self.setWindowTitle("Süzgeç")
         self.setWindowIcon(QIcon("res/icons/Filter-2--Streamline-Sharp-Gradient--Free.png"))
 
-    
     def update_albums(self):
         self.albums = self.data_manager.get_all_albums()
-    
+
     def build_filter(self) -> MediaFilter:
         media_filter = MediaFilter(
             albums=self.frame_tree.get_selected_albums(),
@@ -50,10 +48,8 @@ class DialogFilter(QDialog):
         )
 
         return media_filter
-    
+
     def filter_media(self):
         media_filter = self.build_filter()
         self.media_list = self.data_manager.get_filtered_media(media_filter)
         self.accept()
-
-    

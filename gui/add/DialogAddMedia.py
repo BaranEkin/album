@@ -12,7 +12,7 @@ from gui.add.DialogUpload import DialogUpload
 from data.data_manager import DataManager
 
 import face_detection
-import file_operations
+from ops import file_ops
 
 
 class DialogAddMedia(QDialog):
@@ -30,7 +30,6 @@ class DialogAddMedia(QDialog):
         self.selected_media_path = ""
         self.detections_with_names = []
 
-
         self.setFixedSize(1350, 900)
 
         # Main layout of the dialog (horizontal layout for the 3 frames)
@@ -41,7 +40,7 @@ class DialogAddMedia(QDialog):
         self.frame_navigation = QFrame(self)
         self.frame_navigation.setFixedWidth(250)  # Set fixed width for frame_navigation
         self.frame_navigation_layout = QVBoxLayout(self.frame_navigation)
-        self.frame_navigation.setContentsMargins(0,0,0,0)
+        self.frame_navigation.setContentsMargins(0, 0, 0, 0)
 
         # Create and set up the folder tree view
         self.folder_tree = QTreeView(self.frame_navigation)
@@ -90,7 +89,7 @@ class DialogAddMedia(QDialog):
         self.frame_action = FrameAction(self.album_list, parent=self)
         self.frame_action.button_add.clicked.connect(self.on_media_add)
         self.frame_action.button_upload.clicked.connect(self.on_media_upload)
-        self.frame_action.setFixedWidth(250) 
+        self.frame_action.setFixedWidth(250)
         main_layout.addWidget(self.frame_action)
 
         # Set the layout for the dialog
@@ -112,7 +111,7 @@ class DialogAddMedia(QDialog):
         index = self.folder_tree.selectionModel().currentIndex()
         folder_path = self.file_system_model.filePath(index)
         self.current_folder_path = folder_path  # Store the current folder path
-        
+
         # Clear the media list and image label
         self.media_list.clear()
         self.image_label.clear()
@@ -130,7 +129,8 @@ class DialogAddMedia(QDialog):
                 if file_path not in self.media_paths_to_be_uploaded + self.media_paths_uploaded:
 
                     if os.path.isfile(file_path):
-                        if any(file_name.lower().endswith(ext) for ext in image_extensions + video_extensions + sound_extensions):
+                        if any(file_name.lower().endswith(ext) for ext in
+                               image_extensions + video_extensions + sound_extensions):
                             self.media_list.addItem(file_name)
 
     def on_media_selected(self, item):
@@ -141,15 +141,15 @@ class DialogAddMedia(QDialog):
         self.selected_media_path = os.path.join(self.current_folder_path, media_file_name)
 
         self.set_auto_date()
-        
+
         # Selected media is an image
-        if file_operations.get_file_type(self.selected_media_path) == 1:
-            
+        if file_ops.get_file_type(self.selected_media_path) == 1:
+
             self.frame_add_info.set_people_enable(False)
             self.detect_people()
             self.draw_identifications()
             self.image_label.set_image("temp/detections.jpg")
-        
+
         # Selected media is a video
         else:
             self.image_label.clear()
@@ -166,7 +166,7 @@ class DialogAddMedia(QDialog):
         image = Image.open(self.selected_media_path)
         self.detections_with_names = face_detection.detect_people(image)
         self.image_label.detections_with_names = self.detections_with_names
-    
+
     def draw_identifications(self):
         image = Image.open(self.selected_media_path)
         image = face_detection.draw_identifications(image, self.detections_with_names)
@@ -185,7 +185,7 @@ class DialogAddMedia(QDialog):
     def get_people(self):
         people = ",".join([det[4] for det in self.detections_with_names if det[4] != ""])
         return people
-    
+
     def get_people_count(self):
         return len([det for det in self.detections_with_names if det[4] != ""])
 
@@ -239,10 +239,10 @@ class DialogAddMedia(QDialog):
             self.media_to_be_uploaded.append(media)
 
         assert len(self.media_paths_to_be_uploaded) == len(self.media_to_be_uploaded)
-        
+
         dialog_upload = DialogUpload(
-            self.media_paths_to_be_uploaded, 
-            self.media_to_be_uploaded, 
+            self.media_paths_to_be_uploaded,
+            self.media_to_be_uploaded,
             self.data_manager
         )
 
@@ -250,7 +250,7 @@ class DialogAddMedia(QDialog):
             self.media_paths_uploaded.extend(self.media_paths_to_be_uploaded)
             self.media_paths_to_be_uploaded = []
             self.media_data_to_be_uploaded = []
-            
+
         self.media_to_be_uploaded = []
         self.clear_fields_for_new_media()
 
@@ -259,7 +259,6 @@ class DialogAddMedia(QDialog):
         self.frame_action.set_button_add_enabled(True)
         self.frame_action.update_button_upload(0)
 
-    
     def clear_fields_for_new_media(self):
         self.frame_add_info.set_people("")
 
@@ -279,13 +278,11 @@ class DialogAddMedia(QDialog):
     def set_auto_date(self):
         date_option = self.frame_add_info.get_date_option()
         if date_option == 1:
-            auto_date = file_operations.get_date_from_filename(self.selected_media_path)
+            auto_date = file_ops.get_date_from_filename(self.selected_media_path)
             self.frame_add_info.set_date(auto_date)
             self.frame_add_info.set_date_est(7)
-        
-        elif date_option == 2:
-            auto_date = file_operations.get_date_from_file_metadata(self.selected_media_path)
-            self.frame_add_info.set_date(auto_date)
-            self.frame_add_info.set_date_est(7)
-        
 
+        elif date_option == 2:
+            auto_date = file_ops.get_date_from_file_metadata(self.selected_media_path)
+            self.frame_add_info.set_date(auto_date)
+            self.frame_add_info.set_date_est(7)

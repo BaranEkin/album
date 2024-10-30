@@ -7,6 +7,7 @@ from tqdm import tqdm
 # Global bucket name
 BUCKET = "album-2-bucket"
 
+
 def upload_directory_to_s3(root_dir):
     """
     Uploads the contents of a local directory to an S3 bucket, preserving the structure.

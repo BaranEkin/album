@@ -1,5 +1,7 @@
 import os
 import datetime
+from typing import Union
+
 import boto3
 
 from io import BytesIO
@@ -151,11 +153,11 @@ def check_s3() -> bool:
         return False
 
 
-def upload_to_s3_bucket(path, key, prefix=""):
+def upload_to_s3_bucket(path: Union[str, bytes, os.PathLike], key, prefix=""):
     """Upload a file to a specified S3 bucket path with optional prefix.
 
     Args:
-        path (str): The local path of the file to upload.
+        path (Union[str, bytes, os.PathLike]): The local path of the file to upload.
         key (str): The name of the file in the S3 bucket.
         prefix (str, optional): Optional prefix path in the S3 bucket. Defaults to "".
 

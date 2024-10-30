@@ -3,9 +3,8 @@ import os
 from PyQt5.QtGui import QImage
 from PIL import Image
 
-import aws
-import file_operations
 from config.config import Config
+from ops import cloud_ops, file_ops
 
 
 class MediaLoader:
@@ -28,7 +27,7 @@ class MediaLoader:
             QImage: The retrieved image, either from local storage or from AWS CloudFront.
         """
 
-        if file_operations.check_file_exists(self.media_dir, image_key):
+        if file_ops.check_file_exists(self.media_dir, image_key):
             print("Image is found on local storage.")
             try:
                 image = QImage(os.path.join(self.media_dir, image_key))
@@ -41,7 +40,7 @@ class MediaLoader:
         else:
             print("Image is not found on local storage.")
             try:
-                pil_image = aws.get_image_from_cloudfront(image_key, prefix="media/")
+                pil_image = cloud_ops.get_image_from_cloudfront(image_key, prefix="media/")
                 print("Image retrieved from AWS S3 bucket.")
                 if self.local_storage_enabled:
                     try:
@@ -79,7 +78,7 @@ class MediaLoader:
             QImage: The retrieved thumbnail, either from local storage or from AWS CloudFront.
         """
 
-        if file_operations.check_file_exists(self.thumbnails_dir, thumbnail_key):
+        if file_ops.check_file_exists(self.thumbnails_dir, thumbnail_key):
             try:
                 image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
                 return image
@@ -89,7 +88,7 @@ class MediaLoader:
         else:
             print(f"Thumbnail is not found on local storage: {thumbnail_key}")
             try:
-                pil_image = aws.get_image_from_cloudfront(thumbnail_key, prefix="thumbnails/")
+                pil_image = cloud_ops.get_image_from_cloudfront(thumbnail_key, prefix="thumbnails/")
                 try:
                     self.save_thumbnail(pil_image, thumbnail_key)
                     image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
@@ -117,7 +116,7 @@ class MediaLoader:
             bool: True if the file exists, False otherwise.
         """
 
-        return file_operations.check_file_exists(self.media_dir, media_key)
+        return file_ops.check_file_exists(self.media_dir, media_key)
 
     def play_video_audio_from_cloud(self, media_key: str):
         """Download a media file from cloud storage, save it locally, and play it.
@@ -126,15 +125,15 @@ class MediaLoader:
             media_key (str): Key of the media.
         """
 
-        media_data = aws.get_video_audio_from_cloudfront(media_key, "media/")
+        media_data = cloud_ops.get_video_audio_from_cloudfront(media_key, "media/")
 
         if self.local_storage_enabled:
             path = os.path.join(self.media_dir, media_key)
         else:
-            path = "temp/media" + file_operations.get_file_extension(media_key)
+            path = "temp/media" + file_ops.get_file_extension(media_key)
 
-        file_operations.save_video_audio(media_data, path)
-        file_operations.play_video_audio(path)
+        file_ops.save_video_audio(media_data, path)
+        file_ops.play_video_audio(path)
 
     def play_video_audio_from_local(self, media_key: str):
         """Play a media file from the local media directory.
@@ -144,7 +143,7 @@ class MediaLoader:
         """
 
         path = os.path.join(self.media_dir, media_key)
-        file_operations.play_video_audio(path)
+        file_ops.play_video_audio(path)
 
     def save_image(self, image: Image, image_key: str):
         """Save an image to the local media directory in JPEG format.
@@ -165,7 +164,7 @@ class MediaLoader:
 
         Args:
             image (PIL.Image): The image to be saved as a thumbnail.
-            thumbnail_key (str): Key of the media thumbnail to determine the save location within the thumbnails directory.
+            thumbnail_key (str): Key of the media thumbnail to determine the save location.
         """
 
         path = os.path.join(self.thumbnails_dir, thumbnail_key)

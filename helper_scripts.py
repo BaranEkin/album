@@ -25,7 +25,7 @@ def resize_thumbnails(folder_path):
             if not os.path.exists(directory):
                 os.makedirs(directory)
             img.save(new_path, "JPEG")
-            #os.remove(path)
+            # os.remove(path)
             # print(i)
 
         except Exception as e:

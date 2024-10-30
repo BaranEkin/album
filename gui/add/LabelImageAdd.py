@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtGui import QPixmap, QImage, QMouseEvent
-from PyQt5.QtCore import  Qt, QSize
+from PyQt5.QtCore import Qt, QSize
 
 from gui.add.DialogAssignPerson import DialogAssignPerson
 
@@ -14,7 +14,7 @@ class LabelImageAdd(QLabel):
         self.original_image_size = None
         self.displayed_pixmap_size = QSize(800, 500)
         self.detections_with_names = []
-    
+
     def set_image(self, image_path: str):
 
         try:
@@ -39,8 +39,7 @@ class LabelImageAdd(QLabel):
 
         # Check if the mouse click is inside the image area (exclude padding)
         if margin_x <= event_x <= (margin_x + displayed_size.width()) and \
-            margin_y <= event_y <= (margin_y + displayed_size.height()):
-            
+                margin_y <= event_y <= (margin_y + displayed_size.height()):
             # Calculate the position inside the displayed pixmap
             click_x = event_x - margin_x
             click_y = event_y - margin_y
@@ -54,15 +53,14 @@ class LabelImageAdd(QLabel):
             original_y = int(click_y * scale_h)
 
             return original_x, original_y
-        
+
     def find_detection_index(self, x, y):
         for i, det in enumerate(self.detections_with_names):
             det_x, det_y, det_w, det_h, _, _ = det
-            if det_x <= x and x <= det_x + det_w:
-                if det_y <= y and y <= det_y + det_h:
+            if det_x <= x <= det_x + det_w:
+                if det_y <= y <= det_y + det_h:
                     return i
         return None
-
 
     def mousePressEvent(self, event: QMouseEvent):
         if self.pixmap():
@@ -95,9 +93,8 @@ class LabelImageAdd(QLabel):
                 self.detections_with_names.append(detection)
                 self.parent().parent().update_identifications(self.detections_with_names)
 
-
     def show_assign_person_dialog(self, position, person):
-        
+
         dialog = DialogAssignPerson(person, self.people_list, self)
         dialog.move(position)
         previous_input = dialog.input_field.text()

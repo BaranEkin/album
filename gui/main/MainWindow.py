@@ -25,8 +25,8 @@ from gui.add.DialogAddMedia import DialogAddMedia
 from gui.main.DialogPeople import DialogPeople
 from gui.main.DialogNotes import DialogNotes
 
-import aws
 import face_detection
+from ops import cloud_ops
 
 
 class MainWindow(QMainWindow):
@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
         self.media_loader = media_loader
 
         """
-        if aws.check_s3():
+        if cloud_ops.check_s3():
             success = self.data_manager.update_local_db()
             if not success:
                 pass
@@ -410,7 +410,7 @@ class MainWindow(QMainWindow):
         self.fit_to_window()
 
     def show_add_media_dialog(self):
-        if not aws.check_s3():
+        if not cloud_ops.check_s3():
             pass
         dialog = DialogAddMedia(self.data_manager)
         dialog.exec_()

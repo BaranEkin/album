@@ -1,8 +1,9 @@
-from PyQt5.QtWidgets import ( QDialog, QVBoxLayout, 
-                             QListWidget, QDialogButtonBox, 
+from PyQt5.QtWidgets import (QDialog, QVBoxLayout,
+                             QListWidget, QDialogButtonBox,
                              QLineEdit, QListWidgetItem)
 
 from gui.constants import Constants
+
 
 class DialogAssignPerson(QDialog):
     def __init__(self, person, people_list, parent=None):
@@ -42,7 +43,7 @@ class DialogAssignPerson(QDialog):
         """Update the list widget based on the input text."""
         # Clear the current list
         self.list_widget.clear()
-        
+
         # Get the current text from the input field
         text = self.input_field.text()
 

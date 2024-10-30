@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QFrame, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
+    QFrame, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QComboBox, QGroupBox, QTextEdit, QRadioButton, QButtonGroup, QCompleter
 )
 from PyQt5.QtCore import Qt
@@ -9,7 +9,7 @@ from gui.constants import Constants
 class FrameAddInfo(QFrame):
     def __init__(self, parent=None):
         super().__init__()
-        #self.setFixedSize(790, 350)
+        # self.setFixedSize(790, 350)
 
         # Main vertical layout
         main_layout = QVBoxLayout(self)
@@ -41,11 +41,11 @@ class FrameAddInfo(QFrame):
         locations = ["New York", "Los Angeles", "San Francisco", "Chicago", "Houston"]
         self.combo_location.addItems(locations)
         self.combo_location.setCurrentText("")
-        
+
         completer = QCompleter(locations)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.combo_location.setCompleter(completer)
-        
+
         frame_location_layout.addWidget(label_location)
         frame_location_layout.addWidget(self.combo_location)
         main_layout.addWidget(frame_location)
@@ -95,7 +95,7 @@ class FrameAddInfo(QFrame):
 
         group_date.setLayout(date_layout)
         frame_date_and_tags_layout.addWidget(group_date)
-        
+
         # Tags input on the right wrapped in a group box
         group_tags = QGroupBox(Constants.LABEL_TAGS)
         tags_layout = QVBoxLayout()
@@ -104,7 +104,7 @@ class FrameAddInfo(QFrame):
         tags_layout.addWidget(self.label_tags)
         tags_layout.addWidget(self.input_tags)
         group_tags.setLayout(tags_layout)
-        
+
         frame_date_and_tags_layout.addWidget(group_tags)
         main_layout.addWidget(frame_date_and_tags)
 
@@ -134,19 +134,19 @@ class FrameAddInfo(QFrame):
 
     def get_title(self):
         return self.input_title.text()
-    
+
     def set_title(self, title):
         self.input_title.setText(title)
-    
+
     def get_location(self):
         return self.combo_location.currentText()
-    
+
     def set_location(self, location):
         self.combo_location.setCurrentText(location)
-    
+
     def get_date(self):
         return self.input_date.text()
-    
+
     def get_date_option(self):
         selected_option = self.radio_group_date.checkedButton()
         if selected_option:
@@ -158,35 +158,33 @@ class FrameAddInfo(QFrame):
             elif selected_name == Constants.LABEL_RADIO_DATE_FIXED:
                 return 3
         return 0
-    
+
     def set_date(self, date):
         self.input_date.setText(date)
-    
+
     def get_date_est(self):
         return 7 - self.combo_date_est.currentIndex()
-    
+
     def set_date_est(self, date_est):
         self.combo_date_est.setCurrentIndex(7 - date_est)
-    
+
     def get_tags(self):
         return self.input_tags.text()
-    
+
     def set_tags(self, tags):
         self.input_tags.setText(tags)
-    
+
     def get_notes(self):
         return self.input_notes.toPlainText()
-    
+
     def set_notes(self, notes):
         self.input_notes.setPlainText(notes)
-    
+
     def get_people(self):
         return self.input_people.toPlainText().replace("\n", ",")
-    
+
     def set_people(self, people: str):
         self.input_people.setPlainText(people.replace(",", "\n"))
-    
+
     def set_people_enable(self, enable: bool):
         self.input_people.setEnabled(enable)
-
-        

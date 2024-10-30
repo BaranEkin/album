@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
-    QFrame, QLabel, QLineEdit, QCheckBox, QComboBox, QGroupBox, 
-    QSpinBox, QHBoxLayout, QVBoxLayout, QPushButton
+    QFrame, QLabel, QLineEdit, QCheckBox, QComboBox, QGroupBox,
+    QHBoxLayout, QVBoxLayout, QPushButton
 )
 from PyQt5.QtCore import Qt
 
@@ -11,14 +11,14 @@ class FrameFilter(QFrame):
     def __init__(self):
         super().__init__()
 
-        self.setFixedSize(550,350)
+        self.setFixedSize(550, 350)
 
         # Title filter
         self.title_input = QLineEdit()
         self.title_input.setFixedWidth(485)
         self.label_title = QLabel("Başlık:")
         self.label_title.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        
+
         title_layout = QHBoxLayout()
         title_layout.addWidget(self.label_title)
         title_layout.addWidget(self.title_input)
@@ -38,11 +38,11 @@ class FrameFilter(QFrame):
         self.date_start = QLineEdit()
         self.date_start.setPlaceholderText("Başlangıç")
         self.date_start.setFixedWidth(120)
-        
+
         self.date_end = QLineEdit()
         self.date_end.setPlaceholderText("Bitiş")
         self.date_end.setFixedWidth(120)
-        
+
         self.date_range_checkbox = QCheckBox("Aralık")
         self.date_end.setEnabled(False)  # Initially disable the end date input
 
@@ -110,7 +110,7 @@ class FrameFilter(QFrame):
         days_of_week_layout.addWidget(label_days_of_week)
         days_of_week_layout.addWidget(self.days_of_week_input)
         additional_filters_layout.addLayout(days_of_week_layout)
-        
+
         date_layout.addLayout(date_range_layout)
         date_layout.addLayout(additional_filters_layout)
         date_group_box.setLayout(date_layout)
@@ -120,7 +120,7 @@ class FrameFilter(QFrame):
         self.type_dropdown = QComboBox()
         self.type_dropdown.addItems(["Fotoğraf", "Video", "Ses"])
         self.type_dropdown.setFixedWidth(80)
-        
+
         self.extension_input = QLineEdit()
         self.extension_input.setFixedWidth(40)
 
@@ -149,11 +149,10 @@ class FrameFilter(QFrame):
         layout_extras.addWidget(group_box_file)
         layout_extras.addLayout(tags_layout)
 
-
         # People and People Count filter (same row)
         self.people_input = QLineEdit()
         self.people_input.setFixedWidth(283)
-        
+
         self.people_count_min = QLineEdit()
         self.people_count_min.setFixedWidth(40)
         self.people_count_max = QLineEdit()
@@ -174,7 +173,6 @@ class FrameFilter(QFrame):
         people_layout.addWidget(self.people_count_max)
         people_layout.addWidget(self.people_count_range_checkbox)
 
-        
         # Layout for the entire frame
         main_layout = QVBoxLayout()
         main_layout.addLayout(title_layout)
@@ -185,7 +183,6 @@ class FrameFilter(QFrame):
         bottom_row_layout = QHBoxLayout()
         bottom_row_layout.addWidget(date_group_box)
 
-        
         group_box_sort = QGroupBox("Sırala")
         group_box_sort.setFixedHeight(100)
         layout_sort_primary = QHBoxLayout()
@@ -244,62 +241,61 @@ class FrameFilter(QFrame):
 
     def get_title(self):
         return turkish_upper(self.title_input.text().strip())
-    
+
     def get_location(self):
         return turkish_upper(self.location_input.text().strip())
-    
+
     def get_people(self):
         return self.people_input.text().strip()
-    
+
     def get_days(self):
         if self.additional_date_filters_checkbox.isChecked():
             return self.days_input.text().strip()
         return ""
-    
+
     def get_months(self):
         if self.additional_date_filters_checkbox.isChecked():
             return self.months_input.text().strip()
         return ""
-    
+
     def get_years(self):
         if self.additional_date_filters_checkbox.isChecked():
             return self.years_input.text().strip()
         return ""
-    
+
     def get_days_of_week(self):
         if self.additional_date_filters_checkbox.isChecked():
             return self.days_of_week_input.text().strip()
         return ""
-    
+
     def get_date_range(self):
         if self.date_range_checkbox.isChecked():
-            return (self.date_start.text().strip(), self.date_end.text().strip())
-        return (self.date_start.text().strip(), "")
-    
+            return self.date_start.text().strip(), self.date_end.text().strip()
+        return self.date_start.text().strip(), ""
+
     def get_people_count_range(self):
         if self.people_count_range_checkbox.isChecked():
             if self.people_count_min.text().isdigit():
                 count_min = int(self.people_count_min.text())
                 if self.people_count_max.text().isdigit():
                     count_max = int(self.people_count_max.text())
-                    return((count_min, count_max))
-                return((count_min, -1))
-            return((-1, -1))
+                    return count_min, count_max
+                return count_min, -1
+            return -1, -1
         else:
             if self.people_count_min.text().isdigit():
                 count_min = int(self.people_count_min.text())
-                return ((count_min, -1))
-            return ((-1, -1))
-    
+                return count_min, -1
+            return -1, -1
+
     def get_file_type(self):
         return int(self.type_dropdown.currentIndex())
-    
+
     def get_ext(self):
         return self.extension_input.text().strip()
-    
+
     def get_tags(self):
         return self.tags_input.text().strip()
-    
-    def get_sort(self):
-        return (int(self.dropdown_sort_primary.currentIndex()), int(self.dropdown_sort_secondary.currentIndex()))
 
+    def get_sort(self):
+        return int(self.dropdown_sort_primary.currentIndex()), int(self.dropdown_sort_secondary.currentIndex())

@@ -13,9 +13,11 @@ class LabelImageViewer(QLabel):
         self.original_size = None
         self.setScaledContents(True)
 
-        self.is_panning = False  
-        self.pan_start_position = QPoint()  
+        self.is_panning = False
+        self.pan_start_position = QPoint()
         self.mouse_press_time = QDateTime.currentDateTime()
+        self.vertical_scroll_start = None
+        self.horizontal_scroll_start = None
 
         self.is_image = True
         self.media_loader = media_loader
@@ -34,15 +36,16 @@ class LabelImageViewer(QLabel):
                     self.horizontal_scroll_start = self.scroll_area.horizontalScrollBar().value()
                     self.vertical_scroll_start = self.scroll_area.verticalScrollBar().value()
 
-            
             elif event.button() == Qt.RightButton:
                 self.zoom_out(event.pos())
-        
+
         else:
             if self.media_loader.check_video_audio(self.current_media_key):
                 self.media_loader.play_video_audio_from_local(self.current_media_key)
             else:
-                self.show_download_dialog(self.media_loader, self.current_media_key)
+                # Show download dialog
+                dialog = DialogDownload(self.media_loader, self.current_media_key)
+                dialog.exec_()
 
     def mouseMoveEvent(self, event):
         if self.is_image:
@@ -63,11 +66,11 @@ class LabelImageViewer(QLabel):
                 # If the time difference is short enough, consider it a click for zoom
                 time_diff = self.mouse_press_time.msecsTo(QDateTime.currentDateTime())
                 if time_diff < 200:
-                    self.zoom_in(event.pos())  
-                
+                    self.zoom_in(event.pos())
+
                 elif self.is_panning:
                     self.is_panning = False
-                
+
     def zoom_in(self, click_pos):
         if self.scale_modifier < 5.0:
             self.scale_modifier += 0.5
@@ -79,11 +82,6 @@ class LabelImageViewer(QLabel):
         elif self.scale_modifier > 0:
             self.scale_modifier = 0
         self.update_image_size(click_pos)
-
-    def show_download_dialog(self, media_loader, media_key):
-        dialog = DialogDownload(media_loader, media_key)
-        dialog.exec_()
-
 
     def update_image_size(self, click_pos):
         if not self.pixmap():

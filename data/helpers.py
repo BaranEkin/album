@@ -2,7 +2,6 @@ from typing import Literal
 from datetime import datetime
 from time import time_ns
 
-
 turkish_months = {
     "ocak": 1,
     "şubat": 2,
@@ -53,7 +52,6 @@ weekdays_in_turkish = {
     6: "pazar"
 }
 
-
 turkish_uppercase_map = str.maketrans({
     "i": "İ",  # Convert 'i' to 'İ'
     "ı": "I",  # Convert 'ı' to 'I'
@@ -82,9 +80,8 @@ def legacy_time_in_unix_subsec(legacy_time_str: str) -> float:
 
 
 def normalize_date(date_str: str) -> str:
-
     date_str = date_str.strip().lower()
-    
+
     # Check if the date is in "DD.MM.YYYY" format directly.
     try:
         # Try parsing as "DD.MM.YYYY".
@@ -118,7 +115,8 @@ def normalize_date(date_str: str) -> str:
     return ""
 
 
-def date_includes(date_str: str, precision: int, input_list: list[str], mode: Literal["day", "month", "year", "weekday"]):
+def date_includes(date_str: str, precision: int, input_list: list[str],
+                  mode: Literal["day", "month", "year", "weekday"]):
     """
     Check if a given date includes at least one of the specified values based on precision and mode.
 
@@ -131,13 +129,13 @@ def date_includes(date_str: str, precision: int, input_list: list[str], mode: Li
     Returns:
     bool: True if the date includes at least one of the given values based on the mode, False otherwise.
     """
-    
+
     # Parse the date string
     try:
         day, month, year = date_str.lower().split(".")
     except ValueError:
         raise ValueError("Date must be in 'DD.MM.YYYY' format.")
-    
+
     # Mode-based logic
     if mode == "day":
         if precision != 7:
@@ -145,7 +143,7 @@ def date_includes(date_str: str, precision: int, input_list: list[str], mode: Li
         # Strip leading zeros from the day for comparison
         day_without_leading_zeros = str(int(day))
         return day in input_list or day_without_leading_zeros in input_list
-    
+
     elif mode == "month":
         if precision not in [3, 7]:
             return False
@@ -153,16 +151,16 @@ def date_includes(date_str: str, precision: int, input_list: list[str], mode: Li
         month_without_leading_zeros = str(month_number)
         month_name = months_in_turkish[month_number]
         return (
-            month_without_leading_zeros in input_list or
-            month_name in input_list or
-            month in input_list
+                month_without_leading_zeros in input_list or
+                month_name in input_list or
+                month in input_list
         )
-    
+
     elif mode == "year":
         if precision not in [1, 3, 7]:
             return False
         return year in input_list
-    
+
     elif mode == "weekday":
         if precision != 7:
             return False
@@ -174,10 +172,10 @@ def date_includes(date_str: str, precision: int, input_list: list[str], mode: Li
         weekday_name = weekdays_in_turkish[weekday_number]
         weekday_number_in_input_format = str(weekday_number + 1)
         return (
-            weekday_name in input_list or
-            weekday_number_in_input_format in input_list or
-            weekday_number_in_input_format.zfill(2) in input_list
+                weekday_name in input_list or
+                weekday_number_in_input_format in input_list or
+                weekday_number_in_input_format.zfill(2) in input_list
         )
-    
+
     else:
         raise ValueError("Mode must be 'day', 'month', 'year', or 'weekday'.")

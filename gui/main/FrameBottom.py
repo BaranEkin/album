@@ -22,18 +22,18 @@ class FrameBottom(QFrame):
         self.layout_cloud = QVBoxLayout()
         self.layout_cloud.setContentsMargins(0, 0, 0, 0)  # Remove margins to make the label start at the top
         self.layout_cloud.setSpacing(0)  # Remove spacing
-        
+
         # Create and center the QLabel, setting alignment to the top of the frame
         self.top_label = QLabel("")
         self.top_label.setAlignment(Qt.AlignCenter)
-        
+
         # Ensure that the label starts at y=0 by setting alignment and margins
-        self.layout_cloud.addWidget(self.top_label, alignment=Qt.AlignTop) 
-        
+        self.layout_cloud.addWidget(self.top_label, alignment=Qt.AlignTop)
+
         # Create a group box at the bottom with a label saying "cloud"
         self.group_box_cloud = QGroupBox(Constants.GROUP_BOX_CLOUD)
         self.group_box_cloud.setFixedSize(160, 70)
-        
+
         # Create horizontal layout for the buttons inside the group box
         self.button_layout = QHBoxLayout()
         self.button_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
@@ -165,4 +165,3 @@ class FrameBottom(QFrame):
         else:
             self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png"))
             self.slideway_direction = "F"
-

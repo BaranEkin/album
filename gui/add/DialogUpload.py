@@ -1,13 +1,12 @@
-import sys
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QProgressBar, QLabel, QPushButton, QMessageBox
+    QDialog, QVBoxLayout, QProgressBar, QLabel, QMessageBox
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal
 
-import aws
 from config.config import Config
 from data.data_manager import DataManager
+from ops import cloud_ops
 
 
 class UploadThread(QThread):
@@ -28,20 +27,20 @@ class UploadThread(QThread):
             for i, media_path in enumerate(self.media_paths):
                 if not self._is_running:
                     break
-                
+
                 media = self.media_list[i]
                 thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, media.thumbnail_key)
-                
+
                 self.current_operation.emit(f"Medya bulut sistemine yükleniyor:\n\n{media_path}")
                 try:
-                    aws.upload_to_s3_bucket(path=media_path, key=media.media_key, prefix="media/")
-                    aws.upload_to_s3_bucket(path=thumbnail_path, key=media.thumbnail_key, prefix="thumbnails/")
-                
+                    cloud_ops.upload_to_s3_bucket(path=media_path, key=media.media_key, prefix="media/")
+                    cloud_ops.upload_to_s3_bucket(path=thumbnail_path, key=media.thumbnail_key, prefix="thumbnails/")
+
                 except Exception as e:
                     self.error_occurred.emit(str(e))
                     return
                 self.progress.emit((i + 1) * 80 // len(self.media_paths))
-            
+
             try:
                 self.current_operation.emit(f"Veri tabanı güncelleniyor...")
                 success = self.data_manager.update_local_db()
@@ -51,12 +50,12 @@ class UploadThread(QThread):
                 self.progress.emit(90)
 
                 self.current_operation.emit(f"Veri tabanı yükleniyor...")
-                aws.upload_to_s3_bucket(path=f"{Config.DATABASE_DIR}/album.db", key="album_cloud.db")
-            
+                cloud_ops.upload_to_s3_bucket(path=f"{Config.DATABASE_DIR}/album.db", key="album_cloud.db")
+
             except Exception as e:
                 self.error_occurred.emit(str(e))
                 return
-            
+
             self.progress.emit(100)
             self.upload_finished.emit()
 
@@ -110,7 +109,7 @@ class DialogUpload(QDialog):
         error_dialog.setIcon(QMessageBox.Critical)
         error_dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Cancel)
         error_dialog.setDefaultButton(QMessageBox.Retry)
-        
+
         result = error_dialog.exec_()
         if result == QMessageBox.Retry:
             self.retry = True
@@ -127,4 +126,3 @@ class DialogUpload(QDialog):
             self.thread.stop()  # Stop the thread if running
             self.thread.wait()  # Wait for the thread to finish
         super().closeEvent(event)
-

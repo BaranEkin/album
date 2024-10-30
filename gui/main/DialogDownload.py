@@ -2,9 +2,6 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QMessageBox
 from media_loader import MediaLoader
 
-import os
-import aws
-
 
 class DownloadThread(QThread):
     current_operation = pyqtSignal(str)

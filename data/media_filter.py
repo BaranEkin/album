@@ -1,7 +1,7 @@
 class MediaFilter:
     def __init__(
-            self, 
-            albums: tuple[str, ...], 
+            self,
+            albums: tuple[str, ...],
             title: str,
             location: str,
             people: str,
@@ -15,7 +15,6 @@ class MediaFilter:
             years: str,
             days_of_week: str,
             sort: tuple[int, int]):
-
         self.albums = albums
         self.title = title
         self.location = location
@@ -30,4 +29,3 @@ class MediaFilter:
         self.years = years
         self.days_of_week = days_of_week
         self.sort = sort
-        

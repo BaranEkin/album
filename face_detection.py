@@ -39,10 +39,10 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             # Define top-left and bottom-right corners of the rectangle
             top_left = (x, y)
             bottom_right = (x + w, y + h)
-            
+
             # Set color based on whether a name is provided
             box_color = (255, 255, 255) if name == "" else (0, 200, 0)
-            
+
             # Draw the rectangle (box) for the face
             draw.rectangle([top_left, bottom_right], outline=box_color, width=box_thickness)
 
@@ -51,7 +51,7 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             name = name[:surname_index] + '\n' + name[surname_index + 1:] if surname_index != -1 else name
 
             # Calculate the text's default position above the box
-            text_x, text_y = x + 0.5 * font_size, y - 2.5 * font_size  
+            text_x, text_y = x + 0.5 * font_size, y - 2.5 * font_size
 
             # Get the bounding box of the text for background purposes
             text_bbox = draw.textbbox((text_x, text_y), name, font=font)
@@ -67,9 +67,9 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
 
             # If text goes above the image, move it below the box
             if text_y < 0:
-                text_y = y + h + 0.5 * font_size 
-            
-            # If text goes to the right of the image, move it to the left
+                text_y = y + h + 0.5 * font_size
+
+                # If text goes to the right of the image, move it to the left
             if text_x + background_width > image_width:
                 text_x = x - background_width - 0.5 * font_size
 
@@ -78,7 +78,8 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
 
             # Draw the background rectangle behind the text
             draw.rectangle(
-                [(text_x - padding_x, text_y - padding_y), (text_x + text_width + padding_x, text_y + text_height + padding_y)],
+                [(text_x - padding_x, text_y - padding_y),
+                 (text_x + text_width + padding_x, text_y + text_height + padding_y)],
                 fill=background_color
             )
 
@@ -106,7 +107,7 @@ def detect_people(image: Image):
     Raises:
         Exception: If an error occurs during detection, an empty list is returned.
     """
-        
+
     try:
         image = np.array(image)
         detection_results = detect_faces(detector_backend="yolov8", img=image, align=False, expand_percentage=0)
@@ -118,7 +119,7 @@ def detect_people(image: Image):
                 detections.append([box.x, box.y, box.w, box.h, "", "auto"])
 
         sorted_detections = sorted(detections, key=lambda x: x[0])
-        
+
         return sorted_detections
     except Exception as e:
         print(e)
@@ -137,7 +138,7 @@ def preprocess_detections(detections_with_names):
 
     # Remove manually added detections with no name
     detections_with_names = [det for det in detections_with_names if not (det[4] == "" and det[5] == "manual")]
-    
+
     # Sort detections on x
     detections_with_names = sorted(detections_with_names, key=lambda x: x[0])
     return detections_with_names
@@ -159,11 +160,10 @@ def build_detections_with_names(detections_str: str, names_str: str):
 
     names = names_str.split(",")
     detections = [list(map(int, det_str.split("-"))) for det_str in detections_str.split(",")]
-    
+
     assert len(names) == len(detections)
-    
+
     for i, det in enumerate(detections):
         det.extend([names[i], "auto"])
-    
-    return detections
 
+    return detections

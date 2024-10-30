@@ -1,23 +1,69 @@
 import re
 import uuid
+from typing import Sequence, Literal
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, and_, or_, select
 
-import aws
-import file_operations
 from config.config import Config
 from data.orm import Album, Media
 from data.media_filter import MediaFilter
 from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_date, date_includes
+from ops import cloud_ops, file_ops
 
+
+def build_media(
+        path,
+        title,
+        location,
+        date_text,
+        date_est,
+        albums,
+        tags,
+        notes,
+        people,
+        people_detect,
+        people_count
+) -> Media:
+    date = date_to_julian(date_text)
+    created_at = current_time_in_unix_subsec()
+
+    # UUID/GUID (Universally/Globally Unique Identifier) using UUID-4 Standard (Random)
+    media_id = str(uuid.uuid4().hex)
+
+    media_key, thumbnail_key = file_ops.add_image(media_id=media_id,
+                                                  media_path=path,
+                                                  date_text=date_text)
+
+    media = Media()
+    media.media_id = media_id
+    media.created_at = created_at
+    media.modified_at = created_at
+    media.media_key = media_key
+    media.thumbnail_key = thumbnail_key
+    media.title = title
+    media.location = location
+    media.date = date
+    media.date_text = date_text
+    media.date_est = date_est
+    media.tags = tags
+    media.notes = notes
+    media.albums = albums
+    media.people = people
+    media.people_detect = people_detect
+    media.people_count = people_count
+    media.extension = file_ops.get_file_extension(path)
+    media.type = file_ops.get_file_type(path)
+    media.private = 0
+
+    return media
 
 
 class DataManager:
     def __init__(self):
         self.engine_local = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album.db")
 
-    def get_all_media(self) -> list[Media]:
+    def get_all_media(self) -> Sequence[Media]:
         session = sessionmaker(bind=self.engine_local)()
         try:
             # Query the Media table, ordering by the 'date' column
@@ -36,10 +82,10 @@ class DataManager:
                     for person in people:
                         if person not in list_people:
                             list_people.append(person)
-        
+
         return sorted(list_people)
-    
-    def get_all_albums(self) -> list[Album]:
+
+    def get_all_albums(self) -> Sequence[Album]:
         session = sessionmaker(bind=self.engine_local)()
 
         try:
@@ -48,14 +94,13 @@ class DataManager:
         finally:
             session.close()
 
-    
     def get_all_album_paths_with_tags(self) -> list[tuple[str, str]]:
         album_list = self.get_all_albums()
 
         if album_list:
             # Create a mapping from tags to nodes for easy access
             tag_to_album = {item.tag: item for item in album_list}
-            
+
             # Create a list to store all paths with tags
             paths = []
 
@@ -83,10 +128,10 @@ class DataManager:
 
     def update_local_db(self) -> bool:
 
-        connect_success = aws.download_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album_cloud.db")
+        connect_success = cloud_ops.download_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album_cloud.db")
         if not connect_success:
             return False
-        
+
         engine_cloud = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album_cloud.db")
         session_local = sessionmaker(bind=self.engine_local)()
         session_cloud = sessionmaker(bind=engine_cloud)()
@@ -99,59 +144,9 @@ class DataManager:
             session_local.close()
             session_cloud.close()
 
-    def build_media(
-            self,
-            path,
-            title,
-            location,
-            date_text,
-            date_est,
-            albums,
-            tags,
-            notes,
-            people,
-            people_detect,
-            people_count
-    ) -> Media:
-
-        date = date_to_julian(date_text)
-        created_at = current_time_in_unix_subsec()
-
-        # UUID/GUID (Universally/Globally Unique Identifier) using UUID-4 Standard (Random)
-        media_id = str(uuid.uuid4().hex)
-
-        media_key, thumbnail_key = file_operations.add_image(media_id=media_id,
-                                                             media_path=path,
-                                                             date_text=date_text)
-
-
-        media = Media()
-        media.media_id = media_id
-        media.created_at = created_at
-        media.modified_at = created_at
-        media.media_key = media_key
-        media.thumbnail_key = thumbnail_key
-        media.title = title
-        media.location = location
-        media.date = date
-        media.date_text = date_text
-        media.date_est = date_est
-        media.tags = tags
-        media.notes = notes
-        media.albums = albums
-        media.people = people
-        media.people_detect = people_detect
-        media.people_count = people_count
-        media.extension = file_operations.get_file_extension(path)
-        media.type = file_operations.get_file_type(path)
-        media.private = 0
-
-        return media
-        
-
     def insert_media_list_to_local(self, media_list: list[Media]):
         session = sessionmaker(bind=self.engine_local)()
-        user_name = aws.get_user_name()
+        user_name = cloud_ops.get_user_name()
         try:
             for media in media_list:
                 media.user_name = user_name
@@ -160,14 +155,13 @@ class DataManager:
         finally:
             session.close()
 
-    
     def get_filtered_media(self, media_filter: MediaFilter) -> list[Media]:
-        
+
         session = sessionmaker(bind=self.engine_local)()
         try:
             # Query the Media table, ordering by the 'date' column
             media_list = session.execute(DataManager._build_selection(media_filter)).scalars().all()
-            
+
             if media_list:
                 if media_filter.days:
                     media_list = DataManager._apply_date_filter(media_list, media_filter.days, mode="day")
@@ -182,7 +176,6 @@ class DataManager:
         finally:
             session.close()
 
-    
     @staticmethod
     def _get_new_rows_from_cloud(session_cloud, session_local):
         local_media_ids = session_local.query(Media.media_id).all()
@@ -215,7 +208,6 @@ class DataManager:
             )
             session.add(new_media_copy)
 
-    
     @staticmethod
     def _build_selection(media_filter: MediaFilter):
         selection = select(Media)
@@ -279,38 +271,35 @@ class DataManager:
                 5: Media.extension
             }
             selection = selection.order_by(column_mapping[media_filter.sort[0]], column_mapping[media_filter.sort[1]])
-            
+
         return selection
 
     @staticmethod
     def _build_select_people(filter_string: str):
-        filter_condition = DataManager._build_filter_condition(filter_string, "search_people") 
+        filter_condition = DataManager._build_filter_condition(filter_string, "search_people")
         return select(Media).where(filter_condition)
-    
-    @staticmethod
-    def _apply_date_filter(result: list[Media], days: str, mode: str):
-        filtered_results = [media for media in result if date_includes(media.date_text, media.date_est, days.split(","), mode=mode)]
-        return filtered_results
 
+    @staticmethod
+    def _apply_date_filter(result: Sequence[Media], days: str, mode: Literal["day", "month", "year", "weekday"]):
+        filtered_results = [media for media in result if
+                            date_includes(media.date_text, media.date_est, days.split(","), mode=mode)]
+        return filtered_results
 
     @staticmethod
     def _parse_filter_string(expr: str, function_name: str):
 
         def search_people(key: str):
             return Media.people.op('GLOB')(f'*{key}*')
-        
-        
+
         def search_tags(key: str):
             return Media.tags.op('GLOB')(f'*{key}*')
-        
-        
+
         def search_title(key: str):
             return Media.title.op('GLOB')(f'*{key}*')
-        
-        
+
         def search_location(key: str):
             return Media.location.op('GLOB')(f'*{key}*')
-        
+
         # Handle + (AND) operator first (higher precedence)
         open_parens = 0
         for i, char in enumerate(expr):
@@ -322,7 +311,7 @@ class DataManager:
             elif open_parens == 0 and char == '+':
                 parts = expr.split('+', 1)
                 return and_(
-                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name), 
+                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
                     DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
 
         # Handle , (OR) operator second (lower precedence)
@@ -336,31 +325,28 @@ class DataManager:
             elif open_parens == 0 and char == ',':
                 parts = expr.split(',', 1)
                 return or_(
-                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name), 
+                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
                     DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
-        
+
         # If no AND/OR, this is a base condition
         return eval(expr, {f"{function_name}": locals().get(function_name)})
 
-
     @staticmethod
     def _build_filter_condition(filter_string: str, function_name: str):
-        
+
         def preprocess_expression(expr: str) -> str:
             """Replace custom operators with Python logical operators and wrap words in quotes"""
-            
+
             # Wrap all names (words) with function_name()
             expr = re.sub(r'([a-zA-ZıİğĞüÜşŞöÖçÇ_][a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_ ]*)', rf'{function_name}("\1")', expr)
 
             return expr
-        
+
         # Process the expression to replace the custom operators
         filter_string = preprocess_expression(filter_string)
         try:
             result_filter = DataManager._parse_filter_string(filter_string, function_name)
         except Exception as e:
             raise ValueError(f"Invalid expression: {e}")
-        
-        return result_filter
-    
 
+        return result_filter

@@ -3,22 +3,23 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from PIL import Image
 
-import aws
 import face_detection
 from media_loader import MediaLoader
 
 from config.config import Config
 from data.orm import Media
 from data.helpers import date_to_julian, legacy_time_in_unix_subsec, current_time_in_unix_subsec
+from ops import cloud_ops
 
 Config.read_config()
 media_loader = MediaLoader()
+
 
 def get_people_detect_str(image_key, people):
     try:
         if not isinstance(people, str):
             return None
-        
+
         image = media_loader.get_image(image_key)
         if Image is None:
             return None
@@ -29,15 +30,14 @@ def get_people_detect_str(image_key, people):
             return None
 
         detections = face_detection.detect_people(image)
-        
+
         if len(detections) == len(people_list):
             detections_str = ",".join(['-'.join(map(str, det[:4])) for det in detections])
             return detections_str
-        
+
         return None
     except Exception as e:
         return None
-
 
 
 def make_entry(old_entry, user_name):
@@ -68,31 +68,31 @@ def make_entry(old_entry, user_name):
 
     modified_at = current_time_in_unix_subsec()
 
-    return Media(title=title, 
-                 location=location, 
-                 date=date, 
+    return Media(title=title,
+                 location=location,
+                 date=date,
                  date_text=date_text,
-                 date_est=date_est, 
-                 thumbnail_key=thumbnail_key, 
+                 date_est=date_est,
+                 thumbnail_key=thumbnail_key,
                  media_key=media_key,
-                 type=mtype, 
-                 extension=extension, 
-                 private=private, 
+                 type=mtype,
+                 extension=extension,
+                 private=private,
                  people=people,
-                 people_count=people_count, 
-                 people_detect=people_detect, 
-                 notes=notes, 
-                 albums=albums, 
+                 people_count=people_count,
+                 people_detect=people_detect,
+                 notes=notes,
+                 albums=albums,
                  tags=tags,
-                 created_at=created_at, 
-                 modified_at = modified_at,
-                 user_name=user_name, 
+                 created_at=created_at,
+                 modified_at=modified_at,
+                 user_name=user_name,
                  media_id=media_id)
 
 
 if __name__ == "__main__":
     MEDIA_IDS = []
-    user_name = aws.get_user_name()
+    user_name = cloud_ops.get_user_name()
 
     # Create an SQLite database engine (or connect to the existing one)
     engine = create_engine("sqlite:///res/database/album.db")
