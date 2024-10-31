@@ -15,9 +15,11 @@ from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
-from data.media_filter import MediaFilter
 from media_loader import MediaLoader
+from logger import log
+from data.media_filter import MediaFilter
 from data.data_manager import DataManager
+from gui.message import show_message
 from gui.filter.DialogFilter import DialogFilter
 from gui.main.FrameBottom import FrameBottom
 from gui.main.ListModelThumbnail import ListModelThumbnail, ThumbnailDelegate
@@ -417,14 +419,13 @@ class MainWindow(QMainWindow):
             pass
         dialog = DialogAddMedia(self.data_manager)
         dialog.exec_()
-        self.media_data = self.data_manager.get_all_media()
-        self.refresh_media_data()
+
+        self.update_media_data(self.data_manager.get_all_media())
 
     def show_filter_dialog(self):
         if self.dialog_filter.exec_() == QDialog.Accepted:
 
-            self.media_data = self.dialog_filter.media_list
-            self.refresh_media_data()
+            self.update_media_data(self.dialog_filter.media_list)
         
         else:
             pass
@@ -443,19 +444,31 @@ class MainWindow(QMainWindow):
             location = self.selected_media.location
 
             media_filter = MediaFilter(date_range=(date, ""), location_exact=location)
-            self.media_data = self.data_manager.get_filtered_media(media_filter)
-            self.refresh_media_data()
+            self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         elif self.previous_media_data is not None:
-            self.media_data = self.previous_media_data.copy()
 
             if self.previous_index is not None:
-                self.refresh_media_data(self.previous_index)
+                self.update_media_data(self.previous_media_data.copy(), self.previous_index)
+            else:
+                self.update_media_data(self.previous_media_data.copy())
 
 
-    def refresh_media_data(self, index=0):
+    def update_media_data(self, new_media_data, index=0):
             
-            # Create and set the custom model
+            if new_media_data is None:
+                log("MainWindow.update_media_data", "Media data is None.", level="error")
+                show_message("Medyaları güncellerken bir sorun yaşandı.", level="error")
+                return
+            
+            elif len(new_media_data) == 0:
+                log("MainWindow.update_media_data", "Media data is empty, no media to display.", level="warning")
+                show_message("Gösterilecek medya bulunamadı.", level="warning")
+                
+            # Update media_data
+            self.media_data = new_media_data
+
+            # Refresh the thumbnails and reset the index
             thumbnail_keys = [media.thumbnail_key for media in self.media_data]
             self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
             self.thumbnail_list.setModel(self.thumbnail_model)

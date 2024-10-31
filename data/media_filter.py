@@ -31,3 +31,7 @@ class MediaFilter:
         self.years = years
         self.days_of_week = days_of_week
         self.sort = sort
+
+    def __str__(self):
+        # Return a single-line string of the instance's attributes as a dictionary
+        return str(self.__dict__)

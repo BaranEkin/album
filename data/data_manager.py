@@ -5,6 +5,7 @@ from typing import Sequence, Literal
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, and_, or_, select
 
+from logger import log
 from config.config import Config
 from data.orm import Album, Media
 from data.media_filter import MediaFilter
@@ -171,6 +172,11 @@ class DataManager:
                     media_list = DataManager._apply_date_filter(media_list, media_filter.years, mode="year")
                 if media_filter.days_of_week:
                     media_list = DataManager._apply_date_filter(media_list, media_filter.days_of_week, mode="weekday")
+            
+            if len(media_list) == 0:
+                log("DataManager.get_filtered_media", f"Filter returned no results. Used Filter: {media_filter}", level="warning")
+            else:
+                log("DataManager.get_filtered_media", f"Filter returned {len(media_list)} results. Used Filter: {media_filter}")
 
             return media_list
         finally:
