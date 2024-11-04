@@ -31,7 +31,7 @@ def log(headline: str, details: str = "", level: Literal["debug", "info", "warni
     
     # Format the log message
     if details:
-        log_message = f"{timestamp} | {level_str} | {headline}: {details}"
+        log_message = f"{timestamp} | {level_str} | {headline} | {details}"
     else:
         log_message = f"{timestamp} | {level_str} | {headline}"
     

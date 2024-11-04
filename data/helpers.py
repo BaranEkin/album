@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 from datetime import datetime
 from time import time_ns
@@ -61,6 +62,18 @@ turkish_uppercase_map = str.maketrans({
 def turkish_upper(text) -> str:
     translated_text = text.translate(turkish_uppercase_map)
     return translated_text.upper()
+
+def is_valid_people(people_str):
+    # Define a regex pattern for Turkish full names with newline separation
+    pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+)$"
+    
+    # Split the input by lines and check each line
+    for line in people_str.strip().splitlines():
+        # Trim whitespace and check if each line matches the full name pattern
+        if not re.match(pattern, line.strip()):
+            return False
+    
+    return True
 
 
 def date_to_julian(date_str: str) -> float:

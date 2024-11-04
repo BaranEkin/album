@@ -1,10 +1,15 @@
 import os
+from datetime import datetime
+
 from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout,
                              QTreeView, QListWidget, QFrame, QFileSystemModel)
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtGui import QIcon
 from PIL import Image
 
+from logger import log
+from data.helpers import is_valid_people
+from gui.message import show_message
 from gui.add.LabelImageAdd import LabelImageAdd
 from gui.add.FrameAddInfo import FrameAddInfo
 from gui.add.FrameAction import FrameAction
@@ -192,7 +197,22 @@ class DialogAddMedia(QDialog):
     def on_media_add(self):
 
         self.frame_action.set_button_add_enabled(False)
+        media_data = self.get_media_data()
+        if not media_data:
+            self.frame_action.set_button_add_enabled(True)
+            return
 
+        self.media_paths_to_be_uploaded.append(self.selected_media_path)
+        self.media_data_to_be_uploaded.append(media_data)
+
+        self.on_folder_selected()
+        self.select_next_media()
+
+        self.frame_action.update_button_upload(len(self.media_data_to_be_uploaded))
+        self.frame_action.set_button_add_enabled(True)
+
+    def get_media_data(self):
+        
         media_data = {
             "media_path": self.selected_media_path,
             "title": self.frame_add_info.get_title(),
@@ -207,14 +227,37 @@ class DialogAddMedia(QDialog):
             "albums": "".join(self.frame_action.get_selected_album_tags()),
         }
 
-        self.media_paths_to_be_uploaded.append(self.selected_media_path)
-        self.media_data_to_be_uploaded.append(media_data)
+        title = media_data["title"]
+        if not title:
+            log("DialogAddMedia.get_media_data", f"Title '{title}' is falsy.", level="warning")
+            show_message("Başlık alanını doldurmak zorunludur. Lütfen bir başlık girin.", level="warning")
+            return None
+        
+        location = media_data["location"]
+        if not location:
+            log("DialogAddMedia.get_media_data", f"Location '{location}' is falsy.", level="warning")
+            show_message("Yer alanını doldurmak zorunludur. Lütfen bir yer girin.", level="warning")
+            return None
+        
+        date_text = media_data["date_text"]
+        try:
+            # Try parsing date as "DD.MM.YYYY"
+            _ = datetime.strptime(date_text, "%d.%m.%Y").strftime("%d.%m.%Y")
+        except ValueError as e:
+            log("DialogAddMedia.get_media_data", f"Date '{date_text}' is incorrectly formatted.", level="warning")
+            show_message("Lütfen tarih alanını GG.AA.YYYY formatında girin.", level="warning")
+            return None
 
-        self.on_folder_selected()
-        self.select_next_media()
-
-        self.frame_action.update_button_upload(len(self.media_data_to_be_uploaded))
-        self.frame_action.set_button_add_enabled(True)
+        people = media_data["people"]
+        if people:
+            if not is_valid_people(people):
+                people_log = people.replace("\n", "\\n")
+                log("DialogAddMedia.get_media_data", f"People '{people_log}' is incorrectly formatted.", level="warning")
+                show_message("Kişiler alanını formatı hatalı. Şunlara dikkat edin:\nNoktalama işaretleri, semboller veya rakamlar kullanmayın.\nHer satıra bir kişi girin.\nİsimlerin baş harflerini ve soyisimlerin tüm harflerini büyük yazın.", level="warning")
+                return None
+        
+        return media_data
+            
 
     def on_media_upload(self):
 

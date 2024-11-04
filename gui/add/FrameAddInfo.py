@@ -133,19 +133,19 @@ class FrameAddInfo(QFrame):
         self.setLayout(main_layout)
 
     def get_title(self):
-        return self.input_title.text()
+        return self.input_title.text().strip()
 
     def set_title(self, title):
         self.input_title.setText(title)
 
     def get_location(self):
-        return self.combo_location.currentText()
+        return self.combo_location.currentText().strip()
 
     def set_location(self, location):
         self.combo_location.setCurrentText(location)
 
     def get_date(self):
-        return self.input_date.text()
+        return self.input_date.text().strip()
 
     def get_date_option(self):
         selected_option = self.radio_group_date.checkedButton()
@@ -169,13 +169,13 @@ class FrameAddInfo(QFrame):
         self.combo_date_est.setCurrentIndex(7 - date_est)
 
     def get_tags(self):
-        return self.input_tags.text()
+        return self.input_tags.text().strip()
 
     def set_tags(self, tags):
         self.input_tags.setText(tags)
 
     def get_notes(self):
-        return self.input_notes.toPlainText()
+        return self.input_notes.toPlainText().strip()
 
     def set_notes(self, notes):
         self.input_notes.setPlainText(notes)
