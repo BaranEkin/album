@@ -167,6 +167,8 @@ class MediaLoader:
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
+        
+        image = image.convert("RGB")
         image.save(path, "JPEG")
 
     def save_thumbnail(self, image: Image, thumbnail_key: str):
@@ -181,4 +183,6 @@ class MediaLoader:
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
+        
+        image = image.convert("RGB")
         image.save(path, "JPEG")

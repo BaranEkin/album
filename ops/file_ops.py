@@ -78,6 +78,7 @@ def create_image_thumbnail(media_key: str, thumbnail_key: str) -> str:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    img = img.convert("RGB")
     img.save(thumbnail_path, "JPEG")
     return thumbnail_key
 

@@ -175,6 +175,7 @@ class DialogAddMedia(QDialog):
     def draw_identifications(self):
         image = Image.open(self.selected_media_path)
         image = face_detection.draw_identifications(image, self.detections_with_names)
+        image = image.convert("RGB")
         image.save("temp/detections.jpg")
 
     def update_identifications(self, detections_with_names):
