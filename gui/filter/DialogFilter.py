@@ -18,6 +18,7 @@ class DialogFilter(QDialog):
         self.frame_tree = FrameTreeAlbums(self.albums)
         self.frame_filter = FrameFilter()
         self.frame_filter.search_button.clicked.connect(self.filter_media)
+        self.frame_filter.clear_button.clicked.connect(self.reset_filter)
 
         layout = QVBoxLayout()
         layout.addWidget(self.frame_tree)
@@ -53,3 +54,7 @@ class DialogFilter(QDialog):
         media_filter = self.build_filter()
         self.media_list = self.data_manager.get_filtered_media(media_filter)
         self.accept()
+
+    def reset_filter(self):
+        self.frame_filter.clear_all_fields()
+        self.frame_tree.clear_selection()

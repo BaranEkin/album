@@ -50,6 +50,11 @@ class FrameTreeAlbums(QFrame):
         self.layout.addWidget(self.tree)
         self.layout.addWidget(self.checkbox_include_child)
 
+    def clear_selection(self):
+        self.selected_album_tags = []
+        self.checkbox_include_child.setChecked(False)
+        self.tree.collapseAll()
+
     def get_selected_albums(self):
         return tuple(self.selected_album_tags)
         

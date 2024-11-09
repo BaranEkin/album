@@ -239,6 +239,29 @@ class FrameFilter(QFrame):
         """Enable or disable the max people count based on the checkbox state."""
         self.people_count_max.setEnabled(state == Qt.Checked)
 
+    def clear_all_fields(self):
+        self.title_input.setText("")
+        self.location_input.setText("")
+        self.people_input.setText("")
+        self.tags_input.setText("")
+        self.extension_input.setText("")
+        self.date_start.setText("")
+        self.date_end.setText("")
+        self.people_count_min.setText("")
+        self.people_count_max.setText("")
+        
+        self.days_input.setText("")
+        self.months_input.setText("")
+        self.years_input.setText("")
+        self.days_of_week_input.setText("")
+
+        self.dropdown_sort_primary.setCurrentIndex(0)
+        self.dropdown_sort_secondary.setCurrentIndex(0)
+
+        self.people_count_range_checkbox.setChecked(False)
+        self.date_range_checkbox.setChecked(False)
+        self.additional_date_filters_checkbox.setChecked(False)
+
     def get_title(self):
         return turkish_upper(self.title_input.text().strip())
 
