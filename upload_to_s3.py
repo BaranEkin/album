@@ -16,15 +16,15 @@ def upload_directory_to_s3(root_dir):
     :param root_dir: The local path of the directory to upload.
     """
     s3_client = boto3.client('s3')
-
+    print("Collecting list of files to upload...")
     # Collect all files to be uploaded
     files_to_upload = []
     for root, dirs, files in os.walk(root_dir):
         for file_name in files:
-            local_path = os.path.join(root, file_name)
-            relative_path = os.path.relpath(local_path, root_dir)
+            local_path = os.path.join(root, file_name).replace("\\", "/")
+            relative_path = os.path.relpath(local_path, root_dir).replace("\\", "/")
             files_to_upload.append((local_path, relative_path))
-
+    print("List of files to upload are collected.")
     # Initialize the progress bar
     with tqdm(total=len(files_to_upload), desc="Uploading files", unit="file") as pbar:
         for local_path, s3_path in files_to_upload:
@@ -44,13 +44,17 @@ def upload_directory_to_s3(root_dir):
                         print(f"Error uploading {local_path}: {ex}")
                 else:
                     print(f"Error checking existence of {s3_path}: {e}")
-            # Update progress bar regardless of whether the file was skipped or uploaded
-            pbar.update(1)
+            finally:
+                # Update progress bar regardless of whether the file was skipped or uploaded
+                pbar.update(1)
 
 
 if __name__ == "__main__":
+    """
     parser = argparse.ArgumentParser(description="Upload a local directory to an S3 bucket.")
     parser.add_argument("root_dir", type=str, help="The local path of the directory to upload.")
     args = parser.parse_args()
 
     upload_directory_to_s3(args.root_dir)
+    """
+    upload_directory_to_s3("C:/album-2/res/upload_root")
