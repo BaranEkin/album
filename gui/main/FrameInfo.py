@@ -16,27 +16,27 @@ class FrameInfo(QFrame):
         self.main_layout = QVBoxLayout()
 
         # Set a fixed width for the labels to ensure both labels have the same width
-        label_width = 80
+        label_width = 120
 
         # Create the first row for title
-        self.title_layout = QHBoxLayout()
-        self.title_label = QLabel("BAŞLIK")
-        self.title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
-        self.title_label.setFixedWidth(label_width)  # Set a fixed width for the label
-        self.title_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+        self.topic_title_layout = QHBoxLayout()
+        self.topic_title_label = QLabel("KONU/BAŞLIK")
+        self.topic_title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        self.topic_title_label.setFixedWidth(label_width)  # Set a fixed width for the label
+        self.topic_title_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
-        self.title_browser = TextBrowserDate()
-        self.title_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
-        self.title_browser.setFixedHeight(40)  # Set height for consistency
-        self.title_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.title_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.title_browser.setStyleSheet("font-family: Arial; font-size: 20px; color: darkblue;")  # Title style
+        self.topic_title_browser = TextBrowserDate()
+        self.topic_title_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
+        self.topic_title_browser.setFixedHeight(40)  # Set height for consistency
+        self.topic_title_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.topic_title_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.topic_title_browser.setStyleSheet("font-family: Arial; font-size: 20px; color: darkblue;")  # Title style
 
         # Mock-up value for title
-        self.title_browser.setHtml('<div style="line-height:27px;">BAŞLIK DENEME YAZISI BAŞLIK DENEME YAZISI</div>')
+        self.topic_title_browser.setHtml('<div style="line-height:27px;">BAŞLIK DENEME YAZISI BAŞLIK DENEME YAZISI</div>')
 
-        self.title_layout.addWidget(self.title_label)
-        self.title_layout.addWidget(self.title_browser)
+        self.topic_title_layout.addWidget(self.topic_title_label)
+        self.topic_title_layout.addWidget(self.topic_title_browser)
 
         # Create the second row for location and date
         self.location_date_layout = QHBoxLayout()
@@ -84,13 +84,21 @@ class FrameInfo(QFrame):
         self.location_date_layout.addWidget(self.date_browser)
 
         # Add both rows to the main layout
-        self.main_layout.addLayout(self.title_layout)
+        self.main_layout.addLayout(self.topic_title_layout)
         self.main_layout.addLayout(self.location_date_layout)
 
         # Set the main layout to the frame
         self.setLayout(self.main_layout)
 
     def set_info(self, media: Media):
-        self.title_browser.set_text(27, media.title)
+        if media.topic:
+            if media.title:
+                topic_title_text = f"{media.topic} / {media.title}"
+            else:
+                topic_title_text = media.topic
+        else:
+            topic_title_text = media.title
+
+        self.topic_title_browser.set_text(27, topic_title_text)
         self.location_browser.set_text(26, media.location)
         self.date_browser.set_date(26, media.date_text, media.date_est)
