@@ -7,15 +7,24 @@ from PyQt5.QtCore import Qt
 from data.helpers import turkish_upper
 
 
-class FrameFilter(QFrame):
+class FrameDetailedFilter(QFrame):
     def __init__(self):
         super().__init__()
 
-        self.setFixedSize(550, 350)
+        self.setFixedSize(580, 400)
+
+        self.topic_input = QLineEdit()
+        self.topic_input.setFixedWidth(500)
+        self.label_topic = QLabel("Konu:")
+        self.label_topic.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+        topic_layout = QHBoxLayout()
+        topic_layout.addWidget(self.label_topic)
+        topic_layout.addWidget(self.topic_input)
 
         # Title filter
         self.title_input = QLineEdit()
-        self.title_input.setFixedWidth(485)
+        self.title_input.setFixedWidth(500)
         self.label_title = QLabel("Başlık:")
         self.label_title.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
@@ -25,7 +34,7 @@ class FrameFilter(QFrame):
 
         # Location filter
         self.location_input = QLineEdit()
-        self.location_input.setFixedWidth(485)
+        self.location_input.setFixedWidth(500)
         self.label_location = QLabel("Yer:")
         self.label_location.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
@@ -35,6 +44,7 @@ class FrameFilter(QFrame):
 
         # Date filter inside a QGroupBox
         date_group_box = QGroupBox("Tarih")
+        date_group_box.setFixedHeight(210)
         self.date_start = QLineEdit()
         self.date_start.setPlaceholderText("Başlangıç")
         self.date_start.setFixedWidth(120)
@@ -55,19 +65,19 @@ class FrameFilter(QFrame):
 
         # Additional date filters
         self.days_input = QLineEdit()
-        self.days_input.setFixedWidth(300)
+        self.days_input.setFixedWidth(320)
         self.days_input.setEnabled(False)
 
         self.months_input = QLineEdit()
-        self.months_input.setFixedWidth(300)
+        self.months_input.setFixedWidth(320)
         self.months_input.setEnabled(False)
 
         self.years_input = QLineEdit()
-        self.years_input.setFixedWidth(300)
+        self.years_input.setFixedWidth(320)
         self.years_input.setEnabled(False)
 
         self.days_of_week_input = QLineEdit()
-        self.days_of_week_input.setFixedWidth(300)
+        self.days_of_week_input.setFixedWidth(320)
         self.days_of_week_input.setEnabled(False)
 
         # Layout for date filters
@@ -122,32 +132,34 @@ class FrameFilter(QFrame):
         self.type_dropdown.setFixedWidth(80)
 
         self.extension_input = QLineEdit()
-        self.extension_input.setFixedWidth(40)
+        self.extension_input.setFixedWidth(80)
 
         group_box_file = QGroupBox("Dosya")
-        group_box_file.setFixedWidth(220)
-        type_extension_layout = QHBoxLayout()
+        group_box_file.setFixedHeight(100)
+        layout_type = QHBoxLayout()
         label_type = QLabel("Tip:")
         label_type.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        type_extension_layout.addWidget(label_type)
-        type_extension_layout.addWidget(self.type_dropdown)
+        layout_type.addWidget(label_type)
+        layout_type.addWidget(self.type_dropdown)
         label_extension = QLabel("Uzantı:")
         label_extension.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        type_extension_layout.addWidget(label_extension)
-        type_extension_layout.addWidget(self.extension_input)
-        group_box_file.setLayout(type_extension_layout)
+        layout_extension = QHBoxLayout()
+        layout_extension.addWidget(label_extension)
+        layout_extension.addWidget(self.extension_input)
+
+        layout_file = QVBoxLayout()
+        layout_file.addLayout(layout_type)
+        layout_file.addLayout(layout_extension)
+        group_box_file.setLayout(layout_file)
 
         self.tags_input = QLineEdit()
-        self.tags_input.setFixedWidth(220)
+        self.tags_input.setFixedWidth(500)
 
         tags_layout = QHBoxLayout()
         label_tags = QLabel("Etiketler:")
         label_tags.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         tags_layout.addWidget(label_tags)
         tags_layout.addWidget(self.tags_input)
-
-        layout_extras.addWidget(group_box_file)
-        layout_extras.addLayout(tags_layout)
 
         # People and People Count filter (same row)
         self.people_input = QLineEdit()
@@ -175,10 +187,11 @@ class FrameFilter(QFrame):
 
         # Layout for the entire frame
         main_layout = QVBoxLayout()
+        main_layout.addLayout(topic_layout)
         main_layout.addLayout(title_layout)
         main_layout.addLayout(location_layout)
         main_layout.addLayout(people_layout)
-        main_layout.addLayout(layout_extras)
+        main_layout.addLayout(tags_layout)
 
         bottom_row_layout = QHBoxLayout()
         bottom_row_layout.addWidget(date_group_box)
@@ -208,16 +221,10 @@ class FrameFilter(QFrame):
         layout_sort.addLayout(layout_sort_secondary)
         group_box_sort.setLayout(layout_sort)
 
-        self.clear_button = QPushButton("Süzmeyi Temizle")
-        self.clear_button.setFixedSize(150, 40)
-        self.search_button = QPushButton("Süz")
-        self.search_button.setFixedSize(150, 40)
-
         layout_bottom_right = QVBoxLayout()
+        layout_bottom_right.addWidget(group_box_file)
         layout_bottom_right.addWidget(group_box_sort)
-        layout_bottom_right.addWidget(self.clear_button, alignment=Qt.AlignBottom)
-        layout_bottom_right.addWidget(self.search_button, alignment=Qt.AlignBottom)
-
+        
         bottom_row_layout.addLayout(layout_bottom_right)
         main_layout.addLayout(bottom_row_layout)
 

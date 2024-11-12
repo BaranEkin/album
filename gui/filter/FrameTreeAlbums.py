@@ -8,7 +8,7 @@ class FrameTreeAlbums(QFrame):
     def __init__(self, albums: Sequence[Album]):
         super().__init__()
 
-        self.setFixedSize(550, 350)
+        self.setFixedSize(600, 300)
         self.layout = QVBoxLayout(self)
 
         self.albums = albums
