@@ -26,61 +26,41 @@ def check_file_exists(directory: str, key: str) -> bool:
     return os.path.exists(os.path.join(directory, key))
 
 
-def add_image(media_id: str, media_path: Union[str, bytes, os.PathLike], date_text: str) -> tuple[str, str]:
+def add_image(media_id: str, media_path: Union[str, bytes, os.PathLike]):
     """Add an image to the media directory with a structured filename and create a thumbnail.
     Crate directories if needed.
 
     Args:
         media_id (Union[str, bytes, os.PathLike]): The unique identifier for the media item.
         media_path (str): The source file path of the media.
-        date_text (str): The date in 'DD.MM.YYYY' format for organizing the file.
-
-    Returns:
-        tuple: A tuple containing the media key  and the thumbnail key.
     """
 
     extension = get_file_extension(media_path)
-    day, month, year = date_text.split(".")
-
-    media_dir = f"{year}/{month}"
-    media_name = f"F{year}{month}{day}_{media_id}{extension}"
-    media_key = f"{media_dir}/{media_name}"
+    media_key = f"{media_id}{extension}"
 
     destination_path = os.path.join(Config.MEDIA_DIR, media_key)
-    destination_dir = os.path.dirname(destination_path)
-    if not os.path.exists(destination_dir):
-        os.makedirs(destination_dir)
 
     shutil.copy2(media_path, destination_path)
 
-    thumbnail_key = f"{year}/P{year}{month}{day}_{media_id}.jpg"
-    thumbnail_key = create_image_thumbnail(media_key, thumbnail_key)
-
-    return media_key, thumbnail_key
+    thumbnail_key = f"{media_id}.jpg"
+    create_image_thumbnail(media_key, thumbnail_key)
 
 
-def create_image_thumbnail(media_key: str, thumbnail_key: str) -> str:
+def create_image_thumbnail(media_key: str, thumbnail_key: str):
     """Create and save a thumbnail for an image.
 
     Args:
         media_key (str): Media key of the source image.
         thumbnail_key (str): Key for the thumbnail to be saved.
-
-    Returns:
-        str: The key of the created thumbnail.
     """
 
     img = Image.open(os.path.join(Config.MEDIA_DIR, media_key))
     img.thumbnail((160, 160))
 
     thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, thumbnail_key)
-    directory = os.path.dirname(thumbnail_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
     img = img.convert("RGB")
     img.save(thumbnail_path, "JPEG")
-    return thumbnail_key
 
 
 def get_file_extension(file_path: Union[str, bytes, os.PathLike]) -> str:

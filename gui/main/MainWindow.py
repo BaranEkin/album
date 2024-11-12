@@ -215,7 +215,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.frame_bottom)
 
         # Create and set the custom model
-        thumbnail_keys = [media.thumbnail_key for media in self.media_data]
+        thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
         self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
         self.thumbnail_list.setModel(self.thumbnail_model)
 
@@ -296,7 +296,8 @@ class MainWindow(QMainWindow):
     
     def on_button_people_clicked(self, checked):
         if checked:
-            q_image = self.media_loader.get_image(self.selected_media.media_key)
+            media_key = f"{self.selected_media.media_uuid}{self.selected_media.extension}"
+            q_image = self.media_loader.get_image(media_key)
             if q_image is None:
                 pass
             q_image.save("temp/detections.jpg", "JPEG")
@@ -352,9 +353,10 @@ class MainWindow(QMainWindow):
         Load the selected image into the main display area.
         """
         self.image_label.is_image = True
-        self.image_label.current_media_key = self.selected_media.media_key
+        media_key = f"{self.selected_media.media_uuid}{self.selected_media.extension}"
+        self.image_label.current_media_key = media_key
         self.image_label.scale_modifier = 0.0
-        q_image = self.media_loader.get_image(self.selected_media.media_key)
+        q_image = self.media_loader.get_image(media_key)
         
         if q_image is not None:
             pixmap = QPixmap.fromImage(q_image)
@@ -363,9 +365,10 @@ class MainWindow(QMainWindow):
 
     def load_video_audio_thumbnail(self):
         self.image_label.is_image = False
-        self.image_label.current_media_key = self.selected_media.media_key
+        media_key = f"{self.selected_media.media_uuid}{self.selected_media.extension}"
+        self.image_label.current_media_key = media_key
         self.image_label.scale_modifier = 0.0
-        q_image = self.media_loader.get_thumbnail(self.selected_media.thumbnail_key)
+        q_image = self.media_loader.get_thumbnail(f"{self.selected_media.media_uuid}.jpg")
         pixmap = QPixmap.fromImage(q_image)
         self.image_label.setPixmap(pixmap)
         self.fit_to_window()
@@ -380,12 +383,12 @@ class MainWindow(QMainWindow):
 
             if img_aspect_ratio > scroll_aspect_ratio:
                 # Image is wider than the viewport
-                new_width = scroll_size.width()
-                new_height = new_width / img_aspect_ratio
+                new_width = int(scroll_size.width())
+                new_height = int(new_width / img_aspect_ratio)
             else:
                 # Image is taller than the viewport
-                new_height = scroll_size.height()
-                new_width = new_height * img_aspect_ratio
+                new_height = int(scroll_size.height())
+                new_width = int(new_height * img_aspect_ratio)
 
             self.image_label.setFixedSize(new_width, new_height)
             self.image_label.initial_scale = new_width / img_size.width()
@@ -469,7 +472,7 @@ class MainWindow(QMainWindow):
             self.media_data = new_media_data
 
             # Refresh the thumbnails and reset the index
-            thumbnail_keys = [media.thumbnail_key for media in self.media_data]
+            thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
             self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
             self.thumbnail_list.setModel(self.thumbnail_model)
             self.thumbnail_model.signal.loaded.connect(lambda: self.try_select_item(index))

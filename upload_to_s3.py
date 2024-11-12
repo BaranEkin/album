@@ -22,7 +22,7 @@ def upload_directory_to_s3(root_dir):
     for root, dirs, files in os.walk(root_dir):
         for file_name in files:
             local_path = os.path.join(root, file_name)
-            relative_path = os.path.relpath(local_path, root_dir).replace("\\", "/").replace("Foto", "")
+            relative_path = os.path.relpath(local_path, root_dir)
             files_to_upload.append((local_path, relative_path))
 
     # Initialize the progress bar

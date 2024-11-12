@@ -59,4 +59,4 @@ def fix_csv(file_path):
 
 
 if __name__ == "__main__":
-    resize_thumbnails(Path(r"D:\Work\self\github\album-2\res\thumbnails"))
+    fix_csv("C:/album-2/res/database/album.csv")

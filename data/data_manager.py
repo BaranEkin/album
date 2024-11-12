@@ -13,62 +13,61 @@ from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_
 from ops import cloud_ops, file_ops
 
 
-def build_media(
-        path,
-        title,
-        location,
-        date_text,
-        date_est,
-        albums,
-        tags,
-        notes,
-        people,
-        people_detect,
-        people_count
-) -> Media:
-    date = date_to_julian(date_text)
-    created_at = current_time_in_unix_subsec()
-
-    # UUID/GUID (Universally/Globally Unique Identifier) using UUID-4 Standard (Random)
-    media_id = str(uuid.uuid4().hex)
-
-    media_key, thumbnail_key = file_ops.add_image(media_id=media_id,
-                                                  media_path=path,
-                                                  date_text=date_text)
-
-    media = Media()
-    media.media_id = media_id
-    media.created_at = created_at
-    media.modified_at = created_at
-    media.media_key = media_key
-    media.thumbnail_key = thumbnail_key
-    media.title = title
-    media.location = location
-    media.date = date
-    media.date_text = date_text
-    media.date_est = date_est
-    media.tags = tags
-    media.notes = notes
-    media.albums = albums
-    media.people = people
-    media.people_detect = people_detect
-    media.people_count = people_count
-    media.extension = file_ops.get_file_extension(path)
-    media.type = file_ops.get_file_type(path)
-    media.private = 0
-
-    return media
-
-
 class DataManager:
     def __init__(self):
         self.engine_local = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album.db")
+
+    def build_media(
+            self,
+            path,
+            topic,
+            title,
+            location,
+            date_text,
+            date_est,
+            albums,
+            tags,
+            notes,
+            people,
+            people_detect,
+            people_count,
+            private
+    ) -> Media:
+        date = date_to_julian(date_text)
+        created_at = current_time_in_unix_subsec()
+
+        # UUID/GUID (Universally/Globally Unique Identifier) using UUID-4 Standard (Random)
+        media_uuid = str(uuid.uuid4().hex)
+        file_ops.add_image(media_uuid=media_uuid, media_path=path)
+
+        media = Media()
+        media.media_uuid = media_uuid
+        media.created_at = created_at
+        media.modified_at = created_at
+        media.topic = topic
+        media.title = title
+        media.location = location
+        media.date = date
+        media.date_text = date_text
+        media.date_est = date_est
+        media.rank = self.get_last_rank(date) + 1.0
+        media.tags = tags
+        media.notes = notes
+        media.albums = albums
+        media.people = people
+        media.people_detect = people_detect
+        media.people_count = people_count
+        media.extension = file_ops.get_file_extension(path)
+        media.type = file_ops.get_file_type(path)
+        media.private = private
+
+        return media
 
     def get_all_media(self) -> Sequence[Media]:
         session = sessionmaker(bind=self.engine_local)()
         try:
             # Query the Media table, ordering by the 'date' column
-            media_list = session.execute(select(Media).order_by(Media.date)).scalars().all()
+            media_list = session.execute(select(Media).order_by(Media.date, Media.rank)).scalars().all()
             return media_list
         finally:
             session.close()
@@ -85,6 +84,20 @@ class DataManager:
                             list_people.append(person)
 
         return sorted(list_people)
+    
+    def get_media_of_date(self, date: float) -> Sequence[Media]:
+        session = sessionmaker(bind=self.engine_local)()
+
+        try:
+            media_list = session.execute(select(Media).where(Media.date == date).order_by(Media.rank)).scalars().all()
+            return media_list
+        finally:
+            session.close()
+
+    def get_last_rank(self, date: float):
+        media_list = self.get_media_of_date(date)
+        last_rank = max([media.rank for media in media_list])
+        return last_rank
 
     def get_all_albums(self) -> Sequence[Album]:
         session = sessionmaker(bind=self.engine_local)()
@@ -184,16 +197,16 @@ class DataManager:
 
     @staticmethod
     def _get_new_rows_from_cloud(session_cloud, session_local):
-        local_media_ids = session_local.query(Media.media_id).all()
-        local_media_id_list = [id_tuple[0] for id_tuple in local_media_ids]
-        new_rows = session_cloud.query(Media).filter(~Media.media_id.in_(local_media_id_list)).all()
+        local_media_uuids = session_local.query(Media.media_uuid).all()
+        local_media_uuid_list = [id_tuple[0] for id_tuple in local_media_uuids]
+        new_rows = session_cloud.query(Media).filter(~Media.media_uuid.in_(local_media_uuid_list)).all()
         return new_rows
 
     @staticmethod
     def _insert_rows(session, rows):
         for row in rows:
             new_media_copy = Media(
-                media_id=row.media_id,
+                media_uuid=row.media_uuid,
                 created_at=row.created_at,
                 user_name=row.user_name,
                 title=row.title,
@@ -282,7 +295,7 @@ class DataManager:
                 4: Media.people,
                 5: Media.extension
             }
-            selection = selection.order_by(column_mapping[media_filter.sort[0]], column_mapping[media_filter.sort[1]])
+            selection = selection.order_by(column_mapping[media_filter.sort[0]], column_mapping[media_filter.sort[1]], Media.rank)
 
         return selection
 

@@ -1,3 +1,6 @@
+import uuid
+import os
+import shutil
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -9,7 +12,7 @@ from media_loader import MediaLoader
 from config.config import Config
 from data.orm import Media
 from data.helpers import date_to_julian, legacy_time_in_unix_subsec, current_time_in_unix_subsec
-from ops import cloud_ops
+from ops import cloud_ops, file_ops
 
 Config.read_config()
 media_loader = MediaLoader()
@@ -40,41 +43,61 @@ def get_people_detect_str(image_key, people):
         return None
 
 
-def make_entry(old_entry, user_name):
+def make_files(media_uuid, old_entry, foto_folder, preview_folder):
+    media_source_path = os.path.join(foto_folder, old_entry["DOSYAADI"][1:])
+    if file_ops.get_file_type(media_source_path) == 1:
+        file_ops.add_image(media_uuid, media_source_path)
+    else:
+        media_destination_path = os.path.join("res/media/", f"{media_uuid}{file_ops.get_file_extension(media_source_path)}")
+        shutil.copy2(media_source_path, media_destination_path)
+
+        thumb_source_path = os.path.join(preview_folder, old_entry["GORUNTU"][1:])
+        thumb_destination_path = os.path.join("res/thumbnails/", f"{media_uuid}{file_ops.get_file_extension(thumb_source_path)}")
+        shutil.copy2(thumb_source_path, thumb_destination_path)
+
+    return f"{media_uuid}{file_ops.get_file_extension(media_source_path)}"
+
+
+def make_entry(old_entry, user_name, foto_folder, preview_folder):
+    global last_rank
+    global last_date
+
+    media_uuid = str(uuid.uuid4().hex)
+    media_path = make_files(media_uuid, old_entry, foto_folder, preview_folder)
+    
+    topic = old_entry["KONU"]
     title = old_entry["BASLIK"]
     location = old_entry["YER"]
-    date = date_to_julian(old_entry["ZAMAN"])
-    date_text = old_entry["ZAMAN"]
+    date = date_to_julian(old_entry["ZAMANTEXT"])
+    date_text = old_entry["ZAMANTEXT"]
     date_est = old_entry["YAKTARIH"]
-    thumbnail_key = old_entry["GORUNTU"][1:].replace("\\", "/")
-    media_key = old_entry["DOSYAADI"][5:].replace("\\", "/")
     mtype = old_entry["DOSYATIPI"]
     extension = old_entry["UZANTI"]
     private = old_entry["OZEL"]
     people = old_entry["KISILER"]
     people_count = old_entry["KISIADET"]
-    people_detect = get_people_detect_str(media_key, people) if int(mtype) == 1 else None
+    people_detect = None # get_people_detect_str(media_path, people) if int(mtype) == 1 else None
     notes = old_entry["NOTLAR"]
     albums = old_entry["ALBUMS"]
     tags = None
 
+    if date == last_date:
+        rank = last_rank + 1.0
+    else:
+        rank = 1.0
+    
+    last_rank = rank
+    last_date = date
+
     created_at = legacy_time_in_unix_subsec(old_entry["KAYITZAMAN"])
-    media_id = str(created_at).replace(".", "_")
-    if media_id in MEDIA_IDS:
-        created_at += 0.1
-        media_id = str(created_at).replace(".", "_")
-
-    MEDIA_IDS.append(media_id)
-
     modified_at = current_time_in_unix_subsec()
 
     return Media(title=title,
+                 topic=topic,
                  location=location,
                  date=date,
                  date_text=date_text,
                  date_est=date_est,
-                 thumbnail_key=thumbnail_key,
-                 media_key=media_key,
                  type=mtype,
                  extension=extension,
                  private=private,
@@ -87,30 +110,48 @@ def make_entry(old_entry, user_name):
                  created_at=created_at,
                  modified_at=modified_at,
                  user_name=user_name,
-                 media_id=media_id)
+                 media_uuid=media_uuid,
+                 rank=rank)
 
 
-if __name__ == "__main__":
-    MEDIA_IDS = []
-    user_name = cloud_ops.get_user_name()
+last_rank = 1.0
+last_date = 0.0
+user_name = cloud_ops.get_user_name()
 
-    # Create an SQLite database engine (or connect to the existing one)
-    engine = create_engine("sqlite:///res/database/album.db")
+# Create an SQLite database engine (or connect to the existing one)
+engine = create_engine("sqlite:///res/database/album.db")
 
-    Session = sessionmaker(bind=engine)
-    session = Session()
+Session = sessionmaker(bind=engine)
+session = Session()
 
+try:
     # Read the CSV file
-    csv_file_path = "res/database/ALBUM_fixed.csv"
+    csv_file_path = "res/database/album_fixed.csv"
+    foto_folder_path = "C:/ALBUM/FOTO/"
+    preview_folder_path = "C:/ALBUM/Data/Preview/"
+
     df = pd.read_csv(csv_file_path, delimiter=";", encoding="utf-8")
 
     # Iterate over the rows of the CSV and insert them into the SQLite database
     for i, row in df.iterrows():
-        print(f"ROW: {i}_______")
-        media_entry = make_entry(row, user_name)
-        session.add(media_entry)
+        try:
+            print(f"ROW: {i}___")
+            media_entry = make_entry(row, user_name, foto_folder=foto_folder_path, preview_folder=preview_folder_path)
+            
+        except Exception as e:
+            print("ERROR OCCURED at FOTO_ID:", str(row["FOTO_ID"]))
+            print("ERROR:", str(e))
+            continue
+        
+        try:
+            session.add(media_entry)
+            session.commit()
+            os.remove(os.path.join(foto_folder_path, row["DOSYAADI"][1:]))
+            os.remove(os.path.join(preview_folder_path, row["GORUNTU"][1:]))
+        except:
+            continue
 
-    session.commit()
-
+finally:
+    
     # Close the session
     session.close()

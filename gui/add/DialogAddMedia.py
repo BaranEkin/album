@@ -268,6 +268,7 @@ class DialogAddMedia(QDialog):
         for media_data in self.media_data_to_be_uploaded:
             media = self.data_manager.build_media(
                 path=media_data["media_path"],
+                topic=None, #  TODO
                 title=media_data["title"],
                 location=media_data["location"],
                 date_text=media_data["date_text"],
@@ -277,7 +278,8 @@ class DialogAddMedia(QDialog):
                 notes=media_data["notes"],
                 people=media_data["people"],
                 people_detect=media_data["people_detect"],
-                people_count=media_data["people_count"]
+                people_count=media_data["people_count"],
+                private=0
             )
 
             self.media_to_be_uploaded.append(media)

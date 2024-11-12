@@ -16,17 +16,17 @@ class Album(Base):
 class Media(Base):
     __tablename__ = "Media"
 
-    media_id = Column(TEXT, primary_key=True, unique=True, nullable=False)
+    media_uuid = Column(TEXT, primary_key=True, unique=True, nullable=False)
     created_at = Column(REAL, nullable=False)
     modified_at = Column(REAL, nullable=False)
     user_name = Column(TEXT, nullable=False)
+    topic = Column(TEXT, nullable=False)
     title = Column(TEXT, nullable=False)
     location = Column(TEXT, nullable=False)
     date = Column(REAL, nullable=False)
     date_text = Column(TEXT, nullable=False)
     date_est = Column(INTEGER, nullable=False)
-    thumbnail_key = Column(TEXT, nullable=False, unique=True)
-    media_key = Column(TEXT, nullable=False, unique=True)
+    rank = Column(REAL, nullable=False)
     type = Column(INTEGER, nullable=False)
     extension = Column(TEXT, nullable=False)
     private = Column(INTEGER, nullable=False)

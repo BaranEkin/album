@@ -94,7 +94,7 @@ class LabelImageViewer(QLabel):
         new_height = self.original_size.height() * scaling_factor
 
         # Update QLabel size
-        self.setFixedSize(new_width, new_height)
+        self.setFixedSize(int(new_width), int(new_height))
 
         # Adjust the scroll area to center on the click position
         self.scroll_area.parent().parent().adjust_scroll_area(click_pos, scaling_factor)
