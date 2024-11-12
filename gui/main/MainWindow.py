@@ -259,10 +259,8 @@ class MainWindow(QMainWindow):
 
         if selected_indexes:
             current_index = selected_indexes[0].row()
-            print(f"Current_index: {current_index}")
         
         if current_index + 1 < self.thumbnail_model.rowCount():
-            print(f"Going to: {current_index + 1}")
             next_index = self.thumbnail_model.index(current_index + 1)
             self.thumbnail_list.setCurrentIndex(next_index)
             self.on_media_selected(next_index)
@@ -273,10 +271,8 @@ class MainWindow(QMainWindow):
 
         if selected_indexes:
             current_index = selected_indexes[0].row()
-            print(f"Current_index: {current_index}")
         
         if current_index - 1 >= 0:
-            print(f"Going to: {current_index - 1}")
             prev_index = self.thumbnail_model.index(current_index - 1)
             self.thumbnail_list.setCurrentIndex(prev_index)
             self.on_media_selected(prev_index)

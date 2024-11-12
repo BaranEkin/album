@@ -56,7 +56,7 @@ class FrameTreeAlbums(QFrame):
         self.tree.collapseAll()
 
     def get_selected_albums(self):
-        return tuple(self.selected_album_tags)
+        return tuple(self.selected_album_tags) if self.selected_album_tags else ("",)
         
     def on_select_albums(self):
         selected_items = self.tree.selectedItems()
