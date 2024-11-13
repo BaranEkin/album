@@ -192,7 +192,7 @@ class MainWindow(QMainWindow):
         self.frame_bottom.setFixedHeight(110)
         self.frame_bottom.setFocusPolicy(Qt.NoFocus)      
 
-        self.frame_bottom.top_label.setText(str(len(self.media_data)))
+        
 
         self.frame_bottom.button_people.clicked.connect(self.on_button_people_clicked)
         self.frame_bottom.button_notes.clicked.connect(self.on_button_notes_clicked)
@@ -209,6 +209,7 @@ class MainWindow(QMainWindow):
         self.update_db()
         self.media_data = self.data_manager.get_all_media()
         self.previous_media_data = self.media_data.copy()
+        self.frame_bottom.top_label.setText(str(len(self.media_data)))
 
         self.dialog_filter = DialogFilter(self.data_manager)
         self.button_filter.clicked.connect(self.show_filter_dialog)

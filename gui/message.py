@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from typing import Literal
 
 def show_message(message: str, level: Literal["info", "warning", "error"] = "info"):
@@ -20,17 +21,19 @@ def show_message(message: str, level: Literal["info", "warning", "error"] = "inf
     
     # Make the message box modal
     msg_box.setWindowModality(Qt.ApplicationModal)  
+    
+    msg_box.setWindowIcon(QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png"))
 
     # Set the icon and title based on the level
     if level == "info":
         msg_box.setIcon(QMessageBox.Information)
-        msg_box.setWindowTitle("Bilgi")
+        msg_box.setWindowTitle("Bilgi Mesajı")
     elif level == "warning":
         msg_box.setIcon(QMessageBox.Warning)
-        msg_box.setWindowTitle("Uyarı")
+        msg_box.setWindowTitle("Uyarı Mesajı")
     elif level == "error":
         msg_box.setIcon(QMessageBox.Critical)
-        msg_box.setWindowTitle("Hata")
+        msg_box.setWindowTitle("Hata Mesajı")
 
     # Show the message box and wait for it to close
     msg_box.exec_()
