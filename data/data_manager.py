@@ -1,6 +1,7 @@
 import re
 import uuid
 from typing import Sequence, Literal
+from contextlib import contextmanager
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, and_, or_, select
@@ -15,7 +16,25 @@ from ops import cloud_ops, file_ops
 
 class DataManager:
     def __init__(self):
-        self.engine_local = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album.db")
+        self.db_engine = None
+
+    def init_db_engine(self):
+        self.db_engine = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album.db")
+
+    def get_db_engine(self):
+        if not self.db_engine:
+            self.init_db_engine()
+        return self.db_engine
+
+    @contextmanager
+    def get_session(self):
+        session = sessionmaker(bind=self.get_db_engine())()
+        try:
+            yield session
+        finally:
+            session.close()
+            self.db_engine.dispose()
+            self.db_engine = None
 
     def build_media(
             self,
@@ -64,13 +83,11 @@ class DataManager:
         return media
 
     def get_all_media(self) -> Sequence[Media]:
-        session = sessionmaker(bind=self.engine_local)()
-        try:
+        with self.get_session() as session:
             # Query the Media table, ordering by the 'date' column
             media_list = session.execute(select(Media).order_by(Media.date, Media.rank)).scalars().all()
             return media_list
-        finally:
-            session.close()
+
 
     def get_list_people(self) -> list[str]:
         media_list = self.get_all_media()
@@ -86,13 +103,10 @@ class DataManager:
         return sorted(list_people)
     
     def get_media_of_date(self, date: float) -> Sequence[Media]:
-        session = sessionmaker(bind=self.engine_local)()
-
-        try:
+        with self.get_session() as session:
             media_list = session.execute(select(Media).where(Media.date == date).order_by(Media.rank)).scalars().all()
             return media_list
-        finally:
-            session.close()
+
 
     def get_last_rank(self, date: float):
         media_list = self.get_media_of_date(date)
@@ -100,13 +114,9 @@ class DataManager:
         return last_rank
 
     def get_all_albums(self) -> Sequence[Album]:
-        session = sessionmaker(bind=self.engine_local)()
-
-        try:
+        with self.get_session() as session:
             album_list = session.execute(select(Album)).scalars().all()
             return album_list
-        finally:
-            session.close()
 
     def get_all_album_paths_with_tags(self) -> list[tuple[str, str]]:
         album_list = self.get_all_albums()
@@ -141,38 +151,20 @@ class DataManager:
             return sorted(paths, key=lambda x: x[0])
 
     def update_local_db(self) -> bool:
-
-        connect_success = cloud_ops.download_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album_cloud.db")
-        if not connect_success:
-            return False
-
-        engine_cloud = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album_cloud.db")
-        session_local = sessionmaker(bind=self.engine_local)()
-        session_cloud = sessionmaker(bind=engine_cloud)()
-        try:
-            new_rows_to_insert = DataManager._get_new_rows_from_cloud(session_cloud, session_local)
-            DataManager._insert_rows(session_local, new_rows_to_insert)
-            session_local.commit()
-            return True
-        finally:
-            session_local.close()
-            session_cloud.close()
-
+        return cloud_ops.download_from_s3_bucket("album_cloud.db", f"{Config.DATABASE_DIR}/album.db")
+    
+        
     def insert_media_list_to_local(self, media_list: list[Media]):
-        session = sessionmaker(bind=self.engine_local)()
-        user_name = cloud_ops.get_user_name()
-        try:
+        with self.get_session() as session:
+            user_name = cloud_ops.get_user_name()
             for media in media_list:
                 media.user_name = user_name
                 session.add(media)
             session.commit()
-        finally:
-            session.close()
 
     def get_filtered_media(self, media_filter: MediaFilter) -> list[Media]:
 
-        session = sessionmaker(bind=self.engine_local)()
-        try:
+        with self.get_session() as session:
             # Query the Media table, ordering by the 'date' column
             media_list = session.execute(DataManager._build_selection(media_filter)).scalars().all()
 
@@ -192,40 +184,6 @@ class DataManager:
                 log("DataManager.get_filtered_media", f"Filter returned {len(media_list)} results. Used Filter: {media_filter}")
 
             return media_list
-        finally:
-            session.close()
-
-    @staticmethod
-    def _get_new_rows_from_cloud(session_cloud, session_local):
-        local_media_uuids = session_local.query(Media.media_uuid).all()
-        local_media_uuid_list = [id_tuple[0] for id_tuple in local_media_uuids]
-        new_rows = session_cloud.query(Media).filter(~Media.media_uuid.in_(local_media_uuid_list)).all()
-        return new_rows
-
-    @staticmethod
-    def _insert_rows(session, rows):
-        for row in rows:
-            new_media_copy = Media(
-                media_uuid=row.media_uuid,
-                created_at=row.created_at,
-                user_name=row.user_name,
-                title=row.title,
-                location=row.location,
-                date=row.date,
-                date_text=row.date_text,
-                date_est=row.date_est,
-                thumbnail_key=row.thumbnail_key,
-                media_key=row.media_key,
-                type=row.type,
-                extension=row.extension,
-                private=row.private,
-                people=row.people,
-                people_count=row.people_count,
-                notes=row.notes,
-                tags=row.tags,
-                albums=row.albums
-            )
-            session.add(new_media_copy)
 
     @staticmethod
     def _build_selection(media_filter: MediaFilter):

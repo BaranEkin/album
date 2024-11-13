@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
+from gui.constants import Constants
 from media_loader import MediaLoader
 from logger import log
 from data.media_filter import MediaFilter
@@ -38,17 +39,9 @@ class MainWindow(QMainWindow):
         self.data_manager = data_manager
         self.media_loader = media_loader
 
-        """
-        if cloud_ops.check_s3():
-            success = self.data_manager.update_local_db()
-            if not success:
-                pass
-        else:
-            pass
-        """
-
-        self.media_data = self.data_manager.get_all_media()
-        self.previous_media_data = self.media_data.copy()
+        self.media_data = []
+        self.previous_media_data = []
+        
         self.selected_media = None
         self.previous_index = None
 
@@ -110,8 +103,7 @@ class MainWindow(QMainWindow):
         self.button_filter.setText("")
         #self.button_filter.setToolTip(Constants.TOOLTIP_BUTTON_FORWARD)
         self.layout_features_area.addWidget(self.button_filter, 0, 1)
-        self.dialog_filter = DialogFilter(self.data_manager)
-        self.button_filter.clicked.connect(self.show_filter_dialog)
+
 
         self.button_same_date_location = QPushButton()
         self.button_same_date_location.setFocusPolicy(Qt.NoFocus)
@@ -198,7 +190,7 @@ class MainWindow(QMainWindow):
         # Create the frame for information at the bottom
         self.frame_bottom = FrameBottom()
         self.frame_bottom.setFixedHeight(110)
-        self.frame_bottom.setFocusPolicy(Qt.NoFocus)
+        self.frame_bottom.setFocusPolicy(Qt.NoFocus)      
 
         self.frame_bottom.top_label.setText(str(len(self.media_data)))
 
@@ -213,6 +205,13 @@ class MainWindow(QMainWindow):
         self.slideshow_timer.timeout.connect(self.run_slideshow)
 
         main_layout.addWidget(self.frame_bottom)
+
+        self.update_db()
+        self.media_data = self.data_manager.get_all_media()
+        self.previous_media_data = self.media_data.copy()
+
+        self.dialog_filter = DialogFilter(self.data_manager)
+        self.button_filter.clicked.connect(self.show_filter_dialog)
 
         # Create and set the custom model
         thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
@@ -230,6 +229,22 @@ class MainWindow(QMainWindow):
 
         # Warmup detection to load YOLOv8 model
         face_detection.detect_people(Image.new('RGB', (200, 200), color='white'))
+    
+    
+    def update_db(self):
+        try:
+            if cloud_ops.check_s3():
+                success = self.data_manager.update_local_db()
+                self.set_cloud_connected(success)
+                if not success:
+                    show_message("Veri tabanı güncellenemedi. Yerel veri tabanı kullanılacak.", level="error")
+            else:
+                show_message("Bulut sistemi bağlantısı sağlanamadı. Uygulama çevrimdışı olarak çalışacak.", level="warning")
+                self.set_cloud_connected(False)
+        except:
+            show_message("Veri tabanı güncellenemedi. Yerel veri tabanı kullanılacak.", level="error")
+            self.set_cloud_connected(False)
+
     
     def keyPressEvent(self, event):
         """
@@ -423,11 +438,15 @@ class MainWindow(QMainWindow):
 
     def show_filter_dialog(self):
         if self.dialog_filter.exec_() == QDialog.Accepted:
-
             self.update_media_data(self.dialog_filter.media_list)
-        
+
+    def set_cloud_connected(self, connected: bool):
+        if connected:
+            self.frame_bottom.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_SUCCESS)
+            self.frame_bottom.status_cloud.setPixmap(QPixmap("res/icons/Cloud-Check--Streamline-Core.png"))
         else:
-            pass
+            self.frame_bottom.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_FAIL)
+            self.frame_bottom.status_cloud.setPixmap(QPixmap("res/icons/Cloud-Warning--Streamline-Core.png"))
 
     def on_same_date_location(self, checked):
         
