@@ -90,23 +90,35 @@ class DialogFilter(QDialog):
     def update_albums(self):
         self.albums = self.data_manager.get_all_albums()
 
+    def get_quick(self):
+        return self.input_quick.text().strip()
+
     def build_filter(self) -> MediaFilter:
-        media_filter = MediaFilter(
-            albums=self.frame_tree.get_selected_albums(),
-            title=self.frame_detailed.get_title(),
-            location=self.frame_detailed.get_location(),
-            people=self.frame_detailed.get_people(),
-            people_count_range=self.frame_detailed.get_people_count_range(),
-            file_type=self.frame_detailed.get_file_type(),
-            file_ext=self.frame_detailed.get_ext(),
-            tags=self.frame_detailed.get_tags(),
-            date_range=self.frame_detailed.get_date_range(),
-            days=self.frame_detailed.get_days(),
-            months=self.frame_detailed.get_months(),
-            years=self.frame_detailed.get_years(),
-            days_of_week=self.frame_detailed.get_days_of_week(),
-            sort=self.frame_detailed.get_sort()
-        )
+
+        if self.radio_quick.isChecked():
+            media_filter = MediaFilter(
+                albums=self.frame_tree.get_selected_albums(),
+                quick=self.get_quick()
+                )
+
+        else:
+            media_filter = MediaFilter(
+                albums=self.frame_tree.get_selected_albums(),
+                topic=self.frame_detailed.get_topic(),
+                title=self.frame_detailed.get_title(),
+                location=self.frame_detailed.get_location(),
+                people=self.frame_detailed.get_people(),
+                people_count_range=self.frame_detailed.get_people_count_range(),
+                file_type=self.frame_detailed.get_file_type(),
+                file_ext=self.frame_detailed.get_ext(),
+                tags=self.frame_detailed.get_tags(),
+                date_range=self.frame_detailed.get_date_range(),
+                days=self.frame_detailed.get_days(),
+                months=self.frame_detailed.get_months(),
+                years=self.frame_detailed.get_years(),
+                days_of_week=self.frame_detailed.get_days_of_week(),
+                sort=self.frame_detailed.get_sort()
+            )
 
         return media_filter
 
@@ -116,5 +128,6 @@ class DialogFilter(QDialog):
         self.accept()
 
     def reset_filter(self):
+        self.input_quick.setText("")
         self.frame_detailed.clear_all_fields()
         self.frame_tree.clear_selection()

@@ -234,6 +234,30 @@ class DataManager:
         if media_filter.albums[0]:
             selection = selection.where(or_(*[Media.albums.contains(album) for album in media_filter.albums]))
 
+        if media_filter.quick:
+            quick_filter_fields = [
+                Media.topic,
+                Media.title,
+                Media.location,
+                Media.people,
+                Media.tags,
+                Media.extension,
+                Media.date_text
+            ]
+            
+            selection = selection.where(
+                or_(*[field.like(f"%{media_filter.quick}%") for field in quick_filter_fields])
+            )
+            selection = selection.order_by(Media.date, Media.rank)
+            return selection
+
+        if media_filter.topic:
+            filter_condition = DataManager._build_filter_condition(
+                media_filter.topic,
+                "search_topic"
+            )
+            selection = selection.where(filter_condition)
+
         if media_filter.title:
             filter_condition = DataManager._build_filter_condition(
                 media_filter.title,
@@ -318,6 +342,9 @@ class DataManager:
 
         def search_tags(key: str):
             return Media.tags.op('GLOB')(f'*{key}*')
+        
+        def search_topic(key: str):
+            return Media.topic.op('GLOB')(f'*{key}*')
 
         def search_title(key: str):
             return Media.title.op('GLOB')(f'*{key}*')

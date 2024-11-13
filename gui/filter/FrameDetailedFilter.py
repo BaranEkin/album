@@ -247,6 +247,7 @@ class FrameDetailedFilter(QFrame):
         self.people_count_max.setEnabled(state == Qt.Checked)
 
     def clear_all_fields(self):
+        self.topic_input.setText("")
         self.title_input.setText("")
         self.location_input.setText("")
         self.people_input.setText("")
@@ -269,6 +270,9 @@ class FrameDetailedFilter(QFrame):
         self.date_range_checkbox.setChecked(False)
         self.additional_date_filters_checkbox.setChecked(False)
 
+    def get_topic(self):
+        return turkish_upper(self.topic_input.text().strip())
+    
     def get_title(self):
         return turkish_upper(self.title_input.text().strip())
 
