@@ -111,9 +111,10 @@ def create_video_thumbnail(media_key: str, thumbnail_key: str):
     
     # Stack banners and thumbnail horizontally
     thumbnail_image = np.hstack((banner, cropped_frame, banner))
+    thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, thumbnail_key)
     
     # Save the final image
-    cv2.imwrite(thumbnail_key, thumbnail_image)
+    cv2.imwrite(thumbnail_path, thumbnail_image)
 
     # Release resources
     video.release()

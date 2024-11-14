@@ -110,7 +110,10 @@ class DataManager:
 
     def get_last_rank(self, date: float):
         media_list = self.get_media_of_date(date)
-        last_rank = max([media.rank for media in media_list])
+        if media_list:
+            last_rank = max([media.rank for media in media_list])
+        else:
+            last_rank = 0.0
         return last_rank
 
     def get_all_albums(self) -> Sequence[Album]:
