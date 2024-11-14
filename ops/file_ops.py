@@ -29,7 +29,7 @@ def check_file_exists(directory: str, key: str) -> bool:
     return os.path.exists(os.path.join(directory, key))
 
 
-def add_media(media_id: str, media_path: Union[str, bytes, os.PathLike]):
+def add_media(media_uuid: str, media_path: Union[str, bytes, os.PathLike]):
     """Add a media to the media directory with a structured filename and create a thumbnail.
     Crate directories if needed.
 
@@ -39,13 +39,13 @@ def add_media(media_id: str, media_path: Union[str, bytes, os.PathLike]):
     """
 
     extension = get_file_extension(media_path)
-    media_key = f"{media_id}{extension}"
+    media_key = f"{media_uuid}{extension}"
 
     destination_path = os.path.join(Config.MEDIA_DIR, media_key)
 
     shutil.copy2(media_path, destination_path)
 
-    thumbnail_key = f"{media_id}.jpg"
+    thumbnail_key = f"{media_uuid}.jpg"
     
     file_type = get_file_type(media_path)
     if file_type == 1:
