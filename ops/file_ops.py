@@ -3,6 +3,8 @@ import os
 import re
 import platform
 import subprocess
+import cv2
+import numpy as np
 
 from typing import Literal, Union
 from datetime import datetime
@@ -10,6 +12,7 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 
 from config.config import Config
+from logger import log
 
 
 def check_file_exists(directory: str, key: str) -> bool:
@@ -26,8 +29,8 @@ def check_file_exists(directory: str, key: str) -> bool:
     return os.path.exists(os.path.join(directory, key))
 
 
-def add_image(media_id: str, media_path: Union[str, bytes, os.PathLike]):
-    """Add an image to the media directory with a structured filename and create a thumbnail.
+def add_media(media_id: str, media_path: Union[str, bytes, os.PathLike]):
+    """Add a media to the media directory with a structured filename and create a thumbnail.
     Crate directories if needed.
 
     Args:
@@ -43,7 +46,12 @@ def add_image(media_id: str, media_path: Union[str, bytes, os.PathLike]):
     shutil.copy2(media_path, destination_path)
 
     thumbnail_key = f"{media_id}.jpg"
-    create_image_thumbnail(media_key, thumbnail_key)
+    
+    file_type = get_file_type(media_path)
+    if file_type == 1:
+        create_image_thumbnail(media_key, thumbnail_key)
+    elif file_type == 2:
+        create_video_thumbnail(media_key, thumbnail_key)
 
 
 def create_image_thumbnail(media_key: str, thumbnail_key: str):
@@ -61,6 +69,54 @@ def create_image_thumbnail(media_key: str, thumbnail_key: str):
 
     img = img.convert("RGB")
     img.save(thumbnail_path, "JPEG")
+
+
+def create_video_thumbnail(media_key: str, thumbnail_key: str):
+
+    # Load video and extract the frame
+    video = cv2.VideoCapture(os.path.join(Config.MEDIA_DIR, media_key))
+    frame_number = 30
+    video.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+    success, frame = video.read()
+
+    if success:
+        # Process frame: resize, crop center, and add banners
+        # Get original dimensions
+        h, w = frame.shape[:2]
+        width = 320
+        height = 300
+        
+        # Scale the frame to keep aspect ratio with minimum dimension covering width or height
+        scale_w = width / w
+        scale_h = height / h
+        scale = max(scale_w, scale_h)  # Ensure both dimensions fit
+
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        resized_frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        
+        # Crop center 320x300
+        start_x = (new_w - width) // 2
+        start_y = (new_h - height) // 2
+        cropped_frame = resized_frame[start_y:start_y+height, start_x:start_x+width]
+
+    else:
+        cropped_frame = np.zeros((300, 320, 3), dtype=np.uint8)
+        log("file_ops.create_video_thumbnail", 
+            f"Video frame could not be extracted from '{media_key}'. Black thumbnail will be used.", 
+            level="warning")
+
+    # Load banner
+    banner = cv2.imread("res/video_banner.jpg")
+    
+    # Stack banners and thumbnail horizontally
+    thumbnail_image = np.hstack((banner, cropped_frame, banner))
+    
+    # Save the final image
+    cv2.imwrite(thumbnail_key, thumbnail_image)
+
+    # Release resources
+    video.release()
 
 
 def get_file_extension(file_path: Union[str, bytes, os.PathLike]) -> str:

@@ -57,7 +57,7 @@ class DataManager:
 
         # UUID/GUID (Universally/Globally Unique Identifier) using UUID-4 Standard (Random)
         media_uuid = str(uuid.uuid4().hex)
-        file_ops.add_image(media_uuid=media_uuid, media_path=path)
+        file_ops.add_media(media_uuid=media_uuid, media_path=path)
 
         media = Media()
         media.media_uuid = media_uuid

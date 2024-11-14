@@ -216,6 +216,7 @@ class DialogAddMedia(QDialog):
         
         media_data = {
             "media_path": self.selected_media_path,
+            "topic": self.frame_add_info.get_topic(),
             "title": self.frame_add_info.get_title(),
             "location": self.frame_add_info.get_location(),
             "date_text": self.frame_add_info.get_date(),
@@ -228,10 +229,18 @@ class DialogAddMedia(QDialog):
             "albums": "".join(self.frame_action.get_selected_album_tags()),
         }
 
+        media_path = media_data["media_path"]
+        if not media_path:
+            log("DialogAddMedia.get_media_data", f"Media path '{media_path}' is falsy.", level="warning")
+            show_message("Medya dosyası seçilmedi. Lütfen bir medya dosyası seçin.", level="warning")
+            return None
+
+        topic = media_data["topic"]
         title = media_data["title"]
-        if not title:
-            log("DialogAddMedia.get_media_data", f"Title '{title}' is falsy.", level="warning")
-            show_message("Başlık alanını doldurmak zorunludur. Lütfen bir başlık girin.", level="warning")
+
+        if not (title or topic):
+            log("DialogAddMedia.get_media_data", f"Both topic '{topic}' and title {title} are falsy.", level="warning")
+            show_message("Konu ile başlık alanlarından en az bir tanesini doldurmak zorunludur.", level="warning")
             return None
         
         location = media_data["location"]
@@ -268,7 +277,7 @@ class DialogAddMedia(QDialog):
         for media_data in self.media_data_to_be_uploaded:
             media = self.data_manager.build_media(
                 path=media_data["media_path"],
-                topic=None, #  TODO
+                topic=media_data["topic"],
                 title=media_data["title"],
                 location=media_data["location"],
                 date_text=media_data["date_text"],

@@ -46,7 +46,7 @@ def get_people_detect_str(image_key, people):
 def make_files(media_uuid, old_entry, foto_folder, preview_folder):
     media_source_path = os.path.join(foto_folder, old_entry["DOSYAADI"][1:])
     if file_ops.get_file_type(media_source_path) == 1:
-        file_ops.add_image(media_uuid, media_source_path)
+        file_ops.add_media(media_uuid, media_source_path)
     else:
         media_destination_path = os.path.join("res/media/", f"{media_uuid}{file_ops.get_file_extension(media_source_path)}")
         shutil.copy2(media_source_path, media_destination_path)

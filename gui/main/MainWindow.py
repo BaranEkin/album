@@ -192,8 +192,6 @@ class MainWindow(QMainWindow):
         self.frame_bottom.setFixedHeight(110)
         self.frame_bottom.setFocusPolicy(Qt.NoFocus)      
 
-        
-
         self.frame_bottom.button_people.clicked.connect(self.on_button_people_clicked)
         self.frame_bottom.button_notes.clicked.connect(self.on_button_notes_clicked)
         self.frame_bottom.button_back.clicked.connect(self.go_to_previous_media)

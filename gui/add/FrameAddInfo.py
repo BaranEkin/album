@@ -15,7 +15,19 @@ class FrameAddInfo(QFrame):
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(0)
 
-        # Frame 1: Title
+        # Frame: Topic
+        frame_topic = QFrame(self)
+        frame_topic_layout = QHBoxLayout(frame_topic)
+        label_topic = QLabel(Constants.LABEL_TOPIC)
+        label_topic.setFixedWidth(40)
+        label_topic.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.input_topic = QLineEdit()
+        self.input_topic.setFixedWidth(700)
+        frame_topic_layout.addWidget(label_topic)
+        frame_topic_layout.addWidget(self.input_topic)
+        main_layout.addWidget(frame_topic)
+
+        # Frame: Title
         frame_title = QFrame(self)
         frame_title_layout = QHBoxLayout(frame_title)
         label_title = QLabel(Constants.LABEL_TITLE)
@@ -27,7 +39,7 @@ class FrameAddInfo(QFrame):
         frame_title_layout.addWidget(self.input_title)
         main_layout.addWidget(frame_title)
 
-        # Frame 2: Location
+        # Frame: Location
         frame_location = QFrame(self)
         frame_location_layout = QHBoxLayout(frame_location)
         label_location = QLabel(Constants.LABEL_LOCATION)
@@ -50,7 +62,7 @@ class FrameAddInfo(QFrame):
         frame_location_layout.addWidget(self.combo_location)
         main_layout.addWidget(frame_location)
 
-        # Frame 3: date and Tags
+        # Frame: date and Tags
         frame_date_and_tags = QFrame(self)
         frame_date_and_tags_layout = QHBoxLayout(frame_date_and_tags)
 
@@ -131,6 +143,12 @@ class FrameAddInfo(QFrame):
         main_layout.addWidget(frame_people_notes)
 
         self.setLayout(main_layout)
+
+    def get_topic(self):
+        return self.input_topic.text().strip()
+
+    def set_title(self, topic):
+        self.input_topic.setText(topic)
 
     def get_title(self):
         return self.input_title.text().strip()
