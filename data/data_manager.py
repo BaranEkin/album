@@ -253,6 +253,9 @@ class DataManager:
         if media_filter.file_ext:
             selection = selection.where(Media.extension.ilike(f"%{media_filter.file_ext}%"))
 
+        if media_filter.file_type:
+            selection = selection.where(Media.type == media_filter.file_type)
+
         if media_filter.date_range[0]:
             date_start = date_to_julian(normalize_date(media_filter.date_range[0]))
             if date_start:

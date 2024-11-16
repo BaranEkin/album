@@ -128,7 +128,7 @@ class FrameDetailedFilter(QFrame):
         # Extras
         layout_extras = QHBoxLayout()
         self.type_dropdown = QComboBox()
-        self.type_dropdown.addItems(["Fotoğraf", "Video", "Ses"])
+        self.type_dropdown.addItems(["Tümü", "Fotoğraf", "Video", "Ses"])
         self.type_dropdown.setFixedWidth(80)
 
         self.extension_input = QLineEdit()
