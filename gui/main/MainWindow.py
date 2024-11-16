@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
 
         # Set window title and initial dimensions
         self.setWindowTitle("ALBUM 2.0")
+        self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
 
         #self.file_menu = QMenu("&Dosya", self)
@@ -116,6 +117,15 @@ class MainWindow(QMainWindow):
         #self.button_same_date_location.setToolTip(Constants.TOOLTIP_BUTTON_SLIDESHOW)
         self.layout_features_area.addWidget(self.button_same_date_location, 0, 2)
 
+        self.button_edit_media = QPushButton()
+        self.button_edit_media.setFocusPolicy(Qt.NoFocus)
+        self.button_edit_media.setFixedSize(50, 50)
+        self.button_edit_media.setIcon(QIcon("res/icons/Pencil-Square--Streamline-Plump-Gradient.png"))
+        self.button_edit_media.setIconSize(QSize(27, 27))
+        self.button_edit_media.setText("")
+        #self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
+        self.layout_features_area.addWidget(self.button_edit_media, 1, 0)
+
         self.button_export_media = QPushButton()
         self.button_export_media.setFocusPolicy(Qt.NoFocus)
         self.button_export_media.setFixedSize(50, 50)
@@ -124,29 +134,23 @@ class MainWindow(QMainWindow):
         self.button_export_media.setIconSize(QSize(30, 30))
         self.button_export_media.setText("")
         #self.button_export_media.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
-        self.layout_features_area.addWidget(self.button_export_media, 1, 0)
+        self.layout_features_area.addWidget(self.button_export_media, 1, 1)
 
-        self.button_edit_media = QPushButton()
-        self.button_edit_media.setFocusPolicy(Qt.NoFocus)
-        self.button_edit_media.setFixedSize(50, 50)
-        #self.button_edit_media.setIcon(QIcon("res/icons/Task-List-Edit--Streamline-Plump-Gradient.png"))
-        self.button_edit_media.setEnabled(False)
-        self.button_edit_media.setIconSize(QSize(30, 30))
-        self.button_edit_media.setText("")
-        #self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
-        self.layout_features_area.addWidget(self.button_edit_media, 1, 1)
+        self.button_same_date = QPushButton()
+        self.button_same_date.setFixedSize(50, 50)
+        self.button_same_date.setIcon(QIcon("res/icons/Circle-Clock--Streamline-Core-Gradient.png"))
+        self.button_same_date.setIconSize(QSize(25, 25))
+        self.button_same_date.setText("")
+        self.button_same_date.clicked.connect(self.on_same_date)
+        self.button_same_date.setCheckable(True)
+        self.layout_features_area.addWidget(self.button_same_date, 1, 2)
 
-        self.button_placeholder1 = QPushButton()
-        self.button_placeholder1.setFixedSize(50, 50)
-        self.button_placeholder1.setText("")
-        self.button_placeholder1.setEnabled(False)
-        self.layout_features_area.addWidget(self.button_placeholder1, 1, 2)
-
-        self.button_placeholder2 = QPushButton()
-        self.button_placeholder2.setFixedSize(50, 50)
-        self.button_placeholder2.setText("")
-        self.button_placeholder2.setEnabled(False)
-        self.layout_features_area.addWidget(self.button_placeholder2, 2, 0)
+        self.button_delete_media = QPushButton()
+        self.button_delete_media.setFixedSize(50, 50)
+        self.button_delete_media.setIcon(QIcon("res/icons/Recycle-Bin-2--Streamline-Plump-Gradient.png"))
+        self.button_delete_media.setIconSize(QSize(35, 35))
+        self.button_delete_media.setText("")
+        self.layout_features_area.addWidget(self.button_delete_media, 2, 0)
 
         self.button_placeholder3 = QPushButton()
         self.button_placeholder3.setFixedSize(50, 50)
@@ -154,11 +158,14 @@ class MainWindow(QMainWindow):
         self.button_placeholder3.setEnabled(False)
         self.layout_features_area.addWidget(self.button_placeholder3, 2, 1)
 
-        self.button_placeholder4 = QPushButton()
-        self.button_placeholder4.setFixedSize(50, 50)
-        self.button_placeholder4.setText("")
-        self.button_placeholder4.setEnabled(False)
-        self.layout_features_area.addWidget(self.button_placeholder4, 2, 2)
+        self.button_same_location = QPushButton()
+        self.button_same_location.setFixedSize(50, 50)
+        self.button_same_location.setIcon(QIcon("res/icons/Location-Pin-3--Streamline-Sharp-Gradient-Free.png"))
+        self.button_same_location.setIconSize(QSize(30, 30))
+        self.button_same_location.setText("")
+        self.button_same_location.clicked.connect(self.on_same_location)
+        self.button_same_location.setCheckable(True)
+        self.layout_features_area.addWidget(self.button_same_location, 2, 2)
 
         self.frame_features_area.setLayout(self.layout_features_area)
         menu_layout.addWidget(self.frame_features_area)
@@ -446,29 +453,85 @@ class MainWindow(QMainWindow):
         else:
             self.frame_bottom.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_FAIL)
             self.frame_bottom.status_cloud.setPixmap(QPixmap("res/icons/Cloud-Warning--Streamline-Core.png"))
-
+    
     def on_same_date_location(self, checked):
-        
         if checked:
-            selected_indexes = self.thumbnail_list.selectedIndexes()
+            self.button_same_date.setEnabled(False)
+            self.button_same_location.setEnabled(False)
+            self.button_same_date.setChecked(False)
+            self.button_same_location.setChecked(False)
 
+            selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
                 self.previous_index = selected_indexes[0].row()
 
             self.previous_media_data = self.media_data.copy()
-
             date = self.selected_media.date_text
             location = self.selected_media.location
-
             media_filter = MediaFilter(date_range=(date, ""), location_exact=location)
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
-        elif self.previous_media_data is not None:
+        else:
+            self.button_same_date.setEnabled(True)
+            self.button_same_location.setEnabled(True)
 
-            if self.previous_index is not None:
-                self.update_media_data(self.previous_media_data.copy(), self.previous_index)
-            else:
-                self.update_media_data(self.previous_media_data.copy())
+            if self.previous_media_data is not None:
+                if self.previous_index is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index)
+                else:
+                    self.update_media_data(self.previous_media_data.copy())
+
+    def on_same_date(self, checked):
+        if checked:
+            self.button_same_date_location.setEnabled(False)
+            self.button_same_location.setEnabled(False)
+            self.button_same_date_location.setChecked(False)
+            self.button_same_location.setChecked(False)
+
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+            if selected_indexes:
+                self.previous_index = selected_indexes[0].row()
+
+            self.previous_media_data = self.media_data.copy()
+            date = self.selected_media.date_text
+            media_filter = MediaFilter(date_range=(date, ""))
+            self.update_media_data(self.data_manager.get_filtered_media(media_filter))
+        
+        else:
+            self.button_same_date_location.setEnabled(True)
+            self.button_same_location.setEnabled(True)
+
+            if self.previous_media_data is not None:
+                if self.previous_index is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index)
+                else:
+                    self.update_media_data(self.previous_media_data.copy())
+
+    def on_same_location(self, checked):
+        if checked:
+            self.button_same_date_location.setEnabled(False)
+            self.button_same_date.setEnabled(False)
+            self.button_same_date_location.setChecked(False)
+            self.button_same_date.setChecked(False)
+
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+            if selected_indexes:
+                self.previous_index = selected_indexes[0].row()
+
+            self.previous_media_data = self.media_data.copy()
+            location = self.selected_media.location
+            media_filter = MediaFilter(location_exact=location)
+            self.update_media_data(self.data_manager.get_filtered_media(media_filter))
+        
+        else:
+            self.button_same_date_location.setEnabled(True)
+            self.button_same_date.setEnabled(True)
+
+            if self.previous_media_data is not None:
+                if self.previous_index is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index)
+                else:
+                    self.update_media_data(self.previous_media_data.copy())
 
 
     def update_media_data(self, new_media_data, index=0):
