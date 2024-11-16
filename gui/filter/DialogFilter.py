@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt
 
 from data.data_manager import DataManager
 from data.media_filter import MediaFilter
+from data.helpers import turkish_upper
 from gui.filter.FrameDetailedFilter import FrameDetailedFilter
 from gui.filter.FrameTreeAlbums import FrameTreeAlbums
 
@@ -91,7 +92,7 @@ class DialogFilter(QDialog):
         self.albums = self.data_manager.get_all_albums()
 
     def get_quick(self):
-        return self.input_quick.text().strip()
+        return turkish_upper(self.input_quick.text().strip())
 
     def build_filter(self) -> MediaFilter:
 
