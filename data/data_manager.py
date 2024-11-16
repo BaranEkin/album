@@ -62,7 +62,7 @@ class DataManager:
         media = Media()
         media.media_uuid = media_uuid
         media.created_at = created_at
-        media.modified_at = created_at
+        media.modified_at = None
         media.topic = topic
         media.title = title
         media.location = location
@@ -161,7 +161,7 @@ class DataManager:
         with self.get_session() as session:
             user_name = cloud_ops.get_user_name()
             for media in media_list:
-                media.user_name = user_name
+                media.created_by = user_name
                 session.add(media)
             session.commit()
 

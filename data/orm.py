@@ -18,8 +18,10 @@ class Media(Base):
 
     media_uuid = Column(TEXT, primary_key=True, unique=True, nullable=False)
     created_at = Column(REAL, nullable=False)
-    modified_at = Column(REAL, nullable=False)
-    user_name = Column(TEXT, nullable=False)
+    created_by = Column(TEXT, nullable=False)
+    modified_at = Column(REAL)
+    modified_by = Column(TEXT)
+    status = Column(INTEGER, nullable=False)
     topic = Column(TEXT, nullable=False)
     title = Column(TEXT, nullable=False)
     location = Column(TEXT, nullable=False)
