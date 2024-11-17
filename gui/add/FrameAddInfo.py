@@ -146,7 +146,7 @@ class FrameAddInfo(QFrame):
     def get_topic(self):
         return self.input_topic.text().strip()
 
-    def set_title(self, topic):
+    def set_topic(self, topic):
         self.input_topic.setText(topic)
 
     def get_title(self):

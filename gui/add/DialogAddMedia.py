@@ -39,8 +39,8 @@ class DialogAddMedia(QDialog):
         self.setFixedSize(1350, 900)
 
         # Main layout of the dialog (horizontal layout for the 3 frames)
-        main_layout = QHBoxLayout(self)
-        main_layout.setSpacing(0)
+        self.main_layout = QHBoxLayout(self)
+        self.main_layout.setSpacing(0)
 
         # Create left frame: frame_navigation
         self.frame_navigation = QFrame(self)
@@ -66,7 +66,7 @@ class DialogAddMedia(QDialog):
         self.frame_navigation_layout.addWidget(self.media_list)
 
         # Add the frame_navigation to the main layout
-        main_layout.addWidget(self.frame_navigation)
+        self.main_layout.addWidget(self.frame_navigation)
 
         # Create middle frame: frame_media
         self.frame_media = QFrame(self)
@@ -77,7 +77,7 @@ class DialogAddMedia(QDialog):
         # Create the clickable image label (top part of frame_media)
         self.image_label = LabelImageAdd(self.people_list, parent=self.frame_media)
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setFixedHeight(500)
+        self.image_label.setFixedSize(800, 500)
         self.frame_media_layout.addWidget(self.image_label)
 
         # Create the frame_details (bottom part of frame_media)
@@ -89,17 +89,17 @@ class DialogAddMedia(QDialog):
         self.frame_media_layout.addWidget(self.frame_add_info)
 
         # Add the frame_media to the main layout
-        main_layout.addWidget(self.frame_media)
+        self.main_layout.addWidget(self.frame_media)
 
         # Create right frame: frame_action
         self.frame_action = FrameAction(self.album_list, parent=self)
         self.frame_action.button_add.clicked.connect(self.on_media_add)
         self.frame_action.button_upload.clicked.connect(self.on_media_upload)
         self.frame_action.setFixedWidth(250)
-        main_layout.addWidget(self.frame_action)
+        self.main_layout.addWidget(self.frame_action)
 
         # Set the layout for the dialog
-        self.setLayout(main_layout)
+        self.setLayout(self.main_layout)
         self.setWindowTitle("Medya Ekleme")
         self.setWindowIcon(QIcon("res/icons/Image--Add.png"))
 

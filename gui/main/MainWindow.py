@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
+from gui.add.DialogEditMedia import DialogEditMedia
 from gui.constants import Constants
 from media_loader import MediaLoader
 from logger import log
@@ -219,6 +220,7 @@ class MainWindow(QMainWindow):
         self.dialog_filter = DialogFilter(self.data_manager)
         self.button_filter.clicked.connect(self.show_filter_dialog)
         self.button_upload_media.clicked.connect(self.show_add_media_dialog)
+        self.button_edit_media.clicked.connect(self.show_edit_media_dialog)
 
         # Create and set the custom model
         thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
@@ -450,6 +452,15 @@ class MainWindow(QMainWindow):
         dialog.exec_()
 
         self.update_media_data(self.data_manager.get_all_media())
+
+    def show_edit_media_dialog(self):
+        if not cloud_ops.check_s3():
+            pass
+        dialog = DialogEditMedia(self.data_manager, self.media_loader, self.selected_media)
+        dialog.exec_()
+
+        self.update_media_data(self.data_manager.get_all_media())
+
 
     def show_filter_dialog(self):
         if self.dialog_filter.exec_() == QDialog.Accepted:

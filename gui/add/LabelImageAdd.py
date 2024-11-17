@@ -66,16 +66,17 @@ class LabelImageAdd(QLabel):
         if self.pixmap():
             if event.button() == Qt.LeftButton:
                 clicked_pixel_coords = self.calculate_clicked_pixel(event.x(), event.y())
-                det_index = self.find_detection_index(
-                    x=clicked_pixel_coords[0],
-                    y=clicked_pixel_coords[1]
-                )
-                if det_index is not None:
-                    person = self.detections_with_names[det_index][4]
+                if clicked_pixel_coords:
+                    det_index = self.find_detection_index(
+                        x=clicked_pixel_coords[0],
+                        y=clicked_pixel_coords[1]
+                    )
+                    if det_index is not None:
+                        person = self.detections_with_names[det_index][4]
 
-                    person = self.show_assign_person_dialog(event.globalPos(), person)
-                    self.detections_with_names[det_index][4] = person
-                    self.parent().parent().update_identifications(self.detections_with_names)
+                        person = self.show_assign_person_dialog(event.globalPos(), person)
+                        self.detections_with_names[det_index][4] = person
+                        self.parent().parent().update_identifications(self.detections_with_names)
             elif event.button() == Qt.RightButton:
                 self.start_pixel = self.calculate_clicked_pixel(event.x(), event.y())
 

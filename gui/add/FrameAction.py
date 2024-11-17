@@ -76,6 +76,13 @@ class FrameAction(QFrame):
                 selected_album_tags.append(tag)
 
         return sorted(selected_album_tags)
+    
+    def set_selected_album_tags(self, selected_album_tags):
+        for checkbox, tag in self.checkbox_to_album_tag.items():
+            if tag in selected_album_tags:
+                checkbox.setChecked(True)
+            else:
+                checkbox.setChecked(False)
 
     def clear_selected_album_tags(self):
         for checkbox, tag in self.checkbox_to_album_tag.items():
