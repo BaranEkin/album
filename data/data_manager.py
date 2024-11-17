@@ -62,7 +62,7 @@ class DataManager:
         media = Media()
         media.media_uuid = media_uuid
         media.created_at = created_at
-        media.created_by = cloud_ops.get_user_name()
+        media.created_by = None # Assigned at insertion
         media.modified_at = None
         media.modified_by = None
         media.status = 1
@@ -87,10 +87,13 @@ class DataManager:
 
     def get_all_media(self) -> Sequence[Media]:
         with self.get_session() as session:
-            # Query the Media table, ordering by the 'date' column
-            media_list = session.execute(select(Media).order_by(Media.date, Media.rank)).scalars().all()
+            media_list = session.execute(select(Media).where(Media.status != 0).order_by(Media.date, Media.rank)).scalars().all()
             return media_list
 
+    def get_all_deleted_media(self) -> Sequence[Media]:
+        with self.get_session() as session:
+            media_list = session.execute(select(Media).where(Media.status == 0).order_by(Media.date, Media.rank)).scalars().all()
+            return media_list
 
     def get_list_people(self) -> list[str]:
         media_list = self.get_all_media()
@@ -105,9 +108,19 @@ class DataManager:
 
         return sorted(list_people)
     
+    def get_list_locations(self) -> list[str]:
+        media_list = self.get_all_media()
+        list_locations = []
+        for media in media_list:
+            location = media.location
+            if location not in list_locations:
+                list_locations.append(location)
+
+        return sorted(list_locations)
+    
     def get_media_of_date(self, date: float) -> Sequence[Media]:
         with self.get_session() as session:
-            media_list = session.execute(select(Media).where(Media.date == date).order_by(Media.rank)).scalars().all()
+            media_list = session.execute(select(Media).where(Media.status != 0).where(Media.date == date).order_by(Media.rank)).scalars().all()
             return media_list
 
 
@@ -193,7 +206,7 @@ class DataManager:
 
     @staticmethod
     def _build_selection(media_filter: MediaFilter):
-        selection = select(Media)
+        selection = select(Media).where(Media.status != 0)
 
         if media_filter.albums[0]:
             selection = selection.where(or_(*[Media.albums.contains(album) for album in media_filter.albums]))

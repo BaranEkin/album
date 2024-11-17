@@ -7,9 +7,9 @@ from gui.constants import Constants
 
 
 class FrameAddInfo(QFrame):
-    def __init__(self, parent=None):
+    def __init__(self, locations, parent=None):
         super().__init__()
-        # self.setFixedSize(790, 350)
+        self.locations = locations
 
         # Main vertical layout
         main_layout = QVBoxLayout(self)
@@ -50,11 +50,10 @@ class FrameAddInfo(QFrame):
         self.combo_location.setEditable(True)
         self.combo_location.setInsertPolicy(QComboBox.NoInsert)
 
-        locations = ["New York", "Los Angeles", "San Francisco", "Chicago", "Houston"]
-        self.combo_location.addItems(locations)
+        self.combo_location.addItems(self.locations)
         self.combo_location.setCurrentText("")
 
-        completer = QCompleter(locations)
+        completer = QCompleter(self.locations)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.combo_location.setCompleter(completer)
 

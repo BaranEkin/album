@@ -92,7 +92,6 @@ class MainWindow(QMainWindow):
         self.button_upload_media.setIcon(QIcon("res/icons/Image--Add.png"))
         self.button_upload_media.setIconSize(QSize(30, 30))
         self.button_upload_media.setText("")
-        self.button_upload_media.clicked.connect(self.show_add_media_dialog)
         #self.button_upload_media.setToolTip(Constants.TOOLTIP_BUTTON_BACK)
         self.layout_features_area.addWidget(self.button_upload_media, 0, 0)
 
@@ -219,6 +218,7 @@ class MainWindow(QMainWindow):
 
         self.dialog_filter = DialogFilter(self.data_manager)
         self.button_filter.clicked.connect(self.show_filter_dialog)
+        self.button_upload_media.clicked.connect(self.show_add_media_dialog)
 
         # Create and set the custom model
         thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]

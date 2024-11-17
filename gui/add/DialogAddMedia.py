@@ -27,6 +27,7 @@ class DialogAddMedia(QDialog):
         self.data_manager = data_manager
         self.people_list = self.data_manager.get_list_people()
         self.album_list = self.data_manager.get_all_album_paths_with_tags()
+        self.locations_list = self.data_manager.get_list_locations()
         self.media_to_be_uploaded = []
         self.media_data_to_be_uploaded = []
         self.media_paths_to_be_uploaded = []
@@ -80,7 +81,7 @@ class DialogAddMedia(QDialog):
         self.frame_media_layout.addWidget(self.image_label)
 
         # Create the frame_details (bottom part of frame_media)
-        self.frame_add_info = FrameAddInfo(parent=self)
+        self.frame_add_info = FrameAddInfo(locations=self.locations_list, parent=self)
         self.frame_add_info.setFixedHeight(350)
         self.frame_add_info.setFrameStyle(QFrame.StyledPanel)
         self.frame_add_info.radio_date_from_filename.toggled.connect(self.set_auto_date)
