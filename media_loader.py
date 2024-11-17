@@ -114,6 +114,9 @@ class MediaLoader:
             except Exception as e:
                 log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} couldn't be retrieved: {e}", level="error")
 
+    def get_media_path(self, media_uuid, media_extension):
+        return os.path.join(Config.MEDIA_DIR, f"{media_uuid}{media_extension}")
+
     def check_video_audio(self, media_key: str) -> bool:
         """Check if a video or audio file exists in the local media directory.
 

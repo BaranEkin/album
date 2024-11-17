@@ -256,3 +256,10 @@ def play_video_audio(file_path: Union[str, bytes, os.PathLike]):
 
     else:
         subprocess.run(["xdg-open", file_path])
+
+def open_with_default_app(file_path: Union[str, bytes, os.PathLike]):
+    try:
+        os.startfile(file_path)
+    except Exception as e:
+        log("file_ops.open_with_default_app", f"Error openining '{file_path}': {e}", level="error")
+        raise e

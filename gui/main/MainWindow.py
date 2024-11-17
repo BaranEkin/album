@@ -30,7 +30,7 @@ from gui.main.DialogPeople import DialogPeople
 from gui.main.DialogNotes import DialogNotes
 
 import face_detection
-from ops import cloud_ops
+from ops import cloud_ops, file_ops
 
 
 class MainWindow(QMainWindow):
@@ -105,7 +105,6 @@ class MainWindow(QMainWindow):
         #self.button_filter.setToolTip(Constants.TOOLTIP_BUTTON_FORWARD)
         self.layout_features_area.addWidget(self.button_filter, 0, 1)
 
-
         self.button_same_date_location = QPushButton()
         self.button_same_date_location.setFocusPolicy(Qt.NoFocus)
         self.button_same_date_location.setFixedSize(50, 50)
@@ -126,15 +125,13 @@ class MainWindow(QMainWindow):
         #self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
         self.layout_features_area.addWidget(self.button_edit_media, 1, 0)
 
-        self.button_export_media = QPushButton()
-        self.button_export_media.setFocusPolicy(Qt.NoFocus)
-        self.button_export_media.setFixedSize(50, 50)
-        #self.button_export_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
-        self.button_export_media.setEnabled(False)
-        self.button_export_media.setIconSize(QSize(30, 30))
-        self.button_export_media.setText("")
-        #self.button_export_media.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
-        self.layout_features_area.addWidget(self.button_export_media, 1, 1)
+        self.button_open_media = QPushButton()
+        self.button_open_media.setFixedSize(50, 50)
+        self.button_open_media.setText("")
+        self.button_open_media.setIcon(QIcon("res/icons/Link-Share-2--Streamline-Sharp-Gradient-Free.png"))
+        self.button_open_media.setIconSize(QSize(30, 30))
+        self.button_open_media.clicked.connect(self.on_open_media)
+        self.layout_features_area.addWidget(self.button_open_media, 1, 1)
 
         self.button_same_date = QPushButton()
         self.button_same_date.setFixedSize(50, 50)
@@ -152,11 +149,15 @@ class MainWindow(QMainWindow):
         self.button_delete_media.setText("")
         self.layout_features_area.addWidget(self.button_delete_media, 2, 0)
 
-        self.button_placeholder3 = QPushButton()
-        self.button_placeholder3.setFixedSize(50, 50)
-        self.button_placeholder3.setText("")
-        self.button_placeholder3.setEnabled(False)
-        self.layout_features_area.addWidget(self.button_placeholder3, 2, 1)
+        self.button_export_media = QPushButton()
+        self.button_export_media.setFocusPolicy(Qt.NoFocus)
+        self.button_export_media.setFixedSize(50, 50)
+        self.button_export_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
+        self.button_export_media.setEnabled(False)
+        self.button_export_media.setIconSize(QSize(30, 30))
+        self.button_export_media.setText("")
+        #self.button_export_media.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
+        self.layout_features_area.addWidget(self.button_export_media, 2, 1)
 
         self.button_same_location = QPushButton()
         self.button_same_location.setFixedSize(50, 50)
@@ -390,6 +391,14 @@ class MainWindow(QMainWindow):
         self.image_label.setPixmap(pixmap)
         self.fit_to_window()
 
+    def on_open_media(self):
+        media_path = self.media_loader.get_media_path(self.selected_media.media_uuid,
+                                                      self.selected_media.extension)
+        
+        try:
+            file_ops.open_with_default_app(media_path)
+        except:
+            show_message("Medya dosyası açılamadı.", level="error")
 
     def fit_to_window(self):
         if self.image_label.pixmap():
