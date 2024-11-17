@@ -159,7 +159,7 @@ class DialogAddMedia(QDialog):
         else:
             self.image_label.clear()
             self.frame_add_info.set_people_enable(True)
-            file_ops.play_video_audio(self.selected_media_path)
+            file_ops.open_with_default_app(self.selected_media_path)
 
     def select_next_media(self):
         next_row = self.media_list.currentRow() + 1

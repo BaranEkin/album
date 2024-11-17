@@ -147,7 +147,7 @@ class MediaLoader:
         file_ops.save_video_audio(media_data, path)
 
         log("MediaLoader.play_video_audio_from_cloud", f"Playing the media {media_key} from {path}")
-        file_ops.play_video_audio(path)
+        file_ops.open_with_default_app(path)
 
     def play_video_audio_from_local(self, media_key: str):
         """Play a media file from the local media directory.
@@ -156,7 +156,7 @@ class MediaLoader:
             media_key (str): The key or filename of the media file within the media directory.
         """
         path = os.path.join(self.media_dir, media_key)
-        file_ops.play_video_audio(path)
+        file_ops.open_with_default_app(path)
 
     def save_image(self, image: Image, image_key: str):
         """Save an image to the local media directory in JPEG format.

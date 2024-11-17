@@ -239,25 +239,13 @@ def save_video_audio(media_data, path: Union[str, bytes, os.PathLike]):
         media_file.write(media_data)
 
 
-def play_video_audio(file_path: Union[str, bytes, os.PathLike]):
-    """Play a media file using the default system application based on the operating system.
+def open_with_default_app(file_path: Union[str, bytes, os.PathLike]):
+    """Open a media file using the default system application.
 
     Args:
         file_path (Union[str, bytes, os.PathLike]): The path to the media file to be played.
     """
 
-    file_path = os.path.normpath(file_path)
-
-    if platform.system() == "Windows":
-        subprocess.run(f'start "" "{file_path}"', shell=True)
-
-    elif platform.system() == "Darwin":
-        subprocess.run(["open", file_path])
-
-    else:
-        subprocess.run(["xdg-open", file_path])
-
-def open_with_default_app(file_path: Union[str, bytes, os.PathLike]):
     try:
         os.startfile(file_path)
     except Exception as e:
