@@ -78,9 +78,6 @@ class LabelImageAdd(QLabel):
                     self.parent().parent().update_identifications(self.detections_with_names)
             elif event.button() == Qt.RightButton:
                 self.start_pixel = self.calculate_clicked_pixel(event.x(), event.y())
-        else:
-            # Click is outside the displayed image
-            print("Clicked outside the image area.")
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.RightButton:

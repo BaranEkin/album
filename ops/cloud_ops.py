@@ -107,7 +107,7 @@ def get_image_from_cloudfront(image_key: str, prefix: str) -> Image:
             image = image.convert('RGB') if image.mode != 'RGB' else image
             return image
     except Exception as e:
-        print(f"Error occurred: {e}")
+        log("cloud_ops.get_image_from_cloudfront", f"Image '{image_key}' couldn't be retrieved from cloudfront: {e}", level="warning")
         raise e
 
 
@@ -134,7 +134,7 @@ def get_video_audio_from_cloudfront(media_key: str, prefix: str) -> bytes:
             data = response.read()
             return data
     except Exception as e:
-        print(f"Error occurred: {e}")
+        log("cloud_ops.get_video_audio_from_cloudfront", f"Media '{media_key}' couldn't be retrieved from cloudfront: {e}", level="warning")
         raise e
 
 

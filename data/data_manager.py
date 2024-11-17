@@ -62,7 +62,10 @@ class DataManager:
         media = Media()
         media.media_uuid = media_uuid
         media.created_at = created_at
+        media.created_by = cloud_ops.get_user_name()
         media.modified_at = None
+        media.modified_by = None
+        media.status = 1
         media.topic = topic
         media.title = title
         media.location = location

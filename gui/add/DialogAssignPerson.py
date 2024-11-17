@@ -62,6 +62,4 @@ class DialogAssignPerson(QDialog):
         self.input_field.setText(item.text())
 
     def accepted(self):
-        # Print the input field value when OK is pressed
-        print(f"Person entered: {self.input_field.text()}")
         self.accept()
