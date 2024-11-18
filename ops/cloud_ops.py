@@ -261,3 +261,21 @@ def download_from_s3_bucket(key, path) -> bool:
     except Exception as e:
         log("cloud_ops.download_from_s3_bucket", f"An unexpected error occurred: {e}", level="error")
         raise e
+    
+def delete_from_s3_bucket(key, prefix=""):
+    try:
+        s3.delete_object(Bucket=Config.S3_BUCKET_NAME, Key=f"{prefix}{key}")
+        log("cloud_ops.delete_from_s3_bucket", f"File deleted successfully from s3:'{prefix}{key}'", level="info")
+    
+    except s3.exceptions.NoSuchKey:
+        log("cloud_ops.delete_from_s3_bucket", f"The specified key does not exist:'{prefix}{key}'", level="error")
+    
+    except Exception as e:
+        log("cloud_ops.delete_from_s3_bucket", f"Error occurred while deleting '{prefix}{key}': {e}", level="error")
+
+def upload_database():
+    upload_to_s3_bucket(path=f"{Config.DATABASE_DIR}/album.db", key="album_cloud.db")
+
+def delete_media(media_uuid: str, extension: str):
+    delete_from_s3_bucket(key=f"{media_uuid}{extension}", prefix="media/")
+    delete_from_s3_bucket(key=f"{media_uuid}.jpg", prefix="thumbnails/")

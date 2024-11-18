@@ -50,7 +50,7 @@ class UploadThread(QThread):
                 self.progress.emit(90)
 
                 self.current_operation.emit(f"Veri tabanı yükleniyor...")
-                cloud_ops.upload_to_s3_bucket(path=f"{Config.DATABASE_DIR}/album.db", key="album_cloud.db")
+                cloud_ops.upload_database()
 
             except Exception as e:
                 self.error_occurred.emit(str(e))

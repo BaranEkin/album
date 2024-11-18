@@ -33,8 +33,9 @@ class DataManager:
             yield session
         finally:
             session.close()
-            self.db_engine.dispose()
-            self.db_engine = None
+            if self.db_engine:
+                self.db_engine.dispose()
+                self.db_engine = None
 
     def build_media(
             self,
@@ -84,6 +85,42 @@ class DataManager:
         media.private = private
 
         return media
+    
+    def edit_media(self, media:Media):
+        with self.get_session() as session:
+            row = session.query(Media).get(media.media_uuid)
+            if row:
+                row.modified_at = current_time_in_unix_subsec()
+                row.modified_by = cloud_ops.get_user_name()
+                row.status = 2
+                row.topic = media.topic or None
+                row.title = media.title or None
+                row.location = media.location
+                row.tags = media.tags or None
+                row.notes = media.notes or None
+                row.albums = media.albums or None
+                row.people = media.people or None
+                row.people_detect = media.people_detect or None
+                row.people_count = media.people_count or 0
+
+                new_date = date_to_julian(media.date_text)
+                if row.date != new_date:
+                    row.date = new_date
+                    row.date_text = media.date_text
+                    row.date_est = media.date_est
+                    row.rank = self.get_last_rank(new_date) + 1.0
+
+                session.commit()
+
+            else:
+                pass
+    
+    def set_media_deleted(self, media_uuid):
+        with self.get_session() as session:
+            row = session.query(Media).get(media_uuid)
+            if row:
+                row.status = 0
+                session.commit()
 
     def get_all_media(self) -> Sequence[Media]:
         with self.get_session() as session:

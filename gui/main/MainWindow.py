@@ -17,6 +17,7 @@ from PIL import Image
 
 from gui.add.DialogEditMedia import DialogEditMedia
 from gui.constants import Constants
+from gui.main.DialogProcess import DialogProcess
 from media_loader import MediaLoader
 from logger import log
 from data.media_filter import MediaFilter
@@ -221,6 +222,7 @@ class MainWindow(QMainWindow):
         self.button_filter.clicked.connect(self.show_filter_dialog)
         self.button_upload_media.clicked.connect(self.show_add_media_dialog)
         self.button_edit_media.clicked.connect(self.show_edit_media_dialog)
+        self.button_delete_media.clicked.connect(self.on_delete_media)
 
         # Create and set the custom model
         thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
@@ -402,6 +404,25 @@ class MainWindow(QMainWindow):
         except:
             show_message("Medya dosyası açılamadı.", level="error")
 
+    def on_delete_media(self):
+        def delete_procedure():
+            self.data_manager.update_local_db()
+            self.data_manager.set_media_deleted(self.selected_media.media_uuid)
+            cloud_ops.upload_database()
+            file_ops.delete_media(self.selected_media.media_uuid, self.selected_media.extension)
+            cloud_ops.delete_media(self.selected_media.media_uuid, self.selected_media.extension)
+
+        procceed = show_message(("Silme işlemi medyayı hem bilgisayarınızdan hem de bulut sisteminden siler!\n"
+                                 "Bu işlem geri alınamaz!\n\n"
+                                 "Seçili medyayı silme işlemini onaylıyor musunuz?"), is_question=True)
+        if procceed:
+            dialog_delete = DialogProcess(operation=delete_procedure,
+                                          title="Silme İşlemi",
+                                          message="Silme işlemi devam ediyor...")
+            dialog_delete.exec_()
+            self.update_media_data(self.data_manager.get_all_media())
+            
+
     def fit_to_window(self):
         if self.image_label.pixmap():
             scroll_size = self.scroll_area.viewport().size()
@@ -456,10 +477,13 @@ class MainWindow(QMainWindow):
     def show_edit_media_dialog(self):
         if not cloud_ops.check_s3():
             pass
+        selected_indexes = self.thumbnail_list.selectedIndexes()
+        if selected_indexes:
+            self.previous_index = selected_indexes[0].row()
+        
         dialog = DialogEditMedia(self.data_manager, self.media_loader, self.selected_media)
-        dialog.exec_()
-
-        self.update_media_data(self.data_manager.get_all_media())
+        if dialog.exec_() == QDialog.Accepted:
+            self.update_media_data(self.data_manager.get_all_media(), self.previous_index)
 
 
     def show_filter_dialog(self):

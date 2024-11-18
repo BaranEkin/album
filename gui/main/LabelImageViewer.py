@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtCore import Qt, QPoint, QDateTime
 from media_loader import MediaLoader
-from gui.main.DialogDownload import DialogDownload
+from gui.main.DialogProcess import DialogProcess
+from gui.message import show_message
 
 
 class LabelImageViewer(QLabel):
@@ -43,9 +44,16 @@ class LabelImageViewer(QLabel):
             if self.media_loader.check_video_audio(self.current_media_key):
                 self.media_loader.play_video_audio_from_local(self.current_media_key)
             else:
-                # Show download dialog
-                dialog = DialogDownload(self.media_loader, self.current_media_key)
-                dialog.exec_()
+                procceed = show_message(("Medya bilgisayarınızda bulunmadığı için bulut sisteminden indirilecek.\n"
+                                         "Bu işlem internet hızınıza bağlı olarak biraz zaman alabilir.\n\n"
+                                         "Devam etmek istiyot musunuz?"), is_question=True)
+                if procceed:
+                    # Show download dialog
+                    dialog = DialogProcess(operation=self.media_loader.play_video_audio_from_cloud,
+                                           operation_args=(self.media_key),
+                                           title="Medya İndirme İşlemi",
+                                           message="İndirme işlemi devam ediyor...")
+                    dialog.exec_()
 
     def mouseMoveEvent(self, event):
         if self.is_image:

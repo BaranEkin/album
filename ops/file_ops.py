@@ -251,3 +251,18 @@ def open_with_default_app(file_path: Union[str, bytes, os.PathLike]):
     except Exception as e:
         log("file_ops.open_with_default_app", f"Error openining '{file_path}': {e}", level="error")
         raise e
+    
+def delete_media(media_uuid: str, extension: str) -> bool:
+    media_key = f"{media_uuid}{extension}"
+    media_path = os.path.join(Config.MEDIA_DIR, media_key)
+
+    thumbnail_key = f"{media_uuid}.jpg"
+    thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, thumbnail_key)
+
+    try:
+        os.remove(media_path)
+        os.remove(thumbnail_path)
+        return True
+    except Exception as e:
+        log("file_ops.delete_media", f"Error removing media with uuid:'{media_uuid}': {e}", level="error")
+        return False

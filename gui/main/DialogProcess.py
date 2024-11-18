@@ -1,33 +1,33 @@
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QMessageBox
-from media_loader import MediaLoader
 
-
-class DownloadThread(QThread):
+class ProcessThread(QThread):
     current_operation = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
-    download_finished = pyqtSignal()
+    process_finished = pyqtSignal()
 
-    def __init__(self, media_loader: MediaLoader, media_key):
+    def __init__(self, operation, operation_args=None, message="Operation in progress..."):
         super().__init__()
         self._is_running = True
-        self.media_loader = media_loader
-        self.media_key = media_key
+        self.operation = operation
+        self.operation_args = operation_args or ()
+        self.message = message
 
     def run(self):
         try:
             if not self._is_running:
                 return
 
-            self.current_operation.emit(f"İndirme işlemi devam ediyor...")
+            self.current_operation.emit(self.message)
             try:
-                self.media_loader.play_video_audio_from_cloud(self.media_key)
+                # Run the operation with provided arguments
+                self.operation(*self.operation_args)
                 
             except Exception as e:
                 self.error_occurred.emit(str(e))
                 return
 
-            self.download_finished.emit()
+            self.process_finished.emit()
 
         except Exception as e:
             self.error_occurred.emit(str(e))
@@ -36,33 +36,37 @@ class DownloadThread(QThread):
         self._is_running = False
 
 
-class DialogDownload(QDialog):
-    def __init__(self, media_loader: MediaLoader, media_key):
+class DialogProcess(QDialog):
+    def __init__(self, operation, operation_args=None, message="", title=""):
         super().__init__()
-        self.media_loader = media_loader
-        self.media_key = media_key
-        self.thread = None
-
-        self.setWindowTitle("Medya İndirme İşlemi")
+        self.operation = operation
+        self.operation_args = operation_args or ()
+        self.message = message
+        self.setWindowTitle(title)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint & ~Qt.WindowContextHelpButtonHint)
         self.setFixedSize(400, 100)
 
         self.layout = QVBoxLayout(self)
 
-        self.label = QLabel("İndirme başlatılıyor...")
+        self.label = QLabel(self.message)
         self.layout.addWidget(self.label)
 
         self.retry = False
 
-        self.start_download()
+        self.start_process()
 
-    def start_download(self):
-        self.thread = DownloadThread(self.media_loader, self.media_key)
+    def start_process(self):
+        self.thread = ProcessThread(
+            operation=self.operation, 
+            operation_args=self.operation_args,
+            message=self.message
+        )
         self.thread.current_operation.connect(self.label.setText)
         self.thread.error_occurred.connect(self.show_error_dialog)
-        self.thread.download_finished.connect(self.download_complete)
+        self.thread.process_finished.connect(self.process_complete)
         self.thread.start()
 
-    def download_complete(self):
+    def process_complete(self):
         self.accept()  # Close the dialog and return Accepted when the download finishes
 
     def show_error_dialog(self, error_message):
@@ -78,7 +82,7 @@ class DialogDownload(QDialog):
             self.retry = True
             self.thread.stop()  # Stop the current thread if it's still running
             self.thread.wait()  # Wait for the thread to properly stop
-            self.start_download()  # Restart the download process
+            self.start_process()  # Restart the download process
         elif result == QMessageBox.Cancel:
             self.retry = False
             self.thread.stop()  # Ensure the thread is stopped
