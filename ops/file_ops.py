@@ -149,7 +149,7 @@ def get_file_type(file_path: Union[str, bytes, os.PathLike]) -> Literal[1, 2, 3]
     image_extensions = [".png", ".jpg", ".jpeg"]
     video_extensions = [".mp4", ".avi", ".mov", ".mpg", ".wmv", ".3gp", ".asf"]
     sound_extensions = [".mp3", ".wav"]
-    extension = get_file_extension(file_path)
+    extension = get_file_extension(file_path).lower()
     if extension in image_extensions:
         return 1
     elif extension in video_extensions:

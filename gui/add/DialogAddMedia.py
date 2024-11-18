@@ -156,7 +156,7 @@ class DialogAddMedia(QDialog):
             self.draw_identifications()
             self.image_label.set_image("temp/detections.jpg")
 
-        # Selected media is a video
+        # Selected media is a video/audio
         else:
             self.image_label.clear()
             self.frame_add_info.set_people_enable(True)
