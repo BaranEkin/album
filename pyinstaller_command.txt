@@ -1,1 +1,1 @@
-pyinstaller --onedir --name Album --add-data "res/database;res/database" --add-data "res/icons;res/icons" --add-data "res/keys;res/keys" icon=album_icon.ico --noconsole app.py
+pyinstaller --onedir --noconsole --name Album --add-data "res/database;res/database" --add-data "res/icons;res/icons" --add-data "res/keys;res/keys" --icon=album_icon.ico app.py

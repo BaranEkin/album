@@ -1,4 +1,5 @@
 import sys
+from multiprocessing import freeze_support
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTranslator, QLibraryInfo
 from gui.main.MainWindow import MainWindow
@@ -10,7 +11,7 @@ from data.data_manager import DataManager
 
 # Main application execution
 if __name__ == "__main__":
-    # """
+    freeze_support()
     Config.read_config()
 
     media_loader = MediaLoader()
@@ -18,7 +19,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     app.setStyle("windowsvista")
-    
+
     # Load Turkish translations
     translator = QTranslator()
     translator.load("qtbase_tr", QLibraryInfo.location(QLibraryInfo.TranslationsPath))
