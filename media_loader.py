@@ -31,8 +31,6 @@ class MediaLoader:
         if file_ops.check_file_exists(self.media_dir, image_key):
             try:
                 image = QImage(os.path.join(self.media_dir, image_key))
-                log("MediaLoader.get_image", f"Image {image_key} is retrieved from local storage.")
-                
                 return image
             
             except OSError as e:
@@ -50,7 +48,6 @@ class MediaLoader:
                         log("MediaLoader.get_image", f"Image {image_key} is saved to local storage.")
                         
                         image = QImage(os.path.join(self.media_dir, image_key))
-                        log("MediaLoader.get_image", f"Image {image_key} is retrieved from local storage.")
 
                     except OSError as e:
                         log("MediaLoader.get_image", f"Image {image_key} couldn't be retrieved from local storage for the first time: {e}", level="error")

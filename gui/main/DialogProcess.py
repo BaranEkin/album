@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QMessageBox
 
 class ProcessThread(QThread):
@@ -6,7 +7,7 @@ class ProcessThread(QThread):
     error_occurred = pyqtSignal(str)
     process_finished = pyqtSignal()
 
-    def __init__(self, operation, operation_args=None, message="Operation in progress..."):
+    def __init__(self, operation, operation_args=None, message=""):
         super().__init__()
         self._is_running = True
         self.operation = operation
@@ -43,6 +44,7 @@ class DialogProcess(QDialog):
         self.operation_args = operation_args or ()
         self.message = message
         self.setWindowTitle(title)
+        self.setWindowIcon(QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png"))
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint & ~Qt.WindowContextHelpButtonHint)
         self.setFixedSize(400, 100)
 
@@ -67,7 +69,7 @@ class DialogProcess(QDialog):
         self.thread.start()
 
     def process_complete(self):
-        self.accept()  # Close the dialog and return Accepted when the download finishes
+        self.accept() 
 
     def show_error_dialog(self, error_message):
         error_dialog = QMessageBox(self)
@@ -82,7 +84,7 @@ class DialogProcess(QDialog):
             self.retry = True
             self.thread.stop()  # Stop the current thread if it's still running
             self.thread.wait()  # Wait for the thread to properly stop
-            self.start_process()  # Restart the download process
+            self.start_process()  # Restart the process
         elif result == QMessageBox.Cancel:
             self.retry = False
             self.thread.stop()  # Ensure the thread is stopped

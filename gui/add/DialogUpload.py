@@ -2,7 +2,8 @@ import os
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QProgressBar, QLabel, QMessageBox
 )
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
+from PyQt5.QtGui import QIcon
 
 from config.config import Config
 from data.data_manager import DataManager
@@ -75,6 +76,8 @@ class DialogUpload(QDialog):
         self.thread = None
 
         self.setWindowTitle("Medya Yükleme İlerlemesi")
+        self.setWindowIcon(QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png"))
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint & ~Qt.WindowContextHelpButtonHint)
         self.setFixedSize(400, 150)
 
         self.layout = QVBoxLayout(self)
@@ -104,8 +107,8 @@ class DialogUpload(QDialog):
 
     def show_error_dialog(self, error_message):
         error_dialog = QMessageBox(self)
-        error_dialog.setWindowTitle("Error")
-        error_dialog.setText(f"An error occurred: {error_message}")
+        error_dialog.setWindowTitle("Hata Mesajı")
+        error_dialog.setText(f"Hata: {error_message}")
         error_dialog.setIcon(QMessageBox.Critical)
         error_dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Cancel)
         error_dialog.setDefaultButton(QMessageBox.Retry)
@@ -116,7 +119,7 @@ class DialogUpload(QDialog):
             self.thread.stop()  # Stop the current thread if it's still running
             self.thread.wait()  # Wait for the thread to properly stop
             self.start_upload()  # Restart the upload process
-        elif result == QMessageBox.Cancel:
+        else:
             self.retry = False
             self.thread.stop()  # Ensure the thread is stopped
             self.reject()  # Close the dialog

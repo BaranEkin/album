@@ -46,7 +46,10 @@ class FrameTreeAlbums(QFrame):
             # Store this item in the dictionary for potential child nodes
             node_items[tag] = tree_item
 
+        self.tree.collapseAll()
+        self.expand_tree_default()
         self.tree.itemSelectionChanged.connect(self.on_select_albums)
+        self.checkbox_include_child.stateChanged.connect(self.on_select_albums)
         self.layout.addWidget(self.tree)
         self.layout.addWidget(self.checkbox_include_child)
 
@@ -54,9 +57,21 @@ class FrameTreeAlbums(QFrame):
         self.selected_album_tags = []
         self.checkbox_include_child.setChecked(False)
         self.tree.collapseAll()
+        self.expand_tree_default()
 
     def get_selected_albums(self):
         return tuple(self.selected_album_tags) if self.selected_album_tags else ("",)
+    
+    def expand_tree_default(self):
+        # Iterate over all top-level items (root items)
+        for i in range(self.tree.topLevelItemCount()):
+            root_item = self.tree.topLevelItem(i)
+            root_item.setExpanded(True)
+            
+            # Collapse all children of this root item
+            for j in range(root_item.childCount()):
+                child_item = root_item.child(j)
+                child_item.setExpanded(False)
         
     def on_select_albums(self):
         selected_items = self.tree.selectedItems()
@@ -64,6 +79,7 @@ class FrameTreeAlbums(QFrame):
             selected_item = selected_items[0]
             if not self.checkbox_include_child.isChecked():
                 self.selected_album_tags = [self.get_album_tag(selected_item.text(0))]
+                return
 
             # Gather text for the selected item and its children
             with_children = [selected_item.text(0)]

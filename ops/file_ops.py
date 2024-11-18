@@ -1,8 +1,6 @@
 import shutil
 import os
 import re
-import platform
-import subprocess
 import cv2
 import numpy as np
 

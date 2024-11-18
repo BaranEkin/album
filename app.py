@@ -12,14 +12,18 @@ from data.data_manager import DataManager
 if __name__ == "__main__":
     # """
     Config.read_config()
+
     media_loader = MediaLoader()
     data_manager = DataManager()
+
     app = QApplication(sys.argv)
     app.setStyle("windowsvista")
+    
     # Load Turkish translations
     translator = QTranslator()
     translator.load("qtbase_tr", QLibraryInfo.location(QLibraryInfo.TranslationsPath))
     app.installTranslator(translator)
+
     viewer = MainWindow(data_manager, media_loader)
     viewer.showMaximized()
     sys.exit(app.exec_())

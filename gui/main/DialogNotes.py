@@ -17,7 +17,7 @@ class DialogNotes(QDialog):
         # Set custom font and color
         text_browser.setStyleSheet("font-family: Arial; font-size: 18px; color: black;")
 
-        text_browser.setText(self.notes)
+        text_browser.setText(self.notes.replace("\\n", "\n"))
 
         # Add the text browser to the layout
         layout.addWidget(text_browser)
