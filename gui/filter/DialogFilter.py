@@ -10,10 +10,11 @@ from gui.filter.FrameTreeAlbums import FrameTreeAlbums
 
 
 class DialogFilter(QDialog):
-    def __init__(self, data_manager: DataManager):
+    def __init__(self, data_manager: DataManager, parent=None):
         super().__init__()
 
         self.data_manager = data_manager
+        self.parent = parent
         self.albums = self.data_manager.get_all_albums()
         self.media_list = []
 
@@ -126,6 +127,7 @@ class DialogFilter(QDialog):
     def filter_media(self):
         media_filter = self.build_filter()
         self.media_list = self.data_manager.get_filtered_media(media_filter)
+        self.parent.previous_media_filter = media_filter
         self.accept()
 
     def reset_filter(self):

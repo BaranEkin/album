@@ -45,7 +45,11 @@ class MainWindow(QMainWindow):
         self.previous_media_data = []
         
         self.selected_media = None
-        self.previous_index = None
+        self.previous_media_filter = None
+        # Index before change: add/edit/delete operations
+        self.previous_index_change = None
+        # Index before same date location buttons
+        self.previous_index_same = None
 
         # Set window title and initial dimensions
         self.setWindowTitle("ALBUM 2.0")
@@ -218,7 +222,7 @@ class MainWindow(QMainWindow):
         self.previous_media_data = self.media_data.copy()
         self.frame_bottom.top_label.setText(str(len(self.media_data)))
 
-        self.dialog_filter = DialogFilter(self.data_manager)
+        self.dialog_filter = DialogFilter(self.data_manager, parent=self)
         self.button_filter.clicked.connect(self.show_filter_dialog)
         self.button_upload_media.clicked.connect(self.show_add_media_dialog)
         self.button_edit_media.clicked.connect(self.show_edit_media_dialog)
@@ -420,7 +424,10 @@ class MainWindow(QMainWindow):
                                           title="Silme İşlemi",
                                           message="Silme işlemi devam ediyor...")
             dialog_delete.exec_()
-            self.update_media_data(self.data_manager.get_all_media())
+            if self.previous_media_filter:
+                self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
+            else:
+                self.update_media_data(self.data_manager.get_all_media(), index=max(self.previous_index_change-1, 0))
             
 
     def fit_to_window(self):
@@ -472,18 +479,24 @@ class MainWindow(QMainWindow):
         dialog = DialogAddMedia(self.data_manager)
         dialog.exec_()
 
-        self.update_media_data(self.data_manager.get_all_media())
+        if self.previous_media_filter:
+            self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
+        else:
+            self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
 
     def show_edit_media_dialog(self):
         if not cloud_ops.check_s3():
             pass
         selected_indexes = self.thumbnail_list.selectedIndexes()
         if selected_indexes:
-            self.previous_index = selected_indexes[0].row()
+            self.previous_index_change = selected_indexes[0].row()
         
         dialog = DialogEditMedia(self.data_manager, self.media_loader, self.selected_media)
         if dialog.exec_() == QDialog.Accepted:
-            self.update_media_data(self.data_manager.get_all_media(), self.previous_index)
+            if self.previous_media_filter:
+                self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
+            else:
+                self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
 
 
     def show_filter_dialog(self):
@@ -507,12 +520,13 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
-                self.previous_index = selected_indexes[0].row()
+                self.previous_index_same = selected_indexes[0].row()
 
             self.previous_media_data = self.media_data.copy()
             date = self.selected_media.date_text
             location = self.selected_media.location
             media_filter = MediaFilter(date_range=(date, ""), location_exact=location)
+            self.previous_media_filter = media_filter
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
@@ -520,8 +534,8 @@ class MainWindow(QMainWindow):
             self.button_same_location.setEnabled(True)
 
             if self.previous_media_data is not None:
-                if self.previous_index is not None:
-                    self.update_media_data(self.previous_media_data.copy(), self.previous_index)
+                if self.previous_index_same is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index_same)
                 else:
                     self.update_media_data(self.previous_media_data.copy())
 
@@ -534,11 +548,12 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
-                self.previous_index = selected_indexes[0].row()
+                self.previous_index_same = selected_indexes[0].row()
 
             self.previous_media_data = self.media_data.copy()
             date = self.selected_media.date_text
             media_filter = MediaFilter(date_range=(date, ""))
+            self.previous_media_filter = media_filter
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
@@ -546,8 +561,8 @@ class MainWindow(QMainWindow):
             self.button_same_location.setEnabled(True)
 
             if self.previous_media_data is not None:
-                if self.previous_index is not None:
-                    self.update_media_data(self.previous_media_data.copy(), self.previous_index)
+                if self.previous_index_same is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index_same)
                 else:
                     self.update_media_data(self.previous_media_data.copy())
 
@@ -560,11 +575,12 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
-                self.previous_index = selected_indexes[0].row()
+                self.previous_index_same = selected_indexes[0].row()
 
             self.previous_media_data = self.media_data.copy()
             location = self.selected_media.location
             media_filter = MediaFilter(location_exact=location)
+            self.previous_media_filter = media_filter
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
@@ -572,33 +588,33 @@ class MainWindow(QMainWindow):
             self.button_same_date.setEnabled(True)
 
             if self.previous_media_data is not None:
-                if self.previous_index is not None:
-                    self.update_media_data(self.previous_media_data.copy(), self.previous_index)
+                if self.previous_index_same is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index_same)
                 else:
                     self.update_media_data(self.previous_media_data.copy())
 
 
     def update_media_data(self, new_media_data, index=0):
             
-            if new_media_data is None:
-                log("MainWindow.update_media_data", "Media data is None.", level="error")
-                show_message("Medyaları güncellerken bir sorun yaşandı.", level="error")
-                return
+        if new_media_data is None:
+            log("MainWindow.update_media_data", "Media data is None.", level="error")
+            show_message("Medyaları güncellerken bir sorun yaşandı.", level="error")
+            return
+        
+        elif len(new_media_data) == 0:
+            log("MainWindow.update_media_data", "Media data is empty, no media to display.", level="warning")
+            show_message("Gösterilecek medya bulunamadı.", level="warning")
             
-            elif len(new_media_data) == 0:
-                log("MainWindow.update_media_data", "Media data is empty, no media to display.", level="warning")
-                show_message("Gösterilecek medya bulunamadı.", level="warning")
-                
-            # Update media_data
-            self.media_data = new_media_data
+        # Update media_data
+        self.media_data = new_media_data
 
-            # Refresh the thumbnails and reset the index
-            thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
-            self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
-            self.thumbnail_list.setModel(self.thumbnail_model)
-            self.thumbnail_model.signal.loaded.connect(lambda: self.try_select_item(index))
+        # Refresh the thumbnails and reset the index
+        thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
+        self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
+        self.thumbnail_list.setModel(self.thumbnail_model)
+        self.thumbnail_model.signal.loaded.connect(lambda: self.try_select_item(index))
 
-            self.frame_bottom.top_label.setText(str(len(self.media_data)))
+        self.frame_bottom.top_label.setText(str(len(self.media_data)))
     
     def simulate_keypress(self, window, key):
         """Simulates a keypress event."""
