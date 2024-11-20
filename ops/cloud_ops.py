@@ -150,7 +150,7 @@ def check_s3() -> bool:
         log("cloud_ops.check_s3", f"Bucket: {Config.S3_BUCKET_NAME} is reached successfully.")
         return True
 
-    except ClientError as e:
+    except EndpointConnectionError as e:
         log("cloud_ops.check_s3", f"Unable to reach bucket: {Config.S3_BUCKET_NAME}. Error: {e}", level="error")
         return False
 
