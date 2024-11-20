@@ -329,6 +329,7 @@ class DialogAddMedia(QDialog):
         self.frame_action.set_button_add_enabled(True)
         self.frame_action.update_button_upload(0)
         self.an_upload_completed = True
+        show_message("Yükleme işlemi başarı ile tamamlandı.")
 
     def clear_fields_for_new_media(self):
         self.frame_add_info.set_people("")
