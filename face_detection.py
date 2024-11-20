@@ -29,6 +29,7 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
         font = ImageFont.truetype("arial.ttf", size=font_size)
 
         # Create a draw object from PIL
+        image = image.convert("RGBA")
         draw = ImageDraw.Draw(image, "RGBA")
 
         detections_with_names = preprocess_detections(detections_with_names)

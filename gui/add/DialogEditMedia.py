@@ -71,10 +71,14 @@ class DialogEditMedia(DialogAddMedia):
         
         connected = cloud_ops.check_s3()
         if not connected:
-            pass
+            show_message("Bulut sistemi bağlantısı sağlanamadı.", level="error")
+            return
 
         self.frame_action.button_upload.setEnabled(False)
-        media_data = self.get_media_data()
+        if self.media.type == 1:
+            media_data = self.get_media_data(is_image=True)
+        else:
+            media_data = self.get_media_data(is_image=False)
         media = Media()
 
         
@@ -107,6 +111,7 @@ class DialogEditMedia(DialogAddMedia):
         
         if edit_dialog.exec_() == QDialog.Accepted:
             self.frame_action.button_upload.setEnabled(True)
+            show_message("Medya başarı ile düzenlendi.")
             self.accept()
 
     def edit_procedure(self, media: Media):

@@ -341,6 +341,7 @@ class MainWindow(QMainWindow):
                 
                 dwn = face_detection.build_detections_with_names(people_detect, people)
                 pil_image = face_detection.draw_identifications(pil_image, dwn)
+                pil_image = pil_image.convert("RGB")
                 pil_image.save("temp/detections.jpg", "JPEG")
                 q_image = QImage("temp/detections.jpg")
                 pixmap = QPixmap.fromImage(q_image)
@@ -479,29 +480,27 @@ class MainWindow(QMainWindow):
         self.fit_to_window()
 
     def show_add_media_dialog(self):
-        if not cloud_ops.check_s3():
-            pass
-        dialog = DialogAddMedia(self.data_manager)
-        dialog.exec_()
-        if dialog.an_upload_completed:
-            if self.previous_media_filter:
-                self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
-            else:
-                self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
+        if self.check_cloud_connected():
+            dialog = DialogAddMedia(self.data_manager)
+            dialog.exec_()
+            if dialog.an_upload_completed:
+                if self.previous_media_filter:
+                    self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
+                else:
+                    self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
 
     def show_edit_media_dialog(self):
-        if not cloud_ops.check_s3():
-            pass
-        selected_indexes = self.thumbnail_list.selectedIndexes()
-        if selected_indexes:
-            self.previous_index_change = selected_indexes[0].row()
-        
-        dialog = DialogEditMedia(self.data_manager, self.media_loader, self.selected_media)
-        if dialog.exec_() == QDialog.Accepted:
-            if self.previous_media_filter:
-                self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
-            else:
-                self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
+        if self.check_cloud_connected():
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+            if selected_indexes:
+                self.previous_index_change = selected_indexes[0].row()
+            
+            dialog = DialogEditMedia(self.data_manager, self.media_loader, self.selected_media)
+            if dialog.exec_() == QDialog.Accepted:
+                if self.previous_media_filter:
+                    self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
+                else:
+                    self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
 
 
     def show_filter_dialog(self):
@@ -509,6 +508,14 @@ class MainWindow(QMainWindow):
         if self.dialog_filter.exec_() == QDialog.Accepted:
             self.update_media_data(self.dialog_filter.media_list)
 
+    def check_cloud_connected(self):
+        if cloud_ops.check_s3():
+            self.set_cloud_connected(True)
+            return True
+        self.set_cloud_connected(False)
+        show_message("Bulut sistemi bağlantısı sağlanamadı.", level="warning")
+        return False
+    
     def set_cloud_connected(self, connected: bool):
         if connected:
             self.frame_bottom.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_SUCCESS)
