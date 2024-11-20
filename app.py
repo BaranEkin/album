@@ -7,6 +7,7 @@ from gui.main.MainWindow import MainWindow
 from config.config import Config
 from media_loader import MediaLoader
 from data.data_manager import DataManager
+from logger import close_log
 
 
 # Main application execution
@@ -24,6 +25,7 @@ if __name__ == "__main__":
     translator = QTranslator()
     translator.load("qtbase_tr", QLibraryInfo.location(QLibraryInfo.TranslationsPath))
     app.installTranslator(translator)
+    app.aboutToQuit.connect(close_log)
 
     viewer = MainWindow(data_manager, media_loader)
     viewer.showMaximized()

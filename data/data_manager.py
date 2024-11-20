@@ -222,17 +222,21 @@ class DataManager:
 
         with self.get_session() as session:
             # Query the Media table, ordering by the 'date' column
-            media_list = session.execute(DataManager._build_selection(media_filter)).scalars().all()
+            try:
+                media_list = session.execute(DataManager._build_selection(media_filter)).scalars().all()
 
-            if media_list:
-                if media_filter.days:
-                    media_list = DataManager._apply_date_filter(media_list, media_filter.days, mode="day")
-                if media_filter.months:
-                    media_list = DataManager._apply_date_filter(media_list, media_filter.months, mode="month")
-                if media_filter.years:
-                    media_list = DataManager._apply_date_filter(media_list, media_filter.years, mode="year")
-                if media_filter.days_of_week:
-                    media_list = DataManager._apply_date_filter(media_list, media_filter.days_of_week, mode="weekday")
+                if media_list:
+                    if media_filter.days:
+                        media_list = DataManager._apply_date_filter(media_list, media_filter.days, mode="day")
+                    if media_filter.months:
+                        media_list = DataManager._apply_date_filter(media_list, media_filter.months, mode="month")
+                    if media_filter.years:
+                        media_list = DataManager._apply_date_filter(media_list, media_filter.years, mode="year")
+                    if media_filter.days_of_week:
+                        media_list = DataManager._apply_date_filter(media_list, media_filter.days_of_week, mode="weekday")
+            except Exception as e:
+                log("DataManager.get_filtered_media", f"Error during filtering: {e}. Used Filter: {media_filter}", level="error")
+                media_list = []
             
             if len(media_list) == 0:
                 log("DataManager.get_filtered_media", f"Filter returned no results. Used Filter: {media_filter}", level="warning")
@@ -369,21 +373,7 @@ class DataManager:
         def search_location(key: str):
             return Media.location.op('GLOB')(f'*{key}*')
 
-        # Handle + (AND) operator first (higher precedence)
-        open_parens = 0
-        for i, char in enumerate(expr):
-            if char == '[':
-                open_parens += 1
-            elif char == ']':
-                open_parens -= 1
-            # Only split by + (AND) when not inside parentheses
-            elif open_parens == 0 and char == '+':
-                parts = expr.split('+', 1)
-                return and_(
-                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
-                    DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
-
-        # Handle , (OR) operator second (lower precedence)
+        # Handle , (OR) operator first
         open_parens = 0
         for i, char in enumerate(expr):
             if char == '[':
@@ -394,6 +384,20 @@ class DataManager:
             elif open_parens == 0 and char == ',':
                 parts = expr.split(',', 1)
                 return or_(
+                    DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
+                    DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
+        
+        # Handle + (AND) operator second
+        open_parens = 0
+        for i, char in enumerate(expr):
+            if char == '[':
+                open_parens += 1
+            elif char == ']':
+                open_parens -= 1
+            # Only split by + (AND) when not inside parentheses
+            elif open_parens == 0 and char == '+':
+                parts = expr.split('+', 1)
+                return and_(
                     DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
                     DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
 
@@ -410,8 +414,14 @@ class DataManager:
             expr = re.sub(r'([a-zA-ZıİğĞüÜşŞöÖçÇ_][a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_ ]*)', rf'{function_name}("\1")', expr)
 
             return expr
+        
+        def remove_whitespaces(expr: str) -> str:
+            expr = expr.strip()
+            expr = re.sub(r'\s*(\+|,|\[|\])\s*', r'\1', expr)
+            return expr
 
         # Process the expression to replace the custom operators
+        filter_string = remove_whitespaces(filter_string)
         filter_string = preprocess_expression(filter_string)
         try:
             result_filter = DataManager._parse_filter_string(filter_string, function_name)
