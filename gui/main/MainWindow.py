@@ -273,15 +273,20 @@ class MainWindow(QMainWindow):
 
     
     def try_select_item(self, i=0):
-        # Check if the model has any loaded items
-        if self.thumbnail_model.rowCount() > 0:
-            index = self.thumbnail_model.index(i, 0)
+        try:
+            # Check if the model has any loaded items
+            if self.thumbnail_model.rowCount() > 0:
+                index = self.thumbnail_model.index(i, 0)
 
-            self.thumbnail_list.setCurrentIndex(index)
-            self.thumbnail_list.scrollTo(index)
-            self.thumbnail_list.setFocus()
+                self.thumbnail_list.setCurrentIndex(index)
+                self.thumbnail_list.scrollTo(index)
+                self.thumbnail_list.setFocus()
 
-            self.thumbnail_list.clicked.emit(index)
+                self.thumbnail_list.clicked.emit(index)
+        except Exception as e:
+            log("MainWindow.try_select_item", f"Can't select item '{i}':{e}", level="warning")
+            if i != 0:
+                self.try_select_item(0)
 
     def go_to_next_media(self):
        
@@ -478,11 +483,11 @@ class MainWindow(QMainWindow):
             pass
         dialog = DialogAddMedia(self.data_manager)
         dialog.exec_()
-
-        if self.previous_media_filter:
-            self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
-        else:
-            self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
+        if dialog.an_upload_completed:
+            if self.previous_media_filter:
+                self.update_media_data(self.data_manager.get_filtered_media(self.previous_media_filter), index=self.previous_index_change)
+            else:
+                self.update_media_data(self.data_manager.get_all_media(), index=self.previous_index_change)
 
     def show_edit_media_dialog(self):
         if not cloud_ops.check_s3():
@@ -500,6 +505,7 @@ class MainWindow(QMainWindow):
 
 
     def show_filter_dialog(self):
+        self.dialog_filter.recenter()
         if self.dialog_filter.exec_() == QDialog.Accepted:
             self.update_media_data(self.dialog_filter.media_list)
 

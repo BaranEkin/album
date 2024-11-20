@@ -32,6 +32,7 @@ class DialogAddMedia(QDialog):
         self.media_data_to_be_uploaded = []
         self.media_paths_to_be_uploaded = []
         self.media_paths_uploaded = []
+        self.an_upload_completed = False
 
         self.selected_media_path = ""
         self.detections_with_names = []
@@ -186,21 +187,33 @@ class DialogAddMedia(QDialog):
         self.frame_add_info.set_people(self.get_people())
         self.image_label.set_image("temp/detections.jpg")
 
-    def get_people_detect(self):
-        people_detect = ",".join(['-'.join(map(str, det[:4])) for det in self.detections_with_names if det[4] != ""])
+    def get_people_detect(self, is_image=True):
+        if is_image:
+            people_detect = ",".join(['-'.join(map(str, det[:4])) for det in self.detections_with_names if det[4] != ""])
+        else:
+            people_detect = None
         return people_detect
 
-    def get_people(self):
-        people = ",".join([det[4] for det in self.detections_with_names if det[4] != ""])
+    def get_people(self, is_image=True):
+        if is_image:
+            people = ",".join([det[4] for det in self.detections_with_names if det[4] != ""])
+        else:
+            people = self.frame_add_info.get_people()
         return people
 
-    def get_people_count(self):
-        return len([det for det in self.detections_with_names if det[4] != ""])
+    def get_people_count(self, is_image=True):
+        if is_image:
+            return len([det for det in self.detections_with_names if det[4] != ""])
+        else:
+            return len(self.frame_add_info.get_people().split(","))
 
     def on_media_add(self):
 
         self.frame_action.set_button_add_enabled(False)
-        media_data = self.get_media_data()
+        if file_ops.get_file_type(self.selected_media_path) == 1:
+            media_data = self.get_media_data(is_image=True)
+        else:
+            media_data = self.get_media_data(is_image=False)
         if not media_data:
             self.frame_action.set_button_add_enabled(True)
             return
@@ -214,7 +227,7 @@ class DialogAddMedia(QDialog):
         self.frame_action.update_button_upload(len(self.media_data_to_be_uploaded))
         self.frame_action.set_button_add_enabled(True)
 
-    def get_media_data(self):
+    def get_media_data(self, is_image):
         
         media_data = {
             "media_path": self.selected_media_path,
@@ -225,9 +238,9 @@ class DialogAddMedia(QDialog):
             "date_est": self.frame_add_info.get_date_est(),
             "tags": self.frame_add_info.get_tags(),
             "notes": self.frame_add_info.get_notes(),
-            "people": self.get_people(),
-            "people_detect": self.get_people_detect(),
-            "people_count": self.get_people_count(),
+            "people": self.get_people(is_image=is_image),
+            "people_detect": self.get_people_detect(is_image=is_image),
+            "people_count": self.get_people_count(is_image=is_image),
             "albums": "".join(self.frame_action.get_selected_album_tags()),
         }
 
@@ -315,6 +328,7 @@ class DialogAddMedia(QDialog):
 
         self.frame_action.set_button_add_enabled(True)
         self.frame_action.update_button_upload(0)
+        self.an_upload_completed = True
 
     def clear_fields_for_new_media(self):
         self.frame_add_info.set_people("")

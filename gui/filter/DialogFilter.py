@@ -1,4 +1,12 @@
-from PyQt5.QtWidgets import (QFrame, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QGroupBox, QLabel, QLineEdit, QRadioButton)
+from PyQt5.QtWidgets import (QFrame, 
+                             QDialog, 
+                             QVBoxLayout, 
+                             QHBoxLayout, 
+                             QPushButton, 
+                             QGroupBox, 
+                             QLabel, 
+                             QLineEdit, 
+                             QRadioButton)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
@@ -78,16 +86,25 @@ class DialogFilter(QDialog):
         self.setLayout(self.layout_main)
         self.setWindowTitle("Süzgeç")
         self.setWindowIcon(QIcon("res/icons/Filter-2--Streamline-Sharp-Gradient--Free.png"))
+        self.on_change_mode()
+
+    def recenter(self):
+        """Recenter the dialog relative to its parent"""
+
+        if self.parent:
+            self.move(self.parent.geometry().center() - self.rect().center())
 
     def on_change_mode(self):
         if self.radio_quick.isChecked():
             self.group_box_detailed.hide()
             self.group_box_quick.show()
             self.setFixedSize(620, 450)
+            self.recenter()
         else:
             self.group_box_quick.hide()
             self.group_box_detailed.show()
             self.setFixedSize(620, 810)
+            self.recenter()
 
     def update_albums(self):
         self.albums = self.data_manager.get_all_albums()

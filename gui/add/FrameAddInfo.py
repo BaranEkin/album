@@ -198,7 +198,9 @@ class FrameAddInfo(QFrame):
         self.input_notes.setPlainText(notes)
 
     def get_people(self):
-        return self.input_people.toPlainText().replace("\n", ",")
+        raw_text = self.input_people.toPlainText()
+        processed_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+        return ",".join(processed_lines)
 
     def set_people(self, people: str):
         self.input_people.setPlainText(people.replace(",", "\n"))
