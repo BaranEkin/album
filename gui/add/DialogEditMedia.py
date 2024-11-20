@@ -79,6 +79,11 @@ class DialogEditMedia(DialogAddMedia):
             media_data = self.get_media_data(is_image=True)
         else:
             media_data = self.get_media_data(is_image=False)
+
+        if not media_data:
+            self.frame_action.button_upload.setEnabled(True)
+            return
+        
         media = Media()
 
         

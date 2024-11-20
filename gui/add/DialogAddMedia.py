@@ -187,25 +187,16 @@ class DialogAddMedia(QDialog):
         self.frame_add_info.set_people(self.get_people())
         self.image_label.set_image("temp/detections.jpg")
 
-    def get_people_detect(self, is_image=True):
-        if is_image:
-            people_detect = ",".join(['-'.join(map(str, det[:4])) for det in self.detections_with_names if det[4] != ""])
-        else:
-            people_detect = None
+    def get_people_detect(self):
+        people_detect = ",".join(['-'.join(map(str, det[:4])) for det in self.detections_with_names if det[4] != ""])
         return people_detect
 
-    def get_people(self, is_image=True):
-        if is_image:
+    def get_people(self):
             people = ",".join([det[4] for det in self.detections_with_names if det[4] != ""])
-        else:
-            people = self.frame_add_info.get_people()
-        return people
+            return people
 
-    def get_people_count(self, is_image=True):
-        if is_image:
-            return len([det for det in self.detections_with_names if det[4] != ""])
-        else:
-            return len(self.frame_add_info.get_people().split(","))
+    def get_people_count(self):
+        return len(self.frame_add_info.get_people().split(","))
 
     def on_media_add(self):
 
@@ -238,9 +229,9 @@ class DialogAddMedia(QDialog):
             "date_est": self.frame_add_info.get_date_est(),
             "tags": self.frame_add_info.get_tags(),
             "notes": self.frame_add_info.get_notes(),
-            "people": self.get_people(is_image=is_image),
-            "people_detect": self.get_people_detect(is_image=is_image),
-            "people_count": self.get_people_count(is_image=is_image),
+            "people": self.frame_add_info.get_people(),
+            "people_detect": self.get_people_detect() if is_image else None,
+            "people_count": self.get_people_count(),
             "albums": "".join(self.frame_action.get_selected_album_tags()),
         }
 
