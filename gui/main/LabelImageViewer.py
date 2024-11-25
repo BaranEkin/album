@@ -50,7 +50,7 @@ class LabelImageViewer(QLabel):
                 if procceed:
                     # Show download dialog
                     dialog = DialogProcess(operation=self.media_loader.play_video_audio_from_cloud,
-                                           operation_args=(self.media_key),
+                                           operation_args=(self.current_media_key,),
                                            title="Medya İndirme İşlemi",
                                            message="İndirme işlemi devam ediyor...")
                     dialog.exec_()
