@@ -10,7 +10,7 @@ from logger import log
 from config.config import Config
 from data.orm import Album, Media
 from data.media_filter import MediaFilter
-from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_date, date_includes
+from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_date, date_includes, turkish_upper
 from ops import cloud_ops, file_ops
 
 
@@ -263,9 +263,11 @@ class DataManager:
                 Media.date_text
             ]
             
-            selection = selection.where(
-                or_(*[field.like(f"%{media_filter.quick}%") for field in quick_filter_fields])
-            )
+            conditions = []
+            conditions.extend([field.ilike(f"%{media_filter.quick}%") for field in quick_filter_fields])
+            conditions.extend([field.ilike(f"%{turkish_upper(media_filter.quick)}%") for field in quick_filter_fields])
+            
+            selection = selection.where(or_(*conditions))
             selection = selection.order_by(Media.date, Media.rank)
             return selection
 
