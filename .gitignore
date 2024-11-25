@@ -5,5 +5,7 @@ temp/
 build/
 dist/
 *.pyc
-album.log
 *.spec
+*.bat
+*.lnk
+album.log
