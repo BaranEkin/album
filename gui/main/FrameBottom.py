@@ -162,6 +162,11 @@ class FrameBottom(QFrame):
         if self.slideway_direction == "F":
             self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Back.png"))
             self.slideway_direction = "B"
-        else:
+
+        elif self.slideway_direction == "B":
+            self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Random.png"))
+            self.slideway_direction = "R"
+
+        elif self.slideway_direction == "R":
             self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png"))
             self.slideway_direction = "F"
