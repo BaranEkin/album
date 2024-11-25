@@ -155,6 +155,12 @@ class FrameBottom(QFrame):
         else:
             self.button_notes.setEnabled(False)
 
+        if media.people:
+            self.button_people.setEnabled(True)
+        else:
+            self.button_people.setEnabled(False)
+
+
     def get_slideway_direction(self):
         return self.slideway_direction
 
