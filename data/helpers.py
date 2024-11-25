@@ -64,11 +64,11 @@ def turkish_upper(text) -> str:
     return translated_text.upper()
 
 def is_valid_people(people_str):
-    # Define a regex pattern for Turkish full names with newline separation
-    pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+)$"
+    # Define a regex pattern for Turkish names and multiple surnames
+    pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+(?:\s[A-ZÇĞİÖŞÜ]+)*)$"
     people_list = people_str.split(",")
     
-    # Split the input by lines and check each line
+    # Validate each name in the list
     for person in people_list:
         # Trim whitespace and check if each line matches the full name pattern
         if not re.match(pattern, person):
