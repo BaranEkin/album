@@ -306,21 +306,17 @@ class FrameDetailedFilter(QFrame):
         if self.date_range_checkbox.isChecked():
             return self.date_start.text().strip(), self.date_end.text().strip()
         return self.date_start.text().strip(), ""
+    
+    def get_date_range_enabled(self):
+        return self.date_range_checkbox.isChecked()
 
     def get_people_count_range(self):
-        if self.people_count_range_checkbox.isChecked():
-            if self.people_count_min.text().isdigit():
-                count_min = int(self.people_count_min.text())
-                if self.people_count_max.text().isdigit():
-                    count_max = int(self.people_count_max.text())
-                    return count_min, count_max
-                return count_min, -1
-            return -1, -1
-        else:
-            if self.people_count_min.text().isdigit():
-                count_min = int(self.people_count_min.text())
-                return count_min, -1
-            return -1, -1
+        count_min = int(self.people_count_min.text()) if self.people_count_min.text().isdigit() else -1
+        count_max = int(self.people_count_max.text()) if self.people_count_max.text().isdigit() else -1
+        return count_min, count_max
+        
+    def get_people_count_range_enabled(self):
+        return self.people_count_range_checkbox.isChecked()
 
     def get_file_type(self):
         return int(self.type_dropdown.currentIndex())

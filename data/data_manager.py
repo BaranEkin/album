@@ -313,22 +313,37 @@ class DataManager:
         if media_filter.file_type:
             selection = selection.where(Media.type == media_filter.file_type)
 
-        if media_filter.date_range[0]:
-            date_start = date_to_julian(normalize_date(media_filter.date_range[0]))
-            if date_start:
-                if media_filter.date_range[1]:
-                    date_end = date_to_julian(normalize_date(media_filter.date_range[1]))
-                    if date_end:
-                        selection = selection.where(Media.date >= date_start, Media.date <= date_end)
-                else:
-                    selection = selection.where(Media.date == date_start)
 
-        if media_filter.people_count_range[0] != -1:
-            count_min = media_filter.people_count_range[0]
-            if media_filter.people_count_range[1] != -1:
-                count_max = media_filter.people_count_range[1]
-                selection = selection.where(Media.people_count >= count_min, Media.people_count <= count_max)
+        date_start = date_to_julian(normalize_date(media_filter.date_range[0])) if media_filter.date_range[0] else None
+        date_end = date_to_julian(normalize_date(media_filter.date_range[1])) if media_filter.date_range[1] else None
+        
+        if media_filter.date_range_enabled:
+            if date_start:
+                if date_end:
+                    selection = selection.where(Media.date >= date_start, Media.date <= date_end)
+                else:
+                    selection = selection.where(Media.date >= date_start)
             else:
+                if date_end:
+                    selection = selection.where(Media.date <= date_end)
+        else:
+            if date_start:
+                selection = selection.where(Media.date == date_start)
+
+
+        count_min, count_max = media_filter.people_count_range
+
+        if media_filter.people_count_range_enabled:
+            if count_min != -1:
+                if count_max != -1:
+                    selection = selection.where(Media.people_count >= count_min, Media.people_count <= count_max)
+                else:
+                    selection = selection.where(Media.people_count >= count_min)
+            else:
+                if count_max != -1:
+                    selection = selection.where(Media.people_count <= count_max)
+        else:
+            if count_min != -1:
                 selection = selection.where(Media.people_count == count_min)
 
         if media_filter.sort:
@@ -380,10 +395,10 @@ class DataManager:
                 open_parens += 1
             elif char == ']':
                 open_parens -= 1
-            # Only split by , (OR) when not inside parentheses
-            elif open_parens == 0 and char == ',':
-                parts = expr.split(',', 1)
-                return or_(
+            # Only split by + (AND) when not inside parentheses
+            elif open_parens == 0 and char == '+':
+                parts = expr.split('+', 1)
+                return and_(
                     DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
                     DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
         
@@ -394,10 +409,10 @@ class DataManager:
                 open_parens += 1
             elif char == ']':
                 open_parens -= 1
-            # Only split by + (AND) when not inside parentheses
-            elif open_parens == 0 and char == '+':
-                parts = expr.split('+', 1)
-                return and_(
+            # Only split by , (OR) when not inside parentheses
+            elif open_parens == 0 and char == ',':
+                parts = expr.split(',', 1)
+                return or_(
                     DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
                     DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
 

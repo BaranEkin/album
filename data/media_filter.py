@@ -9,10 +9,12 @@ class MediaFilter:
             location_exact: str = "",
             people: str = "",
             people_count_range: tuple[int, int] = (-1, -1),
+            people_count_range_enabled: bool = False,
             file_type: int = 0,
             file_ext: str = "",
             tags: str = "",
             date_range: tuple[str, str] = ("", ""),
+            date_range_enabled: bool = False,
             days: str = "",
             months: str = "",
             years: str = "",
@@ -26,10 +28,12 @@ class MediaFilter:
         self.location_exact = location_exact
         self.people = people
         self.people_count_range = people_count_range
+        self.people_count_range_enabled = people_count_range_enabled
         self.file_type = file_type
         self.file_ext = file_ext
         self.tags = tags
         self.date_range = date_range
+        self.date_range_enabled = date_range_enabled
         self.days = days
         self.months = months
         self.years = years

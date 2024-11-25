@@ -155,6 +155,12 @@ class FrameBottom(QFrame):
         else:
             self.button_notes.setEnabled(False)
 
+        if media.people:
+            self.button_people.setEnabled(True)
+        else:
+            self.button_people.setEnabled(False)
+
+
     def get_slideway_direction(self):
         return self.slideway_direction
 
@@ -162,6 +168,11 @@ class FrameBottom(QFrame):
         if self.slideway_direction == "F":
             self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Back.png"))
             self.slideway_direction = "B"
-        else:
+
+        elif self.slideway_direction == "B":
+            self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Random.png"))
+            self.slideway_direction = "R"
+
+        elif self.slideway_direction == "R":
             self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png"))
             self.slideway_direction = "F"

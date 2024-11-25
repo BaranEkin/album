@@ -1,3 +1,4 @@
+import random
 from PyQt5.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
@@ -52,7 +53,7 @@ class MainWindow(QMainWindow):
         self.previous_index_same = None
 
         # Set window title and initial dimensions
-        self.setWindowTitle("ALBUM 2.0")
+        self.setWindowTitle("Albüm (v1.0.1)")
         self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
 
@@ -312,18 +313,29 @@ class MainWindow(QMainWindow):
             self.thumbnail_list.setCurrentIndex(prev_index)
             self.on_media_selected(prev_index)
 
+    def go_to_random_media(self):
+        index = random.randint(0, len(self.media_data)-1)
+        self.try_select_item(index)
+
+
     def run_slideshow(self):
         current_direction = self.frame_bottom.get_slideway_direction()
         if current_direction == "F":
             self.go_to_next_media()
-        else:
+        elif current_direction == "B":
             self.go_to_previous_media()
+        elif current_direction == "R":
+            self.go_to_random_media()
 
     def on_slideshow_clicked(self, checked):
         if checked:
             self.slideshow_timer.start()
         else:
             self.slideshow_timer.stop()
+
+    def stop_slideshow(self):
+        self.slideshow_timer.stop()
+        self.frame_bottom.button_slideshow.setChecked(False)
     
     def on_button_people_clicked(self, checked):
         if checked:
@@ -526,6 +538,7 @@ class MainWindow(QMainWindow):
     
     def on_same_date_location(self, checked):
         if checked:
+            self.button_filter.setEnabled(False)
             self.button_same_date.setEnabled(False)
             self.button_same_location.setEnabled(False)
             self.button_same_date.setChecked(False)
@@ -543,6 +556,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
+            self.button_filter.setEnabled(True)
             self.button_same_date.setEnabled(True)
             self.button_same_location.setEnabled(True)
 
@@ -554,6 +568,7 @@ class MainWindow(QMainWindow):
 
     def on_same_date(self, checked):
         if checked:
+            self.button_filter.setEnabled(False)
             self.button_same_date_location.setEnabled(False)
             self.button_same_location.setEnabled(False)
             self.button_same_date_location.setChecked(False)
@@ -570,6 +585,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
+            self.button_filter.setEnabled(True)
             self.button_same_date_location.setEnabled(True)
             self.button_same_location.setEnabled(True)
 
@@ -581,6 +597,7 @@ class MainWindow(QMainWindow):
 
     def on_same_location(self, checked):
         if checked:
+            self.button_filter.setEnabled(False)
             self.button_same_date_location.setEnabled(False)
             self.button_same_date.setEnabled(False)
             self.button_same_date_location.setChecked(False)
@@ -597,6 +614,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
+            self.button_filter.setEnabled(True)
             self.button_same_date_location.setEnabled(True)
             self.button_same_date.setEnabled(True)
 
@@ -608,7 +626,9 @@ class MainWindow(QMainWindow):
 
 
     def update_media_data(self, new_media_data, index=0):
-            
+
+        self.stop_slideshow()
+   
         if new_media_data is None:
             log("MainWindow.update_media_data", "Media data is None.", level="error")
             show_message("Medyaları güncellerken bir sorun yaşandı.", level="error")
