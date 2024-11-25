@@ -395,10 +395,10 @@ class DataManager:
                 open_parens += 1
             elif char == ']':
                 open_parens -= 1
-            # Only split by , (OR) when not inside parentheses
-            elif open_parens == 0 and char == ',':
-                parts = expr.split(',', 1)
-                return or_(
+            # Only split by + (AND) when not inside parentheses
+            elif open_parens == 0 and char == '+':
+                parts = expr.split('+', 1)
+                return and_(
                     DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
                     DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
         
@@ -409,10 +409,10 @@ class DataManager:
                 open_parens += 1
             elif char == ']':
                 open_parens -= 1
-            # Only split by + (AND) when not inside parentheses
-            elif open_parens == 0 and char == '+':
-                parts = expr.split('+', 1)
-                return and_(
+            # Only split by , (OR) when not inside parentheses
+            elif open_parens == 0 and char == ',':
+                parts = expr.split(',', 1)
+                return or_(
                     DataManager._parse_filter_string(parts[0].replace("[", "").replace("]", ""), function_name),
                     DataManager._parse_filter_string(parts[1].replace("[", "").replace("]", ""), function_name))
 
