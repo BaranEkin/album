@@ -452,20 +452,20 @@ class MainWindow(QMainWindow):
         if self.image_label.pixmap():
             scroll_size = self.scroll_area.viewport().size()
             img_size = self.image_label.pixmap().size()
-            img_aspect_ratio = img_size.width() / img_size.height()
+            img_aspect_ratio = img_size.width() / (img_size.height() + 0.001)
             scroll_aspect_ratio = scroll_size.width() / scroll_size.height()
 
             if img_aspect_ratio > scroll_aspect_ratio:
                 # Image is wider than the viewport
                 new_width = int(scroll_size.width())
-                new_height = int(new_width / img_aspect_ratio)
+                new_height = int(new_width / (img_aspect_ratio + 0.001))
             else:
                 # Image is taller than the viewport
                 new_height = int(scroll_size.height())
                 new_width = int(new_height * img_aspect_ratio)
 
             self.image_label.setFixedSize(new_width, new_height)
-            self.image_label.initial_scale = new_width / img_size.width()
+            self.image_label.initial_scale = new_width / (img_size.width() + 0.001)
             self.image_label.original_size = img_size
             self.image_label.scale_modifier = 0.0
 

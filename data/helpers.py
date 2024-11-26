@@ -58,17 +58,26 @@ turkish_uppercase_map = str.maketrans({
     "ı": "I",  # Convert 'ı' to 'I'
 })
 
+turkish_lowercase_map = str.maketrans({
+    "İ": "i",
+    "I": "ı",
+})
+
 
 def turkish_upper(text) -> str:
     translated_text = text.translate(turkish_uppercase_map)
     return translated_text.upper()
 
+def turkish_lower(text) -> str:
+    translated_text = text.translate(turkish_lowercase_map)
+    return translated_text.lower()
+
 def is_valid_people(people_str):
-    # Define a regex pattern for Turkish full names with newline separation
-    pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+)$"
+    # Define a regex pattern for Turkish names and multiple surnames
+    pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+(?:\s[A-ZÇĞİÖŞÜ]+)*)$"
     people_list = people_str.split(",")
     
-    # Split the input by lines and check each line
+    # Validate each name in the list
     for person in people_list:
         # Trim whitespace and check if each line matches the full name pattern
         if not re.match(pattern, person):

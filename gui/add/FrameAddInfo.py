@@ -1,9 +1,12 @@
 from PyQt5.QtWidgets import (
-    QFrame, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QFrame, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDialog,
     QComboBox, QGroupBox, QTextEdit, QRadioButton, QButtonGroup, QCompleter
 )
+from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
+from data.helpers import turkish_upper
 from gui.constants import Constants
+from gui.add.DialogAssignLocation import DialogAssignLocation
 
 
 class FrameAddInfo(QFrame):
@@ -45,20 +48,16 @@ class FrameAddInfo(QFrame):
         label_location = QLabel(Constants.LABEL_LOCATION)
         label_location.setFixedWidth(40)
         label_location.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.combo_location = QComboBox()
-        self.combo_location.setFixedWidth(700)
-        self.combo_location.setEditable(True)
-        self.combo_location.setInsertPolicy(QComboBox.NoInsert)
-
-        self.combo_location.addItems(self.locations)
-        self.combo_location.setCurrentText("")
-
-        completer = QCompleter(self.locations)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self.combo_location.setCompleter(completer)
+        self.input_location = QLineEdit()
+        self.input_location.setFixedWidth(670)
+        self.button_location = QPushButton()
+        self.button_location.setIcon(QIcon("res/icons/List-Search--Streamline-Tabler.png"))
+        self.button_location.setFixedSize(25, 25)
+        self.button_location.clicked.connect(self.show_location_dialog)
 
         frame_location_layout.addWidget(label_location)
-        frame_location_layout.addWidget(self.combo_location)
+        frame_location_layout.addWidget(self.input_location)
+        frame_location_layout.addWidget(self.button_location)
         main_layout.addWidget(frame_location)
 
         # Frame: date and Tags
@@ -143,23 +142,28 @@ class FrameAddInfo(QFrame):
 
         self.setLayout(main_layout)
 
+    def show_location_dialog(self):
+        dialog = DialogAssignLocation(location=self.get_location(), location_list=self.locations, parent=self)
+        if dialog.exec_() == QDialog.Accepted:
+            self.set_location(dialog.input_field.text())
+
     def get_topic(self):
-        return self.input_topic.text().strip()
+        return turkish_upper(self.input_topic.text().strip())
 
     def set_topic(self, topic):
-        self.input_topic.setText(topic)
+        self.input_topic.setText(turkish_upper(topic))
 
     def get_title(self):
-        return self.input_title.text().strip()
+        return turkish_upper(self.input_title.text().strip())
 
     def set_title(self, title):
-        self.input_title.setText(title)
+        self.input_title.setText(turkish_upper(title))
 
     def get_location(self):
-        return self.combo_location.currentText().strip()
+        return turkish_upper(self.input_location.text().strip())
 
     def set_location(self, location):
-        self.combo_location.setCurrentText(location)
+        self.input_location.setText(turkish_upper(location))
 
     def get_date(self):
         return self.input_date.text().strip()

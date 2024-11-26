@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QTextBrowser, QVBoxLayout
 class DialogNotes(QDialog):
     def __init__(self, notes: str, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Kişiler")
+        self.setWindowTitle("Notlar")
 
         self.setFixedSize(500, 250)
 

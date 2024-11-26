@@ -3,30 +3,29 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout,
                              QLineEdit, QListWidgetItem)
 
 from gui.constants import Constants
+from data.helpers import turkish_lower
 
 
-class DialogAssignPerson(QDialog):
-    def __init__(self, person, people_list, parent=None):
+class DialogAssignLocation(QDialog):
+    def __init__(self, location, location_list, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(Constants.WINDOW_DIALOG_ASSIGN_PERSON)
-        self.setFixedSize(250, 250)
+        self.setWindowTitle(Constants.WINDOW_DIALOG_ASSIGN_LOCATION)
+        self.setFixedSize(550,250)
 
         # Layout for the dialog
         layout = QVBoxLayout(self)
-
-        # Mock-up list of names for the list widget
-        self.people_list = people_list
+        self.location_list = location_list
 
         # Create the input field
         self.input_field = QLineEdit(self)
-        self.input_field.setText(f"{person}")
+        self.input_field.setText(f"{location}")
         layout.addWidget(self.input_field)
 
         # Create the scrollable list widget for showing suggestions
         self.list_widget = QListWidget(self)
         layout.addWidget(self.list_widget)
 
-        # Populate the list widget with all names initially
+        # Populate the list widget with all locations initially
         self.update_list_widget()
 
         # Connect the input field's text changes to the filtering function
@@ -38,7 +37,7 @@ class DialogAssignPerson(QDialog):
         layout.addWidget(button_box)
 
         # Handle item click in the list to set it in the input field
-        self.list_widget.itemClicked.connect(self.set_selected_name)
+        self.list_widget.itemClicked.connect(self.set_selected_location)
 
     def update_list_widget(self):
         """Update the list widget based on the input text."""
@@ -48,14 +47,17 @@ class DialogAssignPerson(QDialog):
         # Get the current text from the input field
         text = self.input_field.text()
 
-        # Filter names based on a case-sensitive substring match
-        filtered_names = [name for name in self.people_list if text in name]
+        # Filter names based on a case-insensitive substring match
+        filtered_locations = [
+            loc for loc in self.location_list
+            if turkish_lower(text) in turkish_lower(loc)
+        ]
 
-        # Add the filtered names to the list widget
-        for name in filtered_names:
-            self.list_widget.addItem(QListWidgetItem(name))
+        # Add the filtered locations to the list widget
+        for loc in filtered_locations:
+            self.list_widget.addItem(QListWidgetItem(loc))
 
-    def set_selected_name(self, item):
+    def set_selected_location(self, item):
         """Set the selected name from the list into the input field."""
         self.input_field.setText(item.text())
 
