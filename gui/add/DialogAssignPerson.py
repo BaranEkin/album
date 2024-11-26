@@ -47,11 +47,8 @@ class DialogAssignPerson(QDialog):
         # Get the current text from the input field
         text = self.input_field.text()
 
-        # Filter names based on a case-insensitive substring match
-        filtered_names = [
-            name for name in self.people_list
-            if text.lower() in name.lower()
-        ]
+        # Filter names based on a case-sensitive substring match
+        filtered_names = [name for name in self.people_list if text in name]
 
         # Add the filtered names to the list widget
         for name in filtered_names:
