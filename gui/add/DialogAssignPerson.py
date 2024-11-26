@@ -9,6 +9,7 @@ class DialogAssignPerson(QDialog):
     def __init__(self, person, people_list, parent=None):
         super().__init__(parent)
         self.setWindowTitle(Constants.WINDOW_DIALOG_ASSIGN_PERSON)
+        self.setFixedSize(250, 250)
 
         # Layout for the dialog
         layout = QVBoxLayout(self)
