@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QTextBrowser, QVBoxLayout
 class DialogPeople(QDialog):
     def __init__(self, people_str: str, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Notlar")
+        self.setWindowTitle("Kişiler")
 
         self.setFixedSize(250, 250)
 
