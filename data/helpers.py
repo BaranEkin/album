@@ -58,10 +58,19 @@ turkish_uppercase_map = str.maketrans({
     "ı": "I",  # Convert 'ı' to 'I'
 })
 
+turkish_lowercase_map = str.maketrans({
+    "İ": "i",
+    "I": "ı",
+})
+
 
 def turkish_upper(text) -> str:
     translated_text = text.translate(turkish_uppercase_map)
     return translated_text.upper()
+
+def turkish_lower(text) -> str:
+    translated_text = text.translate(turkish_lowercase_map)
+    return translated_text.lower()
 
 def is_valid_people(people_str):
     # Define a regex pattern for Turkish names and multiple surnames

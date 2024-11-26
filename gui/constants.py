@@ -33,3 +33,4 @@ class Constants:
     LABEL_PEOPLE = "KİŞİLER"
 
     WINDOW_DIALOG_ASSIGN_PERSON = "Kişiyi Ekle"
+    WINDOW_DIALOG_ASSIGN_LOCATION = "Yer Seç"
