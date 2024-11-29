@@ -10,7 +10,7 @@ from logger import log
 from config.config import Config
 from data.orm import Album, Media
 from data.media_filter import MediaFilter
-from data.helpers import date_to_julian, current_time_in_unix_subsec, normalize_date, date_includes, turkish_upper
+from data.helpers import date_to_julian, current_time_in_unix_subsec, legacy_time_in_unix_subsec, normalize_date, date_includes, turkish_upper
 from ops import cloud_ops, file_ops
 
 
@@ -252,6 +252,18 @@ class DataManager:
         if media_filter.albums[0]:
             selection = selection.where(or_(*[Media.albums.contains(album) for album in media_filter.albums]))
 
+        created_at_start, created_at_end = media_filter.created_at_range
+        
+        if media_filter.created_at_range_enabled:
+            if created_at_start != -1.0:
+                if created_at_end != -1.0:
+                    selection = selection.where(Media.created_at >= created_at_start, Media.created_at <= created_at_end)
+                else:
+                    selection = selection.where(Media.created_at >= created_at_start)
+            else:
+                if created_at_end != -1.0:
+                    selection = selection.where(Media.created_at <= created_at_end)
+
         if media_filter.quick:
             quick_filter_fields = [
                 Media.topic,
@@ -331,7 +343,6 @@ class DataManager:
         else:
             if date_start:
                 selection = selection.where(Media.date == date_start)
-
 
         count_min, count_max = media_filter.people_count_range
 

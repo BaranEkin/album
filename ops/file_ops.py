@@ -260,7 +260,17 @@ def delete_media(media_uuid: str, extension: str) -> bool:
     try:
         os.remove(media_path)
         os.remove(thumbnail_path)
+        log("file_ops.delete_media", f"Removed media with uuid:'{media_uuid}'", level="info")
         return True
     except Exception as e:
         log("file_ops.delete_media", f"Error removing media with uuid:'{media_uuid}': {e}", level="error")
+        return False
+    
+def delete_file(path) -> bool:
+    try:
+        os.remove(path)
+        log("file_ops.delete_file", f"Deleted the file at:'{path}'", level="info")
+        return True
+    except Exception as e:
+        log("file_ops.delete_file", f"Error deleting the file at:'{path}': {e}", level="error")
         return False

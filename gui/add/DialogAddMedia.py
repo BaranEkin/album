@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout,
+from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout, QCheckBox,
                              QTreeView, QListWidget, QFrame, QFileSystemModel)
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtGui import QIcon
@@ -62,9 +62,13 @@ class DialogAddMedia(QDialog):
         # Create the scrollable list widget for media files
         self.media_list = QListWidget(self.frame_navigation)
 
-        # Add tree and list widgets to the frame_navigation layout
+        self.checkbox_delete_source = QCheckBox("Yüklemeden sonra orijinal dosyaları sil")
+        self.checkbox_delete_source.setChecked(False)
+
         self.frame_navigation_layout.addWidget(self.folder_tree)
         self.frame_navigation_layout.addWidget(self.media_list)
+        self.frame_navigation_layout.addWidget(self.checkbox_delete_source)
+        
 
         # Add the frame_navigation to the main layout
         self.main_layout.addWidget(self.frame_navigation)
@@ -309,6 +313,10 @@ class DialogAddMedia(QDialog):
 
         if dialog_upload.exec_() == QDialog.Accepted:
             self.media_paths_uploaded.extend(self.media_paths_to_be_uploaded)
+            
+            if self.checkbox_delete_source.isChecked():
+                self.delete_source_files()
+            
             self.media_paths_to_be_uploaded = []
             self.media_data_to_be_uploaded = []
 
@@ -337,6 +345,10 @@ class DialogAddMedia(QDialog):
         self.frame_add_info.set_notes("")
         self.frame_add_info.set_tags("")
         self.frame_action.clear_selected_album_tags()
+
+    def delete_source_files(self):
+        for media_path in self.media_paths_to_be_uploaded:
+            file_ops.delete_file(media_path)
 
     def set_auto_date(self):
         date_option = self.frame_add_info.get_date_option()
