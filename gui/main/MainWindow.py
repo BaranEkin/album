@@ -21,6 +21,7 @@ from gui.constants import Constants
 from gui.main.DialogProcess import DialogProcess
 from media_loader import MediaLoader
 from logger import log
+from data.helpers import get_unix_time_days_ago
 from data.media_filter import MediaFilter
 from data.data_manager import DataManager
 from gui.message import show_message
@@ -131,13 +132,15 @@ class MainWindow(QMainWindow):
         #self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
         self.layout_features_area.addWidget(self.button_edit_media, 1, 0)
 
-        self.button_open_media = QPushButton()
-        self.button_open_media.setFixedSize(50, 50)
-        self.button_open_media.setText("")
-        self.button_open_media.setIcon(QIcon("res/icons/Link-Share-2--Streamline-Sharp-Gradient-Free.png"))
-        self.button_open_media.setIconSize(QSize(30, 30))
-        self.button_open_media.clicked.connect(self.on_open_media)
-        self.layout_features_area.addWidget(self.button_open_media, 1, 1)
+        self.button_latest_media = QPushButton()
+        self.button_latest_media.setFocusPolicy(Qt.NoFocus)
+        self.button_latest_media.setFixedSize(50, 50)
+        self.button_latest_media.setIcon(QIcon("res/icons/Trending-Content--Streamline-Core-Gradient.png"))
+        self.button_latest_media.setIconSize(QSize(30, 30))
+        self.button_latest_media.setText("")
+        self.button_latest_media.clicked.connect(self.on_latest_media)
+        self.button_latest_media.setCheckable(True)
+        self.layout_features_area.addWidget(self.button_latest_media, 1, 1)
 
         self.button_same_date = QPushButton()
         self.button_same_date.setFixedSize(50, 50)
@@ -155,15 +158,13 @@ class MainWindow(QMainWindow):
         self.button_delete_media.setText("")
         self.layout_features_area.addWidget(self.button_delete_media, 2, 0)
 
-        self.button_export_media = QPushButton()
-        self.button_export_media.setFocusPolicy(Qt.NoFocus)
-        self.button_export_media.setFixedSize(50, 50)
-        self.button_export_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
-        self.button_export_media.setEnabled(False)
-        self.button_export_media.setIconSize(QSize(30, 30))
-        self.button_export_media.setText("")
-        #self.button_export_media.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
-        self.layout_features_area.addWidget(self.button_export_media, 2, 1)
+        self.button_open_media = QPushButton()
+        self.button_open_media.setFixedSize(50, 50)
+        self.button_open_media.setText("")
+        self.button_open_media.setIcon(QIcon("res/icons/Link-Share-2--Streamline-Sharp-Gradient-Free.png"))
+        self.button_open_media.setIconSize(QSize(30, 30))
+        self.button_open_media.clicked.connect(self.on_open_media)
+        self.layout_features_area.addWidget(self.button_open_media, 2, 1)
 
         self.button_same_location = QPushButton()
         self.button_same_location.setFixedSize(50, 50)
@@ -417,6 +418,38 @@ class MainWindow(QMainWindow):
         self.image_label.setPixmap(pixmap)
         self.fit_to_window()
 
+    def on_latest_media(self, checked):
+        if checked:
+            self.button_filter.setEnabled(False)
+            self.button_same_date.setEnabled(False)
+            self.button_same_location.setEnabled(False)
+            self.button_same_date_location.setEnabled(False)
+
+            self.button_same_date.setChecked(False)
+            self.button_same_location.setChecked(False)
+            self.button_same_date_location.setChecked(False)
+
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+            if selected_indexes:
+                self.previous_index_same = selected_indexes[0].row()
+
+            self.previous_media_data = self.media_data.copy()
+            media_filter = MediaFilter(created_at_range_enabled=True, created_at_range=(get_unix_time_days_ago(7), -1.0))
+            self.previous_media_filter = media_filter
+            self.update_media_data(self.data_manager.get_filtered_media(media_filter))
+
+        else:
+            self.button_filter.setEnabled(True)
+            self.button_same_date.setEnabled(True)
+            self.button_same_location.setEnabled(True)
+            self.button_same_date_location.setEnabled(True)
+
+            if self.previous_media_data is not None:
+                if self.previous_index_same is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index_same)
+                else:
+                    self.update_media_data(self.previous_media_data.copy())
+
     def on_open_media(self):
         media_path = self.media_loader.get_media_path(self.selected_media.media_uuid,
                                                       self.selected_media.extension)
@@ -538,6 +571,8 @@ class MainWindow(QMainWindow):
     
     def on_same_date_location(self, checked):
         if checked:
+            self.button_latest_media.setEnabled(False)
+            self.button_latest_media.setChecked(False)
             self.button_filter.setEnabled(False)
             self.button_same_date.setEnabled(False)
             self.button_same_location.setEnabled(False)
@@ -556,6 +591,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
+            self.button_latest_media.setEnabled(True)
             self.button_filter.setEnabled(True)
             self.button_same_date.setEnabled(True)
             self.button_same_location.setEnabled(True)
@@ -568,6 +604,8 @@ class MainWindow(QMainWindow):
 
     def on_same_date(self, checked):
         if checked:
+            self.button_latest_media.setEnabled(False)
+            self.button_latest_media.setChecked(False)
             self.button_filter.setEnabled(False)
             self.button_same_date_location.setEnabled(False)
             self.button_same_location.setEnabled(False)
@@ -585,6 +623,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
+            self.button_latest_media.setEnabled(True)
             self.button_filter.setEnabled(True)
             self.button_same_date_location.setEnabled(True)
             self.button_same_location.setEnabled(True)
@@ -597,6 +636,8 @@ class MainWindow(QMainWindow):
 
     def on_same_location(self, checked):
         if checked:
+            self.button_latest_media.setEnabled(False)
+            self.button_latest_media.setChecked(False)
             self.button_filter.setEnabled(False)
             self.button_same_date_location.setEnabled(False)
             self.button_same_date.setEnabled(False)
@@ -614,6 +655,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(media_filter))
         
         else:
+            self.button_latest_media.setEnabled(True)
             self.button_filter.setEnabled(True)
             self.button_same_date_location.setEnabled(True)
             self.button_same_date.setEnabled(True)

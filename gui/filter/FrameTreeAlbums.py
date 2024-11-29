@@ -5,19 +5,18 @@ from data.orm import Album
 
 
 class FrameTreeAlbums(QFrame):
-    def __init__(self, albums: Sequence[Album]):
+    def __init__(self, albums: Sequence[Album], parent=None):
         super().__init__()
+        self.parent = parent
 
         self.setFixedSize(600, 300)
         self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.albums = albums
         self.selected_album_tags = []
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
-
-        self.checkbox_include_child = QCheckBox("Alt albümleri dahil et")
-        self.checkbox_include_child.setChecked(True)
 
         # Create a dictionary to store the QTreeWidgetItem references by their tags
         node_items = {}
@@ -50,13 +49,11 @@ class FrameTreeAlbums(QFrame):
         self.tree.collapseAll()
         self.expand_tree_default()
         self.tree.itemSelectionChanged.connect(self.on_select_albums)
-        self.checkbox_include_child.stateChanged.connect(self.on_select_albums)
         self.layout.addWidget(self.tree)
-        self.layout.addWidget(self.checkbox_include_child)
 
     def clear_selection(self):
         self.selected_album_tags = []
-        self.checkbox_include_child.setChecked(True)
+        self.parent.checkbox_include_child.setChecked(True)
         self.tree.collapseAll()
         self.expand_tree_default()
 
@@ -78,7 +75,7 @@ class FrameTreeAlbums(QFrame):
         selected_items = self.tree.selectedItems()
         if selected_items:
             selected_item = selected_items[0]
-            if not self.checkbox_include_child.isChecked():
+            if not self.parent.checkbox_include_child.isChecked():
                 self.selected_album_tags = [self.get_album_tag(selected_item.text(0))]
                 return
 

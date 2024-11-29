@@ -15,6 +15,8 @@ class MediaFilter:
             tags: str = "",
             date_range: tuple[str, str] = ("", ""),
             date_range_enabled: bool = False,
+            created_at_range: tuple[float, float] = (-1.0, -1.0),
+            created_at_range_enabled: bool = False,
             days: str = "",
             months: str = "",
             years: str = "",
@@ -34,6 +36,8 @@ class MediaFilter:
         self.tags = tags
         self.date_range = date_range
         self.date_range_enabled = date_range_enabled
+        self.created_at_range = created_at_range
+        self.created_at_range_enabled = created_at_range_enabled
         self.days = days
         self.months = months
         self.years = years

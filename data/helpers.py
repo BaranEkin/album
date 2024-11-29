@@ -1,6 +1,6 @@
 import re
 from typing import Literal
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import time_ns
 
 turkish_months = {
@@ -100,6 +100,21 @@ def current_time_in_unix_subsec() -> float:
 def legacy_time_in_unix_subsec(legacy_time_str: str) -> float:
     dt = datetime.strptime(legacy_time_str, "%d.%m.%Y %H:%M:%S")
     return dt.timestamp()
+
+def get_unix_time_days_ago(days: int) -> float:
+    """
+    Get the Unix timestamp with subsecond precision for a specified number of days ago.
+
+    Args:
+        days (int): Number of days ago to calculate the timestamp.
+
+    Returns:
+        float: Unix timestamp with subsecond precision.
+    """
+
+    now = datetime.now()
+    time_days_ago = now - timedelta(days=days)
+    return time_days_ago.timestamp()
 
 
 def normalize_date(date_str: str) -> str:
