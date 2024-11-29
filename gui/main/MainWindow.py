@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
         self.button_upload_media.setIcon(QIcon("res/icons/Image--Add.png"))
         self.button_upload_media.setIconSize(QSize(30, 30))
         self.button_upload_media.setText("")
-        #self.button_upload_media.setToolTip(Constants.TOOLTIP_BUTTON_BACK)
+        self.button_upload_media.setToolTip(Constants.TOOLTIP_BUTTON_ADD_MEDIA)
         self.layout_features_area.addWidget(self.button_upload_media, 0, 0)
 
         self.button_filter = QPushButton()
@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
         self.button_filter.setIcon(QIcon("res/icons/Filter-2--Streamline-Sharp-Gradient--Free.png"))
         self.button_filter.setIconSize(QSize(30, 30))
         self.button_filter.setText("")
-        #self.button_filter.setToolTip(Constants.TOOLTIP_BUTTON_FORWARD)
+        self.button_filter.setToolTip(Constants.TOOLTIP_BUTTON_FILTER)
         self.layout_features_area.addWidget(self.button_filter, 0, 1)
 
         self.button_same_date_location = QPushButton()
@@ -120,7 +120,7 @@ class MainWindow(QMainWindow):
         self.button_same_date_location.setText("")
         self.button_same_date_location.clicked.connect(self.on_same_date_location)
         self.button_same_date_location.setCheckable(True)
-        #self.button_same_date_location.setToolTip(Constants.TOOLTIP_BUTTON_SLIDESHOW)
+        self.button_same_date_location.setToolTip(Constants.TOOLTIP_BUTTON_SAME_DATE_LOCATION)
         self.layout_features_area.addWidget(self.button_same_date_location, 0, 2)
 
         self.button_edit_media = QPushButton()
@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
         self.button_edit_media.setIcon(QIcon("res/icons/Pencil-Square--Streamline-Plump-Gradient.png"))
         self.button_edit_media.setIconSize(QSize(27, 27))
         self.button_edit_media.setText("")
-        #self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
+        self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_EDIT_MEDIA)
         self.layout_features_area.addWidget(self.button_edit_media, 1, 0)
 
         self.button_latest_media = QPushButton()
@@ -140,6 +140,7 @@ class MainWindow(QMainWindow):
         self.button_latest_media.setText("")
         self.button_latest_media.clicked.connect(self.on_latest_media)
         self.button_latest_media.setCheckable(True)
+        self.button_latest_media.setToolTip(Constants.TOOLTIP_BUTTON_LATEST)
         self.layout_features_area.addWidget(self.button_latest_media, 1, 1)
 
         self.button_same_date = QPushButton()
@@ -149,6 +150,7 @@ class MainWindow(QMainWindow):
         self.button_same_date.setText("")
         self.button_same_date.clicked.connect(self.on_same_date)
         self.button_same_date.setCheckable(True)
+        self.button_same_date.setToolTip(Constants.TOOLTIP_BUTTON_SAME_DATE)
         self.layout_features_area.addWidget(self.button_same_date, 1, 2)
 
         self.button_delete_media = QPushButton()
@@ -156,6 +158,7 @@ class MainWindow(QMainWindow):
         self.button_delete_media.setIcon(QIcon("res/icons/Recycle-Bin-2--Streamline-Plump-Gradient.png"))
         self.button_delete_media.setIconSize(QSize(35, 35))
         self.button_delete_media.setText("")
+        self.button_delete_media.setToolTip(Constants.TOOLTIP_BUTTON_DELETE_MEDIA)
         self.layout_features_area.addWidget(self.button_delete_media, 2, 0)
 
         self.button_open_media = QPushButton()
@@ -163,6 +166,7 @@ class MainWindow(QMainWindow):
         self.button_open_media.setText("")
         self.button_open_media.setIcon(QIcon("res/icons/Link-Share-2--Streamline-Sharp-Gradient-Free.png"))
         self.button_open_media.setIconSize(QSize(30, 30))
+        self.button_open_media.setToolTip(Constants.TOOLTIP_BUTTON_OPEN_MEDIA)
         self.button_open_media.clicked.connect(self.on_open_media)
         self.layout_features_area.addWidget(self.button_open_media, 2, 1)
 
@@ -173,6 +177,7 @@ class MainWindow(QMainWindow):
         self.button_same_location.setText("")
         self.button_same_location.clicked.connect(self.on_same_location)
         self.button_same_location.setCheckable(True)
+        self.button_same_location.setToolTip(Constants.TOOLTIP_BUTTON_SAME_LOCATION)
         self.layout_features_area.addWidget(self.button_same_location, 2, 2)
 
         self.frame_features_area.setLayout(self.layout_features_area)
