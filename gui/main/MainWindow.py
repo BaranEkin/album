@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         self.previous_index_same = None
 
         # Set window title and initial dimensions
-        self.setWindowTitle("Albüm (v1.0.2)")
+        self.setWindowTitle("Albüm (v1.0.3)")
         self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
 
