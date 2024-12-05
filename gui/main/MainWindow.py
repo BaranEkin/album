@@ -12,13 +12,14 @@ from PyQt5.QtWidgets import (
     QDialog,
     QApplication
 )
-from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer
+from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer, QItemSelectionModel
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
 from gui.add.DialogEditMedia import DialogEditMedia
 from gui.constants import Constants
 from gui.main.DialogProcess import DialogProcess
+from gui.main.ListViewThumbnail import ListViewThumbnail
 from media_loader import MediaLoader
 from logger import log
 from data.helpers import get_unix_time_days_ago
@@ -47,11 +48,15 @@ class MainWindow(QMainWindow):
         self.previous_media_data = []
         
         self.selected_media = None
+        self.current_index = 0
+
         self.previous_media_filter = None
         # Index before change: add/edit/delete operations
         self.previous_index_change = None
         # Index before same date location buttons
         self.previous_index_same = None
+
+        self.ctrl_selected_rows = set()
 
         # Set window title and initial dimensions
         self.setWindowTitle("Albüm (v1.0.3)")
@@ -184,7 +189,7 @@ class MainWindow(QMainWindow):
         menu_layout.addWidget(self.frame_features_area)
 
         # Replace QListWidget with QListView
-        self.thumbnail_list = QListView(self.frame_menu)
+        self.thumbnail_list = ListViewThumbnail(self.frame_menu)
         self.thumbnail_list.setSpacing(1)
         self.thumbnail_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.thumbnail_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -227,7 +232,7 @@ class MainWindow(QMainWindow):
         self.update_db()
         self.media_data = self.data_manager.get_all_media()
         self.previous_media_data = self.media_data.copy()
-        self.frame_bottom.top_label.setText(str(len(self.media_data)))
+        self.update_frame_bottom_top_label()
 
         self.dialog_filter = DialogFilter(self.data_manager, parent=self)
         self.button_filter.clicked.connect(self.show_filter_dialog)
@@ -237,7 +242,7 @@ class MainWindow(QMainWindow):
 
         # Create and set the custom model
         thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
-        self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
+        self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader, parent=self)
         self.thumbnail_list.setModel(self.thumbnail_model)
 
         # Set the custom delegate
@@ -296,28 +301,12 @@ class MainWindow(QMainWindow):
                 self.try_select_item(0)
 
     def go_to_next_media(self):
-       
-        selected_indexes = self.thumbnail_list.selectedIndexes()
-
-        if selected_indexes:
-            current_index = selected_indexes[0].row()
-        
-        if current_index + 1 < self.thumbnail_model.rowCount():
-            next_index = self.thumbnail_model.index(current_index + 1)
-            self.thumbnail_list.setCurrentIndex(next_index)
-            self.on_media_selected(next_index)
+        if self.current_index < len(self.media_data) - 1:
+            self.try_select_item(self.current_index + 1)
 
     def go_to_previous_media(self):
-
-        selected_indexes = self.thumbnail_list.selectedIndexes()
-
-        if selected_indexes:
-            current_index = selected_indexes[0].row()
-        
-        if current_index - 1 >= 0:
-            prev_index = self.thumbnail_model.index(current_index - 1)
-            self.thumbnail_list.setCurrentIndex(prev_index)
-            self.on_media_selected(prev_index)
+        if self.current_index > 0:
+            self.try_select_item(self.current_index - 1)
 
     def go_to_random_media(self):
         index = random.randint(0, len(self.media_data)-1)
@@ -381,19 +370,42 @@ class MainWindow(QMainWindow):
             dialog_notes = DialogNotes(self.selected_media.notes or "", parent=self)
             dialog_notes.exec_()
             self.frame_bottom.button_notes.setChecked(False)
+
+    def update_thumbnail_highlights(self):
+        self.thumbnail_model.dataChanged.emit(
+            self.thumbnail_model.index(0),
+            self.thumbnail_model.index(self.thumbnail_model.rowCount() - 1),
+            [Qt.BackgroundRole]
+        )
     
     def on_media_selected(self, index: QModelIndex):
-        self.selected_media = self.media_data[index.row()]
-        
-        self.load_media_metadata()
+        row = index.row()
 
-        # Image
-        if self.selected_media.type == 1:
-            self.load_image()
-        
-        # Video or Audio
+        # If Ctrl + click
+        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+            if row in self.ctrl_selected_rows:
+                self.ctrl_selected_rows.remove(row)
+            else:
+                self.ctrl_selected_rows.add(row)
+
+            self.update_thumbnail_highlights()
+            self.update_frame_bottom_top_label()
+            model_index = self.thumbnail_model.index(self.current_index, 0)
+            self.thumbnail_list.selectionModel().select(model_index, QItemSelectionModel.Select)
+
         else:
-            self.load_video_audio_thumbnail()
+            self.current_index = row
+            self.selected_media = self.media_data[row]
+            
+            self.load_media_metadata()
+
+            # Image
+            if self.selected_media.type == 1:
+                self.load_image()
+            
+            # Video or Audio
+            else:
+                self.load_video_audio_thumbnail()
 
     def load_media_metadata(self):
         self.frame_bottom.set_media_info(self.selected_media)
@@ -436,7 +448,7 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
-                self.previous_index_same = selected_indexes[0].row()
+                self.previous_index_same = self.current_index
 
             self.previous_media_data = self.media_data.copy()
             media_filter = MediaFilter(created_at_range_enabled=True, created_at_range=(get_unix_time_days_ago(7), -1.0))
@@ -543,7 +555,7 @@ class MainWindow(QMainWindow):
         if self.check_cloud_connected():
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
-                self.previous_index_change = selected_indexes[0].row()
+                self.previous_index_change = self.current_index
             
             dialog = DialogEditMedia(self.data_manager, self.media_loader, self.selected_media)
             if dialog.exec_() == QDialog.Accepted:
@@ -586,7 +598,7 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
-                self.previous_index_same = selected_indexes[0].row()
+                self.previous_index_same = self.current_index
 
             self.previous_media_data = self.media_data.copy()
             date = self.selected_media.date_text
@@ -619,7 +631,7 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
-                self.previous_index_same = selected_indexes[0].row()
+                self.previous_index_same = self.current_index
 
             self.previous_media_data = self.media_data.copy()
             date = self.selected_media.date_text
@@ -675,6 +687,7 @@ class MainWindow(QMainWindow):
     def update_media_data(self, new_media_data, index=0):
 
         self.stop_slideshow()
+        self.ctrl_selected_rows.clear()
    
         if new_media_data is None:
             log("MainWindow.update_media_data", "Media data is None.", level="error")
@@ -690,11 +703,17 @@ class MainWindow(QMainWindow):
 
         # Refresh the thumbnails and reset the index
         thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]
-        self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader)
+        self.thumbnail_model = ListModelThumbnail(thumbnail_keys, self.media_loader, parent=self)
         self.thumbnail_list.setModel(self.thumbnail_model)
         self.thumbnail_model.signal.loaded.connect(lambda: self.try_select_item(index))
 
-        self.frame_bottom.top_label.setText(str(len(self.media_data)))
+        self.update_frame_bottom_top_label()
+
+    def update_frame_bottom_top_label(self):
+        self.frame_bottom.top_label.setText(f"{len(self.ctrl_selected_rows)} / {len(self.media_data)}")
+
+    def get_uuids_of_ctrl_selected_rows(self):
+        return [self.media_data[row].media_uuid for row in self.ctrl_selected_rows]
     
     def simulate_keypress(self, window, key):
         """Simulates a keypress event."""

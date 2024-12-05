@@ -9,7 +9,7 @@ from PyQt5.QtCore import (
     QAbstractListModel,
     QRect,
 )
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QBrush, QColor
 from PyQt5.QtWidgets import QApplication, QStyledItemDelegate, QStyle
 
 
@@ -48,11 +48,20 @@ class ListModelThumbnail(QAbstractListModel):
                 self.load_thumbnail(index.row())
                 # Return a placeholder pixmap
                 return self.placeholder_pixmap
+        
         elif role == Qt.UserRole:
             return self.thumbnail_keys_loaded[index.row()]
+        
         elif role == Qt.SizeHintRole:
             return QSize(160, 100)
+        
+        elif role == Qt.BackgroundRole:
+            # Ask the MainWindow for selection state
+            if index.row() in self.parent().ctrl_selected_rows:
+                return QBrush(QColor(255, 255, 0))  # Highlight selected items
+        
         return None
+
 
     def canFetchMore(self, parent=QModelIndex()):
         return self.loaded_count < len(self.thumbnail_keys)
@@ -114,33 +123,34 @@ class ThumbnailDelegate(QStyledItemDelegate):
         # Save the painter's state
         painter.save()
 
-        # Draw the default item (background, selection, etc.)
-        if option.state & QStyle.State_Selected:
+        # Check if the item is selected
+        is_selected = index.row() in index.model().parent().ctrl_selected_rows
+        
+        # If selected, fill the background with yellow, otherwise use default behavior
+        if is_selected:
+            painter.fillRect(option.rect, QColor(255, 255, 0))  # Yellow background for selected items
+        elif option.state & QStyle.State_Selected:
+            # Default selection behavior (blue highlight)
             painter.fillRect(option.rect, option.palette.highlight())
+
+        # Draw the default item (background, selection, etc.)
         else:
             painter.fillRect(option.rect, option.palette.base())
 
-        # Get the pixmap from the model
+        # Get the pixmap from the model and draw it centered
         pixmap = index.data(Qt.DecorationRole)
         if pixmap:
-            # Calculate the position to center the pixmap
             item_rect = option.rect
             pixmap_size = pixmap.size()
             x = item_rect.x() + (item_rect.width() - pixmap_size.width()) / 2
             y = item_rect.y() + (item_rect.height() - pixmap_size.height()) / 2
-
-            # Draw the pixmap centered
             painter.drawPixmap(int(x), int(y), pixmap)
 
         # Draw focus rectangle if item has focus
         if option.state & QStyle.State_HasFocus:
-            option_rect = QRect(
-                int(x), int(y), pixmap_size.width(), pixmap_size.height()
-            )
+            option_rect = QRect(int(x), int(y), pixmap_size.width(), pixmap_size.height())
             option.rect = option_rect
-            QApplication.style().drawPrimitive(
-                QStyle.PE_FrameFocusRect, option, painter
-            )
+            QApplication.style().drawPrimitive(QStyle.PE_FrameFocusRect, option, painter)
 
         # Restore the painter's state
         painter.restore()
