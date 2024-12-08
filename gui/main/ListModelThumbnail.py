@@ -58,7 +58,7 @@ class ListModelThumbnail(QAbstractListModel):
         elif role == Qt.BackgroundRole:
             # Ask the MainWindow for selection state
             if index.row() in self.parent().ctrl_selected_rows:
-                return QBrush(QColor(255, 255, 0))  # Highlight selected items
+                return QBrush(QColor(200, 255, 0))  # Highlight selected items
         
         return None
 

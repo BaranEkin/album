@@ -2,6 +2,7 @@ import sys
 from multiprocessing import freeze_support
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTranslator, QLibraryInfo
+from data.media_list_manager import MediaListManager
 from gui.main.MainWindow import MainWindow
 
 from config.config import Config
@@ -17,6 +18,7 @@ if __name__ == "__main__":
 
     media_loader = MediaLoader()
     data_manager = DataManager()
+    media_list_manager = MediaListManager()
 
     app = QApplication(sys.argv)
     app.setStyle("windowsvista")
@@ -27,6 +29,6 @@ if __name__ == "__main__":
     app.installTranslator(translator)
     app.aboutToQuit.connect(close_log)
 
-    viewer = MainWindow(data_manager, media_loader)
+    viewer = MainWindow(data_manager, media_list_manager, media_loader)
     viewer.showMaximized()
     sys.exit(app.exec_())

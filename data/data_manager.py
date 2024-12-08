@@ -131,6 +131,18 @@ class DataManager:
         with self.get_session() as session:
             media_list = session.execute(select(Media).where(Media.status == 0).order_by(Media.date, Media.rank)).scalars().all()
             return media_list
+        
+    def get_media_by_uuids(self, uuids: list) -> Sequence[Media]:
+        with self.get_session() as session:
+            media_list = session.execute(select(Media).where(Media.media_uuid.in_(uuids))).scalars().all()
+
+            # Create a dictionary for quick lookup by media_uuid
+            media_dict = {media.media_uuid: media for media in media_list}
+            
+            # Reorder the results based on the input UUID order
+            media_list = [media_dict[uuid] for uuid in uuids if uuid in media_dict]
+            
+            return media_list
 
     def get_list_people(self) -> list[str]:
         media_list = self.get_all_media()

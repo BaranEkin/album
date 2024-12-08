@@ -16,8 +16,10 @@ from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer, QItemSelectionModel
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
+from data.media_list_manager import MediaListManager
 from gui.add.DialogEditMedia import DialogEditMedia
 from gui.constants import Constants
+from gui.lists.DialogLists import DialogLists
 from gui.main.DialogProcess import DialogProcess
 from gui.main.ListViewThumbnail import ListViewThumbnail
 from media_loader import MediaLoader
@@ -39,9 +41,10 @@ from ops import cloud_ops, file_ops
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, data_manager: DataManager, media_loader: MediaLoader):
+    def __init__(self, data_manager: DataManager, media_list_manager: MediaListManager, media_loader: MediaLoader):
         super().__init__()
         self.data_manager = data_manager
+        self.media_list_manager = media_list_manager
         self.media_loader = media_loader
 
         self.media_data = []
@@ -49,6 +52,7 @@ class MainWindow(QMainWindow):
         
         self.selected_media = None
         self.current_index = 0
+        self.current_list_name = None
 
         self.previous_media_filter = None
         # Index before change: add/edit/delete operations
@@ -56,10 +60,10 @@ class MainWindow(QMainWindow):
         # Index before same date location buttons
         self.previous_index_same = None
 
-        self.ctrl_selected_rows = set()
+        self.ctrl_selected_rows = []
 
         # Set window title and initial dimensions
-        self.setWindowTitle("Albüm (v1.0.3)")
+        self.setWindowTitle("Albüm (v1.1.0)")
         self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
 
@@ -93,7 +97,7 @@ class MainWindow(QMainWindow):
         # Create right QFrame with fixed width and height, and add buttons in a grid
         self.frame_features_area = QFrame()
         self.frame_features_area.setFixedWidth(160)
-        self.frame_features_area.setFixedHeight(160)
+        self.frame_features_area.setFixedHeight(210)
 
         # Create a grid layout for the buttons inside the right frame
         self.layout_features_area = QGridLayout()
@@ -185,11 +189,40 @@ class MainWindow(QMainWindow):
         self.button_same_location.setToolTip(Constants.TOOLTIP_BUTTON_SAME_LOCATION)
         self.layout_features_area.addWidget(self.button_same_location, 2, 2)
 
+        self.button_lists = QPushButton()
+        self.button_lists.setFixedSize(50, 50)
+        self.button_lists.setIcon(QIcon("res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free.png"))
+        self.button_lists.setIconSize(QSize(25, 25))
+        self.button_lists.setText("")
+        self.button_lists.clicked.connect(self.on_button_lists)
+        self.button_lists.setCheckable(True)
+        self.button_lists.setToolTip(Constants.TOOLTIP_BUTTON_LISTS)
+        self.layout_features_area.addWidget(self.button_lists, 3, 0)
+
+        self.button_bulk_edit_selected_media = QPushButton()
+        self.button_bulk_edit_selected_media.setFixedSize(50, 50)
+        self.button_bulk_edit_selected_media.setIcon(QIcon("res/icons/Cashing-Check--Streamline-Flex-Gradient.png"))
+        self.button_bulk_edit_selected_media.setIconSize(QSize(30, 30))
+        self.button_bulk_edit_selected_media.setText("")
+        self.button_bulk_edit_selected_media.clicked.connect(self.on_bulk_edit_selected)
+        self.button_bulk_edit_selected_media.setToolTip(Constants.TOOLTIP_BUTTON_BULK_EDIT)
+        self.layout_features_area.addWidget(self.button_bulk_edit_selected_media, 3, 1)
+
+        self.button_export_selected_media = QPushButton()
+        self.button_export_selected_media.setFixedSize(50, 50)
+        self.button_export_selected_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
+        self.button_export_selected_media.setIconSize(QSize(27, 27))
+        self.button_export_selected_media.setText("")
+        self.button_export_selected_media.clicked.connect(self.on_export_selected)
+        self.button_export_selected_media.setToolTip(Constants.TOOLTIP_BUTTON_EXPORT)
+        self.layout_features_area.addWidget(self.button_export_selected_media, 3, 2)
+
+
         self.frame_features_area.setLayout(self.layout_features_area)
         menu_layout.addWidget(self.frame_features_area)
 
         # Replace QListWidget with QListView
-        self.thumbnail_list = ListViewThumbnail(self.frame_menu)
+        self.thumbnail_list = ListViewThumbnail(parent=self)
         self.thumbnail_list.setSpacing(1)
         self.thumbnail_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.thumbnail_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -312,6 +345,55 @@ class MainWindow(QMainWindow):
         index = random.randint(0, len(self.media_data)-1)
         self.try_select_item(index)
 
+    def on_button_lists(self, checked):
+        if checked:
+            self.button_lists.setChecked(not self.button_lists.isChecked())
+            dialog = DialogLists(media_list_manager=self.media_list_manager)
+            
+            if dialog.exec_() == QDialog.Accepted:
+                selected_list_name = dialog.selected_element
+                
+                if selected_list_name:
+                    selected_uuids = self.media_list_manager.get_uuids_from_list(selected_list_name)
+                    media_from_list = self.data_manager.get_media_by_uuids(selected_uuids)
+                    self.previous_media_data = self.media_data
+                    self.previous_index_same = self.current_index
+                    self.update_media_data(media_from_list)
+                    self.current_list_name = selected_list_name
+                    self.button_lists.setChecked(True)
+                    
+                    self.button_latest_media.setEnabled(False)
+                    self.button_latest_media.setChecked(False)
+                    self.button_filter.setEnabled(False)
+                    self.button_same_date.setEnabled(False)
+                    self.button_same_location.setEnabled(False)
+                    self.button_same_date.setChecked(False)
+                    self.button_same_location.setChecked(False)
+                    self.button_same_date_location.setChecked(False)
+                    self.button_same_date_location.setEnabled(False)
+                
+        else:
+            self.current_list_name = None
+            self.button_lists.setChecked(False)
+            self.button_latest_media.setEnabled(True)
+            self.button_filter.setEnabled(True)
+            self.button_same_date.setEnabled(True)
+            self.button_same_location.setEnabled(True)
+            self.button_same_date_location.setEnabled(True)
+
+            if self.previous_media_data is not None:
+                if self.previous_index_same is not None:
+                    self.update_media_data(self.previous_media_data.copy(), self.previous_index_same)
+                else:
+                    self.update_media_data(self.previous_media_data.copy())
+
+
+    def on_export_selected(self):
+        pass
+
+    def on_bulk_edit_selected(self):
+        pass
+
 
     def run_slideshow(self):
         current_direction = self.frame_bottom.get_slideway_direction()
@@ -386,7 +468,7 @@ class MainWindow(QMainWindow):
             if row in self.ctrl_selected_rows:
                 self.ctrl_selected_rows.remove(row)
             else:
-                self.ctrl_selected_rows.add(row)
+                self.ctrl_selected_rows.append(row)
 
             self.update_thumbnail_highlights()
             self.update_frame_bottom_top_label()
@@ -446,6 +528,9 @@ class MainWindow(QMainWindow):
             self.button_same_location.setChecked(False)
             self.button_same_date_location.setChecked(False)
 
+            self.button_lists.setEnabled(False)
+            self.button_lists.setChecked(False)
+
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
                 self.previous_index_same = self.current_index
@@ -460,6 +545,7 @@ class MainWindow(QMainWindow):
             self.button_same_date.setEnabled(True)
             self.button_same_location.setEnabled(True)
             self.button_same_date_location.setEnabled(True)
+            self.button_lists.setEnabled(True)
 
             if self.previous_media_data is not None:
                 if self.previous_index_same is not None:
@@ -595,6 +681,8 @@ class MainWindow(QMainWindow):
             self.button_same_location.setEnabled(False)
             self.button_same_date.setChecked(False)
             self.button_same_location.setChecked(False)
+            self.button_lists.setEnabled(False)
+            self.button_lists.setChecked(False)
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
@@ -612,6 +700,7 @@ class MainWindow(QMainWindow):
             self.button_filter.setEnabled(True)
             self.button_same_date.setEnabled(True)
             self.button_same_location.setEnabled(True)
+            self.button_lists.setEnabled(True)
 
             if self.previous_media_data is not None:
                 if self.previous_index_same is not None:
@@ -628,6 +717,8 @@ class MainWindow(QMainWindow):
             self.button_same_location.setEnabled(False)
             self.button_same_date_location.setChecked(False)
             self.button_same_location.setChecked(False)
+            self.button_lists.setEnabled(False)
+            self.button_lists.setChecked(False)
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
@@ -644,6 +735,7 @@ class MainWindow(QMainWindow):
             self.button_filter.setEnabled(True)
             self.button_same_date_location.setEnabled(True)
             self.button_same_location.setEnabled(True)
+            self.button_lists.setEnabled(True)
 
             if self.previous_media_data is not None:
                 if self.previous_index_same is not None:
@@ -660,6 +752,8 @@ class MainWindow(QMainWindow):
             self.button_same_date.setEnabled(False)
             self.button_same_date_location.setChecked(False)
             self.button_same_date.setChecked(False)
+            self.button_lists.setEnabled(False)
+            self.button_lists.setChecked(False)
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
@@ -676,6 +770,7 @@ class MainWindow(QMainWindow):
             self.button_filter.setEnabled(True)
             self.button_same_date_location.setEnabled(True)
             self.button_same_date.setEnabled(True)
+            self.button_lists.setEnabled(True)
 
             if self.previous_media_data is not None:
                 if self.previous_index_same is not None:
@@ -687,7 +782,7 @@ class MainWindow(QMainWindow):
     def update_media_data(self, new_media_data, index=0):
 
         self.stop_slideshow()
-        self.ctrl_selected_rows.clear()
+        self.ctrl_select_clear()
    
         if new_media_data is None:
             log("MainWindow.update_media_data", "Media data is None.", level="error")
@@ -714,6 +809,37 @@ class MainWindow(QMainWindow):
 
     def get_uuids_of_ctrl_selected_rows(self):
         return [self.media_data[row].media_uuid for row in self.ctrl_selected_rows]
+    
+    def ctrl_select_all(self):
+        self.ctrl_selected_rows = [*range(0, len(self.media_data), 1)]
+        self.update_frame_bottom_top_label()
+
+    def ctrl_select_clear(self):
+        self.ctrl_selected_rows.clear()
+        self.update_frame_bottom_top_label()
+
+    def ctrl_select_reverse(self):
+        self.ctrl_selected_rows = [row for row in range(0, len(self.media_data), 1) if row not in self.ctrl_selected_rows]
+        self.update_frame_bottom_top_label()
+
+    def ctrl_select_add(self):
+        dialog = DialogLists(media_list_manager=self.media_list_manager, title="Listeye Ekle")
+        if dialog.exec_() == QDialog.Accepted:
+            selected_list_name = dialog.selected_element
+            if show_message(f"Seçili {len(self.ctrl_selected_rows)} medyayı '{selected_list_name}' listesine\neklemek istediğinize emin misiniz?", is_question=True):
+                if selected_list_name:
+                    self.media_list_manager.add_uuids_to_media_list(list_name=selected_list_name, uuids=self.get_uuids_of_ctrl_selected_rows())
+                    show_message(f"Medyalar '{selected_list_name}' listesine eklendi.")
+
+    def ctrl_select_remove(self):
+        if self.current_list_name:
+            if show_message(f"Seçili {len(self.ctrl_selected_rows)} medyayı '{self.current_list_name}' listesinden\nkalıcı olarak çıkarmak istediğinize emin misiniz?", is_question=True):
+                self.media_list_manager.remove_uuids_from_media_list(list_name=self.current_list_name, uuids=self.get_uuids_of_ctrl_selected_rows())
+                selected_uuids = self.media_list_manager.get_uuids_from_list(self.current_list_name)
+                media_from_list = self.data_manager.get_media_by_uuids(selected_uuids)
+                self.update_media_data(media_from_list)
+                show_message(f"Medyalar '{self.current_list_name}' listesinden çıkarıldı.")
+
     
     def simulate_keypress(self, window, key):
         """Simulates a keypress event."""
