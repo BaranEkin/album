@@ -348,14 +348,15 @@ class MainWindow(QMainWindow):
     def on_button_lists(self, checked):
         if checked:
             self.button_lists.setChecked(not self.button_lists.isChecked())
-            dialog = DialogLists(media_list_manager=self.media_list_manager)
+            dialog = DialogLists(media_list_manager=self.media_list_manager, mode="get")
             
             if dialog.exec_() == QDialog.Accepted:
                 selected_list_name = dialog.selected_element
+                selected_sorting = dialog.selected_sorting - 1 # -1 for default sorting
                 
                 if selected_list_name:
                     selected_uuids = self.media_list_manager.get_uuids_from_list(selected_list_name)
-                    media_from_list = self.data_manager.get_media_by_uuids(selected_uuids)
+                    media_from_list = self.data_manager.get_media_by_uuids(selected_uuids, selected_sorting)
                     self.previous_media_data = self.media_data
                     self.previous_index_same = self.current_index
                     self.update_media_data(media_from_list)
@@ -823,7 +824,7 @@ class MainWindow(QMainWindow):
         self.update_frame_bottom_top_label()
 
     def ctrl_select_add(self):
-        dialog = DialogLists(media_list_manager=self.media_list_manager, title="Listeye Ekle")
+        dialog = DialogLists(media_list_manager=self.media_list_manager, mode="add")
         if dialog.exec_() == QDialog.Accepted:
             selected_list_name = dialog.selected_element
             if show_message(f"Seçili {len(self.ctrl_selected_rows)} medyayı '{selected_list_name}' listesine\neklemek istediğinize emin misiniz?", is_question=True):
