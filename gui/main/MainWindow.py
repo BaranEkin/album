@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QGridLayout,
     QDialog,
+    QGroupBox,
     QApplication
 )
 from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer, QItemSelectionModel
@@ -97,12 +98,36 @@ class MainWindow(QMainWindow):
         # Create right QFrame with fixed width and height, and add buttons in a grid
         self.frame_features_area = QFrame()
         self.frame_features_area.setFixedWidth(160)
-        self.frame_features_area.setFixedHeight(210)
+        self.frame_features_area.setFixedHeight(360)
 
         # Create a grid layout for the buttons inside the right frame
-        self.layout_features_area = QGridLayout()
-        self.layout_features_area.setContentsMargins(0,0,10,10)
+        self.layout_features_area = QVBoxLayout()
+        self.layout_features_area.setContentsMargins(0,0,0,0)
 
+        self.group_feature_main = QGroupBox("Ana İşlemler")
+        self.group_feature_explore = QGroupBox("Keşfet")
+        self.group_feature_displayed = QGroupBox("Görüntülen Medya")
+        self.group_feature_selected = QGroupBox("Seçili Medyalar")
+
+        self.layout_group_feature_main = QHBoxLayout()
+        self.layout_group_feature_explore = QHBoxLayout()
+        self.layout_group_feature_displayed = QGridLayout()
+        self.layout_group_feature_selected = QHBoxLayout()
+
+        self.layout_group_feature_main.setContentsMargins(0, 0, 0, 5)
+        self.layout_group_feature_main.setSpacing(0)
+
+        self.layout_group_feature_explore.setContentsMargins(0, 0, 0, 5)
+        self.layout_group_feature_explore.setSpacing(0)
+
+        self.layout_group_feature_displayed.setContentsMargins(0, 0, 0, 5)
+        self.layout_group_feature_displayed.setSpacing(0)
+
+        self.layout_group_feature_selected.setContentsMargins(0, 0, 0, 5)
+        self.layout_group_feature_selected.setSpacing(0)
+
+
+        # Features for main _______________________________________________________________________________________
         self.button_upload_media = QPushButton()
         self.button_upload_media.setFocusPolicy(Qt.NoFocus)
         self.button_upload_media.setFixedSize(50, 50)
@@ -110,7 +135,7 @@ class MainWindow(QMainWindow):
         self.button_upload_media.setIconSize(QSize(30, 30))
         self.button_upload_media.setText("")
         self.button_upload_media.setToolTip(Constants.TOOLTIP_BUTTON_ADD_MEDIA)
-        self.layout_features_area.addWidget(self.button_upload_media, 0, 0)
+        self.layout_group_feature_main.addWidget(self.button_upload_media)
 
         self.button_filter = QPushButton()
         self.button_filter.setFocusPolicy(Qt.NoFocus)
@@ -119,28 +144,20 @@ class MainWindow(QMainWindow):
         self.button_filter.setIconSize(QSize(30, 30))
         self.button_filter.setText("")
         self.button_filter.setToolTip(Constants.TOOLTIP_BUTTON_FILTER)
-        self.layout_features_area.addWidget(self.button_filter, 0, 1)
+        self.layout_group_feature_main.addWidget(self.button_filter)
 
-        self.button_same_date_location = QPushButton()
-        self.button_same_date_location.setFocusPolicy(Qt.NoFocus)
-        self.button_same_date_location.setFixedSize(50, 50)
-        self.button_same_date_location.setIcon(QIcon("res/icons/Date--Location.png"))
-        self.button_same_date_location.setIconSize(QSize(30, 30))
-        self.button_same_date_location.setText("")
-        self.button_same_date_location.clicked.connect(self.on_same_date_location)
-        self.button_same_date_location.setCheckable(True)
-        self.button_same_date_location.setToolTip(Constants.TOOLTIP_BUTTON_SAME_DATE_LOCATION)
-        self.layout_features_area.addWidget(self.button_same_date_location, 0, 2)
+        self.button_lists = QPushButton()
+        self.button_lists.setFixedSize(50, 50)
+        self.button_lists.setIcon(QIcon("res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free.png"))
+        self.button_lists.setIconSize(QSize(30, 30))
+        self.button_lists.setText("")
+        self.button_lists.clicked.connect(self.on_button_lists)
+        self.button_lists.setCheckable(True)
+        self.button_lists.setToolTip(Constants.TOOLTIP_BUTTON_LISTS)
+        self.layout_group_feature_main.addWidget(self.button_lists)
 
-        self.button_edit_media = QPushButton()
-        self.button_edit_media.setFocusPolicy(Qt.NoFocus)
-        self.button_edit_media.setFixedSize(50, 50)
-        self.button_edit_media.setIcon(QIcon("res/icons/Pencil-Square--Streamline-Plump-Gradient.png"))
-        self.button_edit_media.setIconSize(QSize(27, 27))
-        self.button_edit_media.setText("")
-        self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_EDIT_MEDIA)
-        self.layout_features_area.addWidget(self.button_edit_media, 1, 0)
 
+        # Features for explore _______________________________________________________________________________________
         self.button_latest_media = QPushButton()
         self.button_latest_media.setFocusPolicy(Qt.NoFocus)
         self.button_latest_media.setFixedSize(50, 50)
@@ -150,7 +167,43 @@ class MainWindow(QMainWindow):
         self.button_latest_media.clicked.connect(self.on_latest_media)
         self.button_latest_media.setCheckable(True)
         self.button_latest_media.setToolTip(Constants.TOOLTIP_BUTTON_LATEST)
-        self.layout_features_area.addWidget(self.button_latest_media, 1, 1)
+        self.layout_group_feature_explore.addWidget(self.button_latest_media)
+
+        self.button_today_in_history = QPushButton()
+        self.button_today_in_history.setFocusPolicy(Qt.NoFocus)
+        self.button_today_in_history.setFixedSize(50, 50)
+        self.button_today_in_history.setIcon(QIcon("res/icons/Calendar-Jump-To-Date--Streamline-Core-Gradient.png"))
+        self.button_today_in_history.setIconSize(QSize(30, 30))
+        self.button_today_in_history.setText("")
+        #self.button_today_in_history.clicked.connect(self.on_latest_media)
+        self.button_today_in_history.setCheckable(True)
+        self.button_today_in_history.setToolTip(Constants.TOOLTIP_BUTTON_TODAY_IN_HISTORY)
+        self.layout_group_feature_explore.addWidget(self.button_today_in_history)
+
+        self.button_explore_forgotten = QPushButton()
+        self.button_explore_forgotten.setFocusPolicy(Qt.NoFocus)
+        self.button_explore_forgotten.setFixedSize(50, 50)
+        self.button_explore_forgotten.setIcon(QIcon("res/icons/Lens--Streamline-Plump-Gradient.png"))
+        self.button_explore_forgotten.setIconSize(QSize(30, 30))
+        self.button_explore_forgotten.setText("")
+        #self.button_today_in_history.clicked.connect(self.on_latest_media)
+        self.button_explore_forgotten.setCheckable(True)
+        self.button_explore_forgotten.setToolTip(Constants.TOOLTIP_BUTTON_EXPLORE_FORGOTTEN)
+        self.layout_group_feature_explore.addWidget(self.button_explore_forgotten)
+
+
+        # Features for displayed _______________________________________________________________________________________
+        # Features for same ________________________________________________________________________________________
+        self.button_same_date_location = QPushButton()
+        self.button_same_date_location.setFocusPolicy(Qt.NoFocus)
+        self.button_same_date_location.setFixedSize(50, 50)
+        self.button_same_date_location.setIcon(QIcon("res/icons/Date--Location.png"))
+        self.button_same_date_location.setIconSize(QSize(30, 30))
+        self.button_same_date_location.setText("")
+        self.button_same_date_location.clicked.connect(self.on_same_date_location)
+        self.button_same_date_location.setCheckable(True)
+        self.button_same_date_location.setToolTip(Constants.TOOLTIP_BUTTON_SAME_DATE_LOCATION)
+        self.layout_group_feature_displayed.addWidget(self.button_same_date_location, 0, 0)
 
         self.button_same_date = QPushButton()
         self.button_same_date.setFixedSize(50, 50)
@@ -160,24 +213,7 @@ class MainWindow(QMainWindow):
         self.button_same_date.clicked.connect(self.on_same_date)
         self.button_same_date.setCheckable(True)
         self.button_same_date.setToolTip(Constants.TOOLTIP_BUTTON_SAME_DATE)
-        self.layout_features_area.addWidget(self.button_same_date, 1, 2)
-
-        self.button_delete_media = QPushButton()
-        self.button_delete_media.setFixedSize(50, 50)
-        self.button_delete_media.setIcon(QIcon("res/icons/Recycle-Bin-2--Streamline-Plump-Gradient.png"))
-        self.button_delete_media.setIconSize(QSize(35, 35))
-        self.button_delete_media.setText("")
-        self.button_delete_media.setToolTip(Constants.TOOLTIP_BUTTON_DELETE_MEDIA)
-        self.layout_features_area.addWidget(self.button_delete_media, 2, 0)
-
-        self.button_open_media = QPushButton()
-        self.button_open_media.setFixedSize(50, 50)
-        self.button_open_media.setText("")
-        self.button_open_media.setIcon(QIcon("res/icons/Link-Share-2--Streamline-Sharp-Gradient-Free.png"))
-        self.button_open_media.setIconSize(QSize(30, 30))
-        self.button_open_media.setToolTip(Constants.TOOLTIP_BUTTON_OPEN_MEDIA)
-        self.button_open_media.clicked.connect(self.on_open_media)
-        self.layout_features_area.addWidget(self.button_open_media, 2, 1)
+        self.layout_group_feature_displayed.addWidget(self.button_same_date, 0, 1)
 
         self.button_same_location = QPushButton()
         self.button_same_location.setFixedSize(50, 50)
@@ -187,18 +223,37 @@ class MainWindow(QMainWindow):
         self.button_same_location.clicked.connect(self.on_same_location)
         self.button_same_location.setCheckable(True)
         self.button_same_location.setToolTip(Constants.TOOLTIP_BUTTON_SAME_LOCATION)
-        self.layout_features_area.addWidget(self.button_same_location, 2, 2)
+        self.layout_group_feature_displayed.addWidget(self.button_same_location, 0, 2)
 
-        self.button_lists = QPushButton()
-        self.button_lists.setFixedSize(50, 50)
-        self.button_lists.setIcon(QIcon("res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free.png"))
-        self.button_lists.setIconSize(QSize(25, 25))
-        self.button_lists.setText("")
-        self.button_lists.clicked.connect(self.on_button_lists)
-        self.button_lists.setCheckable(True)
-        self.button_lists.setToolTip(Constants.TOOLTIP_BUTTON_LISTS)
-        self.layout_features_area.addWidget(self.button_lists, 3, 0)
+        # Features for data ________________________________________________________________________________________
+        self.button_edit_media = QPushButton()
+        self.button_edit_media.setFocusPolicy(Qt.NoFocus)
+        self.button_edit_media.setFixedSize(50, 50)
+        self.button_edit_media.setIcon(QIcon("res/icons/Pencil-Square--Streamline-Plump-Gradient.png"))
+        self.button_edit_media.setIconSize(QSize(30, 30))
+        self.button_edit_media.setText("")
+        self.button_edit_media.setToolTip(Constants.TOOLTIP_BUTTON_EDIT_MEDIA)
+        self.layout_group_feature_displayed.addWidget(self.button_edit_media, 1, 0)
 
+        self.button_delete_media = QPushButton()
+        self.button_delete_media.setFixedSize(50, 50)
+        self.button_delete_media.setIcon(QIcon("res/icons/Recycle-Bin-2--Streamline-Plump-Gradient.png"))
+        self.button_delete_media.setIconSize(QSize(30, 30))
+        self.button_delete_media.setText("")
+        self.button_delete_media.setToolTip(Constants.TOOLTIP_BUTTON_DELETE_MEDIA)
+        self.layout_group_feature_displayed.addWidget(self.button_delete_media, 1, 1)
+
+        self.button_open_media = QPushButton()
+        self.button_open_media.setFixedSize(50, 50)
+        self.button_open_media.setText("")
+        self.button_open_media.setIcon(QIcon("res/icons/Link-Share-2--Streamline-Sharp-Gradient-Free.png"))
+        self.button_open_media.setIconSize(QSize(30, 30))
+        self.button_open_media.setToolTip(Constants.TOOLTIP_BUTTON_OPEN_MEDIA)
+        self.button_open_media.clicked.connect(self.on_open_media)
+        self.layout_group_feature_displayed.addWidget(self.button_open_media, 1, 2)
+
+        
+        # Features for selected ________________________________________________________________________________________
         self.button_bulk_edit_selected_media = QPushButton()
         self.button_bulk_edit_selected_media.setFixedSize(50, 50)
         self.button_bulk_edit_selected_media.setIcon(QIcon("res/icons/Cashing-Check--Streamline-Flex-Gradient.png"))
@@ -206,20 +261,45 @@ class MainWindow(QMainWindow):
         self.button_bulk_edit_selected_media.setText("")
         self.button_bulk_edit_selected_media.clicked.connect(self.on_bulk_edit_selected)
         self.button_bulk_edit_selected_media.setToolTip(Constants.TOOLTIP_BUTTON_BULK_EDIT)
-        self.layout_features_area.addWidget(self.button_bulk_edit_selected_media, 3, 1)
+        self.layout_group_feature_selected.addWidget(self.button_bulk_edit_selected_media)
 
         self.button_export_selected_media = QPushButton()
         self.button_export_selected_media.setFixedSize(50, 50)
         self.button_export_selected_media.setIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
-        self.button_export_selected_media.setIconSize(QSize(27, 27))
+        self.button_export_selected_media.setIconSize(QSize(30, 30))
         self.button_export_selected_media.setText("")
         self.button_export_selected_media.clicked.connect(self.on_export_selected)
         self.button_export_selected_media.setToolTip(Constants.TOOLTIP_BUTTON_EXPORT)
-        self.layout_features_area.addWidget(self.button_export_selected_media, 3, 2)
+        self.layout_group_feature_selected.addWidget(self.button_export_selected_media)
+
+        self.button_add_to_list = QPushButton()
+        self.button_add_to_list.setFocusPolicy(Qt.NoFocus)
+        self.button_add_to_list.setFixedSize(50, 50)
+        self.button_add_to_list.setIcon(QIcon("res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free--Add.png"))
+        self.button_add_to_list.setIconSize(QSize(30, 30))
+        self.button_add_to_list.setText("")
+        #self.button_today_in_history.clicked.connect(self.on_latest_media)
+        self.button_add_to_list.setCheckable(True)
+        self.button_add_to_list.setToolTip(Constants.TOOLTIP_BUTTON_ADD_TO_LIST)
+        self.layout_group_feature_selected.addWidget(self.button_add_to_list)
 
 
+        # Set layouts for the group boxes
+        self.group_feature_main.setLayout(self.layout_group_feature_main)
+        self.group_feature_explore.setLayout(self.layout_group_feature_explore)
+        self.group_feature_displayed.setLayout(self.layout_group_feature_displayed)
+        self.group_feature_selected.setLayout(self.layout_group_feature_selected)
+
+        # Add group boxes to the main layout
+        self.layout_features_area.addWidget(self.group_feature_main)
+        self.layout_features_area.addWidget(self.group_feature_explore)
+        self.layout_features_area.addWidget(self.group_feature_displayed)
+        self.layout_features_area.addWidget(self.group_feature_selected)
         self.frame_features_area.setLayout(self.layout_features_area)
         menu_layout.addWidget(self.frame_features_area)
+
+        # Add stretch to make spacing dynamic
+        self.layout_features_area.addStretch()
 
         # Replace QListWidget with QListView
         self.thumbnail_list = ListViewThumbnail(parent=self)

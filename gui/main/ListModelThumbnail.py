@@ -53,7 +53,7 @@ class ListModelThumbnail(QAbstractListModel):
             return self.thumbnail_keys_loaded[index.row()]
         
         elif role == Qt.SizeHintRole:
-            return QSize(160, 100)
+            return QSize(160, 105)
         
         elif role == Qt.BackgroundRole:
             # Ask the MainWindow for selection state
