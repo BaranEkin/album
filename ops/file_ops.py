@@ -105,7 +105,7 @@ def create_video_thumbnail(media_key: str, thumbnail_key: str):
             level="warning")
 
     # Load banner
-    banner = cv2.imread("res/video_banner.jpg")
+    banner = cv2.imread("res/icons/video_banner.jpg")
     
     # Stack banners and thumbnail horizontally
     thumbnail_image = np.hstack((banner, cropped_frame, banner))
