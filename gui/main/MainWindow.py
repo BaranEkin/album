@@ -60,8 +60,12 @@ class MainWindow(QMainWindow):
         self.displayed_media = None
         self.selected_rows = []
 
-        # Previous index
+        # Previous data
         self.previous_media_index = 0
+        self.previous_media_filter = None
+
+        # State variables
+        self.is_in_list_mode = False
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
@@ -389,7 +393,7 @@ class MainWindow(QMainWindow):
                 button.setEnabled(True)
 
     
-    def try_select_item(self, i=0):
+    def try_select_item(self, i=0, attempt=0):
         try:
             # Check if the model has any loaded items
             if self.thumbnail_model.rowCount() > 0:
@@ -401,9 +405,21 @@ class MainWindow(QMainWindow):
 
                 self.thumbnail_list.clicked.emit(index)
         except Exception as e:
-            log("MainWindow.try_select_item", f"Can't select item '{i}':{e}", level="warning")
-            if i != 0:
-                self.try_select_item(0)
+            log("MainWindow.try_select_item", f"Can't select item '{i}' on attempt {attempt}: {e}", level="warning")
+            # Determine fallback behavior based on the current attempt
+            if attempt == 0:
+                # First attempt: initial index (i)
+                self.try_select_item(i - 1, attempt=1)
+            elif attempt == 1 and i > 0:
+                # Second attempt: try i-1
+                self.try_select_item(i + 1, attempt=2)
+            elif attempt == 2 and i + 1 < self.thumbnail_model.rowCount():
+                # Third attempt: try i+1
+                self.try_select_item(0, attempt=3)
+            elif attempt == 3:
+                # Final attempt: try 0
+                log("MainWindow.try_select_item", "All attempts to select an item have failed.", level="error")
+
 
     def go_to_next_media(self):
         if self.media_index < len(self.media_data) - 1:
@@ -432,10 +448,12 @@ class MainWindow(QMainWindow):
                     self.previous_media_index = self.media_index
                     self.update_media_data(media_from_list)
                     self.media_list_name = selected_list_name
+                    self.is_in_list_mode = True
                     self.handle_feature_buttons(self.button_lists, checked=True)
                 
         else:
             self.media_list_name = None
+            self.is_in_list_mode = False
             self.handle_feature_buttons(self.button_lists, checked=False)
             self.return_to_previous_media_state()
 
@@ -577,8 +595,9 @@ class MainWindow(QMainWindow):
             if selected_indexes:
                 self.previous_media_index = self.media_index
 
-            media_filter_latest = MediaFilter(created_at_range_enabled=True, created_at_range=(get_unix_time_days_ago(7), -1.0))
-            self.update_media_data(self.data_manager.get_filtered_media(media_filter_latest))
+            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
+            self.media_filter = MediaFilter(created_at_range_enabled=True, created_at_range=(get_unix_time_days_ago(7), -1.0))
+            self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
 
         else:
             self.handle_feature_buttons(self.button_latest_media, checked=False)
@@ -609,7 +628,7 @@ class MainWindow(QMainWindow):
                                           title="Silme İşlemi",
                                           message="Silme işlemi devam ediyor...")
             dialog_delete.exec_()
-            self.return_to_previous_media_state()
+            self.refresh_current_media_state()
             
 
     def fit_to_window(self):
@@ -660,22 +679,31 @@ class MainWindow(QMainWindow):
             dialog = DialogAddMedia(self.data_manager)
             dialog.exec_()
             if dialog.an_upload_completed:
-                self.return_to_previous_media_state()
+                self.refresh_current_media_state()
 
     def show_edit_media_dialog(self):
         if self.check_cloud_connected():
-            selected_indexes = self.thumbnail_list.selectedIndexes()
-            self.previous_media_index = self.media_index if selected_indexes else 0
-            
             dialog = DialogEditMedia(self.data_manager, self.media_loader, self.displayed_media)
             if dialog.exec_() == QDialog.Accepted:
-                self.return_to_previous_media_state()
+                self.refresh_current_media_state()
 
     def return_to_previous_media_state(self):
+        self.media_filter = self.previous_media_filter.copy() if self.previous_media_filter else None
         if self.media_filter:
             self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.previous_media_index)
         else:
             self.update_media_data(self.data_manager.get_all_media(), index=self.previous_media_index)
+
+    def refresh_current_media_state(self):
+        if self.is_in_list_mode:
+            selected_uuids = self.media_list_manager.get_uuids_from_list(self.media_list_name)
+            media_from_list = self.data_manager.get_media_by_uuids(selected_uuids)
+            self.update_media_data(media_from_list, self.media_index)
+        else:
+            if self.media_filter:
+                self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.media_index)
+            else:
+                self.update_media_data(self.data_manager.get_all_media(), index=self.media_index)
 
     def show_filter_dialog(self):
         self.dialog_filter.recenter()
@@ -705,12 +733,13 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             self.previous_media_index = self.media_index if selected_indexes else 0
-            
+            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
+
             date = self.displayed_media.date_text
             location = self.displayed_media.location
             
-            media_filter_same_date_loc = MediaFilter(date_range=(date, ""), location_exact=location)
-            self.update_media_data(self.data_manager.get_filtered_media(media_filter_same_date_loc))
+            self.media_filter = MediaFilter(date_range=(date, ""), location_exact=location)
+            self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
         
         else:
             self.handle_feature_buttons(self.button_same_date_location, checked=False)
@@ -722,10 +751,11 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             self.previous_media_index = self.media_index if selected_indexes else 0
+            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
 
             date = self.displayed_media.date_text
-            media_filter_same_date = MediaFilter(date_range=(date, ""))
-            self.update_media_data(self.data_manager.get_filtered_media(media_filter_same_date))
+            self.media_filter = MediaFilter(date_range=(date, ""))
+            self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
         
         else:
             self.handle_feature_buttons(self.button_same_date, checked=False)
@@ -737,10 +767,11 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             self.previous_media_index = self.media_index if selected_indexes else 0
+            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
 
             location = self.displayed_media.location
-            media_filter_same_loc = MediaFilter(location_exact=location)
-            self.update_media_data(self.data_manager.get_filtered_media(media_filter_same_loc))
+            self.media_filter = MediaFilter(location_exact=location)
+            self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
         
         else:
             self.handle_feature_buttons(self.button_same_location, checked=False)
@@ -803,9 +834,7 @@ class MainWindow(QMainWindow):
         if self.media_list_name:
             if show_message(f"Seçili {len(self.selected_rows)} medyayı '{self.media_list_name}' listesinden\nkalıcı olarak çıkarmak istediğinize emin misiniz?", is_question=True):
                 self.media_list_manager.remove_uuids_from_media_list(list_name=self.media_list_name, uuids=self.get_uuids_of_selected_rows())
-                selected_uuids = self.media_list_manager.get_uuids_from_list(self.media_list_name)
-                media_from_list = self.data_manager.get_media_by_uuids(selected_uuids)
-                self.update_media_data(media_from_list)
+                self.refresh_current_media_state()
                 show_message(f"Medyalar '{self.media_list_name}' listesinden çıkarıldı.")
 
     
