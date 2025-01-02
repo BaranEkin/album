@@ -41,7 +41,7 @@ class ListViewThumbnail(QListView):
             action_reverse_selection.triggered.connect(lambda: self.parent.ctrl_select_reverse())
             context_menu.addAction(action_reverse_selection)
 
-            if self.parent.ctrl_selected_rows:
+            if self.parent.selected_rows:
                 action_add_to_list.setEnabled(True)
                 
                 if self.parent.current_list_name:

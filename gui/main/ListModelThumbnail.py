@@ -57,7 +57,7 @@ class ListModelThumbnail(QAbstractListModel):
         
         elif role == Qt.BackgroundRole:
             # Ask the MainWindow for selection state
-            if index.row() in self.parent().ctrl_selected_rows:
+            if index.row() in self.parent().selected_rows:
                 return QBrush(QColor(200, 255, 0))  # Highlight selected items
         
         return None
@@ -124,7 +124,7 @@ class ThumbnailDelegate(QStyledItemDelegate):
         painter.save()
 
         # Check if the item is selected
-        is_selected = index.row() in index.model().parent().ctrl_selected_rows
+        is_selected = index.row() in index.model().parent().selected_rows
         
         # If selected, fill the background with yellow, otherwise use default behavior
         if is_selected:
