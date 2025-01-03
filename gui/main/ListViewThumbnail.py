@@ -41,6 +41,12 @@ class ListViewThumbnail(QListView):
             action_reverse_selection.triggered.connect(lambda: self.parent.ctrl_select_reverse())
             context_menu.addAction(action_reverse_selection)
 
+            context_menu.addSeparator()
+
+            action_reorder_date = QAction("Aynı güne ait medyaları yeniden sırala", self)
+            action_reorder_date.triggered.connect(lambda: self.parent.reorder_date(index))
+            context_menu.addAction(action_reorder_date)
+
             if self.parent.selected_rows:
                 action_add_to_list.setEnabled(True)
                 

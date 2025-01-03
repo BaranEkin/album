@@ -95,14 +95,37 @@ class LabelImageViewer(QLabel):
         if not self.pixmap():
             return
 
-        scaling_factor = self.initial_scale * (self.scale_modifier + 1)
+        # Calculate the new scale factor
+        scale_factor = self.initial_scale * (self.scale_modifier + 1)
 
-        # Scale the image based on the new scale factor
-        new_width = self.original_size.width() * scaling_factor
-        new_height = self.original_size.height() * scaling_factor
+        # Store current QLabel dimensions
+        old_width = self.width()
+        old_height = self.height()
+
+        # Calculate new QLabel dimensions
+        new_width = self.original_size.width() * scale_factor
+        new_height = self.original_size.height() * scale_factor
+
+        # Access the scrollbars
+        horizontal_scroll = self.scroll_area.horizontalScrollBar()
+        vertical_scroll = self.scroll_area.verticalScrollBar()
+
+        # Calculate the relative position of the clicked pixel within the QLabel
+        rel_x = (horizontal_scroll.value() + click_pos.x()) / old_width
+        rel_y = (vertical_scroll.value() + click_pos.y()) / old_height
 
         # Update QLabel size
         self.setFixedSize(int(new_width), int(new_height))
 
-        # Adjust the scroll area to center on the click position
-        self.scroll_area.parent().parent().adjust_scroll_area(click_pos, scaling_factor)
+        # Calculate the new scroll positions based on the relative position
+        new_h_scroll = int(rel_x * new_width - click_pos.x())
+        new_v_scroll = int(rel_y * new_height - click_pos.y())
+
+        # Clamp scroll values to ensure they stay within valid bounds
+        new_h_scroll = max(0, min(new_h_scroll, horizontal_scroll.maximum()))
+        new_v_scroll = max(0, min(new_v_scroll, vertical_scroll.maximum()))
+
+        # Update the scrollbar positions
+        horizontal_scroll.setValue(new_h_scroll)
+        vertical_scroll.setValue(new_v_scroll)
+

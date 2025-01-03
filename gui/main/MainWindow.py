@@ -18,6 +18,7 @@ from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 
 from data.media_list_manager import MediaListManager
+from gui.DialogReorder import DialogReorder
 from gui.add.DialogEditMedia import DialogEditMedia
 from gui.constants import Constants
 from gui.lists.DialogLists import DialogLists
@@ -232,7 +233,7 @@ class MainWindow(QMainWindow):
         self.button_add_to_list = self.make_feature_button(
             "res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free--Add.png", 
             Constants.TOOLTIP_BUTTON_ADD_TO_LIST, 
-            self.ctrl_select_add)
+            self.add_selection_to_list)
 
         self.layout_group_feature_selected.addWidget(self.button_bulk_edit_selected_media)
         self.layout_group_feature_selected.addWidget(self.button_export_selected_media)
@@ -256,7 +257,6 @@ class MainWindow(QMainWindow):
         self.layout_features_area.addStretch()
 
         # THUMBNAIL LIST AND IMAGE VIEWER____________________________________________________
-        # Replace QListWidget with QListView
         self.thumbnail_list = ListViewThumbnail(parent=self)
         self.thumbnail_list.setSpacing(1)
         self.thumbnail_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -653,22 +653,25 @@ class MainWindow(QMainWindow):
             self.image_label.scale_modifier = 0.0
 
 
-    def adjust_scroll_area(self, click_pos, scale_factor):
-        # Get the current scroll positions
-        h_scroll = self.scroll_area.horizontalScrollBar()
-        v_scroll = self.scroll_area.verticalScrollBar()
+    def adjust_scroll_area(self, click_pos, scale_factor, old_width, old_height):
+        horizontal_scroll = self.scroll_area.horizontalScrollBar()
+        vertical_scroll = self.scroll_area.verticalScrollBar()
 
-        # Get the relative click position in the image as a percentage
-        relative_x = click_pos.x() / self.image_label.width()
-        relative_y = click_pos.y() / self.image_label.height()
+        # Calculate the new dimensions
+        new_width = old_width * scale_factor
+        new_height = old_height * scale_factor
 
-        # Calculate the new scroll position based on the clicked point and zoom level
-        h_new_value = int(relative_x * h_scroll.maximum())
-        v_new_value = int(relative_y * v_scroll.maximum())
+        # Calculate the relative position of the click within the QLabel
+        relative_x = click_pos.x() / old_width if old_width > 0 else 0.5
+        relative_y = click_pos.y() / old_height if old_height > 0 else 0.5
 
-        # Set the new scroll positions, adjusting as needed
-        h_scroll.setValue(h_new_value)
-        v_scroll.setValue(v_new_value)
+        # Adjust the scroll area to maintain the relative position of the mouse
+        new_horizontal_value = int(horizontal_scroll.value() + (relative_x * new_width - click_pos.x()))
+        new_vertical_value = int(vertical_scroll.value() + (relative_y * new_height - click_pos.y()))
+
+        # Set the new scroll values
+        horizontal_scroll.setValue(new_horizontal_value)
+        vertical_scroll.setValue(new_vertical_value)
 
     def resizeEvent(self, event):
         super(MainWindow, self).resizeEvent(event)
@@ -781,7 +784,7 @@ class MainWindow(QMainWindow):
     def update_media_data(self, new_media_data, index=0):
 
         self.stop_slideshow()
-        self.ctrl_select_clear()
+        self.clear_selection()
    
         if new_media_data is None:
             log("MainWindow.update_media_data", "Media data is None.", level="error")
@@ -809,19 +812,19 @@ class MainWindow(QMainWindow):
     def get_uuids_of_selected_rows(self):
         return [self.media_data[row].media_uuid for row in self.selected_rows]
     
-    def ctrl_select_all(self):
+    def select_all(self):
         self.selected_rows = [*range(0, len(self.media_data), 1)]
         self.update_frame_bottom_top_label()
 
-    def ctrl_select_clear(self):
+    def clear_selection(self):
         self.selected_rows.clear()
         self.update_frame_bottom_top_label()
 
-    def ctrl_select_reverse(self):
+    def reverse_selection(self):
         self.selected_rows = [row for row in range(0, len(self.media_data), 1) if row not in self.selected_rows]
         self.update_frame_bottom_top_label()
 
-    def ctrl_select_add(self):
+    def add_selection_to_list(self):
         dialog = DialogLists(media_list_manager=self.media_list_manager, mode="add")
         if dialog.exec_() == QDialog.Accepted:
             selected_list_name = dialog.selected_element
@@ -830,14 +833,35 @@ class MainWindow(QMainWindow):
                     self.media_list_manager.add_uuids_to_media_list(list_name=selected_list_name, uuids=self.get_uuids_of_selected_rows())
                     show_message(f"Medyalar '{selected_list_name}' listesine eklendi.")
 
-    def ctrl_select_remove(self):
+    def remove_selection(self):
         if self.media_list_name:
             if show_message(f"Seçili {len(self.selected_rows)} medyayı '{self.media_list_name}' listesinden\nkalıcı olarak çıkarmak istediğinize emin misiniz?", is_question=True):
                 self.media_list_manager.remove_uuids_from_media_list(list_name=self.media_list_name, uuids=self.get_uuids_of_selected_rows())
                 self.refresh_current_media_state()
                 show_message(f"Medyalar '{self.media_list_name}' listesinden çıkarıldı.")
 
-    
+    def reorder_date(self, index):
+        def reorder_date_procedure(date, reordered_keys):
+            self.data_manager.update_local_db()
+            reordered_uuids = [key.split(".")[0] for key in reordered_keys]
+            self.data_manager.reorder_within_date(date=date, ordered_uuids=reordered_uuids)
+            cloud_ops.upload_database()
+            
+        right_clicked_media = self.media_data[index.row()]
+        date_text = right_clicked_media.date_text
+        date_filter = MediaFilter(date_range=(date_text, ""))
+        media_from_date = self.data_manager.get_filtered_media(date_filter)
+        thumbnail_keys = [f"{media.media_uuid}.jpg" for media in media_from_date]
+
+        dialog = DialogReorder(thumbnail_keys, self.media_loader, parent=self)
+        if dialog.exec_() == QDialog.Accepted:
+            reordered_keys = dialog.get_reordered_keys()
+            dialog_process = DialogProcess(operation=lambda: reorder_date_procedure(right_clicked_media.date, reordered_keys),
+                                            title="Güne Ait Medyaları Yeniden Sırala",
+                                            message="Medya sıralaması güncelleniyor...")
+            dialog_process.exec_()
+            self.refresh_current_media_state()
+            
     def simulate_keypress(self, window, key):
         """Simulates a keypress event."""
         # Create a QKeyEvent for the keypress (KeyPress event)

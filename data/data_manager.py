@@ -114,6 +114,20 @@ class DataManager:
 
             else:
                 pass
+
+    def reorder_within_date(self, date: float, ordered_uuids: list[str]):
+        with self.get_session() as session:
+            media_list = session.execute(select(Media).where(Media.status != 0).where(Media.date == date).order_by(Media.rank)).scalars().all()
+
+            # Create a dictionary for quick lookup by media_uuid
+            media_dict = {media.media_uuid: media for media in media_list}
+
+            for i, uuid in enumerate(ordered_uuids):
+                media_dict[uuid].rank = i + 1.0
+                media_dict[uuid].modified_at = current_time_in_unix_subsec()
+                media_dict[uuid].modified_by = cloud_ops.get_user_name()
+            session.commit()
+
     
     def set_media_deleted(self, media_uuid):
         with self.get_session() as session:
