@@ -1,4 +1,5 @@
 import random
+import copy
 from PyQt5.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
@@ -436,7 +437,7 @@ class MainWindow(QMainWindow):
     def on_button_lists(self, checked):
         if checked:
             self.button_lists.setChecked(not self.button_lists.isChecked())
-            dialog = DialogLists(media_list_manager=self.media_list_manager, mode="get")
+            dialog = DialogLists(media_loader=self.media_loader, media_list_manager=self.media_list_manager, mode="get")
             
             if dialog.exec_() == QDialog.Accepted:
                 selected_list_name = dialog.selected_element
@@ -595,7 +596,7 @@ class MainWindow(QMainWindow):
             if selected_indexes:
                 self.previous_media_index = self.media_index
 
-            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
+            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
             self.media_filter = MediaFilter(created_at_range_enabled=True, created_at_range=(get_unix_time_days_ago(7), -1.0))
             self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
 
@@ -691,7 +692,7 @@ class MainWindow(QMainWindow):
                 self.refresh_current_media_state()
 
     def return_to_previous_media_state(self):
-        self.media_filter = self.previous_media_filter.copy() if self.previous_media_filter else None
+        self.media_filter = copy.deepcopy(self.previous_media_filter) if self.previous_media_filter else None
         if self.media_filter:
             self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.previous_media_index)
         else:
@@ -736,7 +737,7 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             self.previous_media_index = self.media_index if selected_indexes else 0
-            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
+            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
 
             date = self.displayed_media.date_text
             location = self.displayed_media.location
@@ -754,7 +755,7 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             self.previous_media_index = self.media_index if selected_indexes else 0
-            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
+            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
 
             date = self.displayed_media.date_text
             self.media_filter = MediaFilter(date_range=(date, ""))
@@ -770,7 +771,7 @@ class MainWindow(QMainWindow):
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             self.previous_media_index = self.media_index if selected_indexes else 0
-            self.previous_media_filter = self.media_filter.copy() if self.media_filter else None
+            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
 
             location = self.displayed_media.location
             self.media_filter = MediaFilter(location_exact=location)
@@ -825,7 +826,7 @@ class MainWindow(QMainWindow):
         self.update_frame_bottom_top_label()
 
     def add_selection_to_list(self):
-        dialog = DialogLists(media_list_manager=self.media_list_manager, mode="add")
+        dialog = DialogLists(media_loader=self.media_loader, media_list_manager=self.media_list_manager, mode="add")
         if dialog.exec_() == QDialog.Accepted:
             selected_list_name = dialog.selected_element
             if show_message(f"Seçili {len(self.selected_rows)} medyayı '{selected_list_name}' listesine\neklemek istediğinize emin misiniz?", is_question=True):

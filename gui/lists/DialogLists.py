@@ -5,11 +5,13 @@ from PyQt5.QtWidgets import (
     QListWidget, QPushButton, QInputDialog, QFrame, QLabel, QComboBox
 )
 from PyQt5.QtGui import QIcon
+from gui.lists.DialogEditList import DialogEditList
 from gui.message import show_message
 from data.media_list_manager import MediaListManager
+from media_loader import MediaLoader
 
 class DialogLists(QDialog):
-    def __init__(self, media_list_manager: MediaListManager, inital_selection=None, mode: Literal["get", "add"] = "get"):
+    def __init__(self, media_loader: MediaLoader, media_list_manager: MediaListManager, inital_selection=None, mode: Literal["get", "add"] = "get"):
         super().__init__()
         
         if mode == "get":
@@ -24,6 +26,7 @@ class DialogLists(QDialog):
         self.setWindowIcon(QIcon("res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free.png"))
         self.setFixedSize(350, 250)
 
+        self.media_loader = media_loader
         self.media_list_manager = media_list_manager
         self.selected_sorting = 0
 
@@ -40,7 +43,7 @@ class DialogLists(QDialog):
         self.layout_sorting = QHBoxLayout()
         self.label_sorting = QLabel("Medya Sıralaması:")
         self.combo_sorting = QComboBox()
-        self.combo_sorting.addItems(["Listeye Eklenme", "Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"])
+        self.combo_sorting.addItems(["Liste Varsayılan", "Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"])
         self.combo_sorting.currentIndexChanged.connect(self.update_sorting)
         self.layout_sorting.addWidget(self.label_sorting)
         self.layout_sorting.addWidget(self.combo_sorting)
@@ -59,7 +62,7 @@ class DialogLists(QDialog):
         self.button_edit = QPushButton()
         self.button_edit.setFixedWidth(25)
         self.button_edit.setIcon(QIcon("res/icons/Edit--Streamline-Mynaui.png"))
-        self.button_edit.setToolTip("Seçili listeyi yeniden adlandır")
+        self.button_edit.setToolTip("Seçili listeyi düzenle")
         self.button_edit.setEnabled(False)  # Initially disabled
         self.layout_middle.addWidget(self.button_add)
         self.layout_middle.addWidget(self.button_delete)
@@ -104,7 +107,7 @@ class DialogLists(QDialog):
                 return
             self.list_widget.addItem(text)
             self.elements.append(text)
-            self.media_list_manager.create_media_list(list_name=text)
+            self.media_list_manager.create_media_list(list_name=text, uuids=[])
 
     def delete_element(self):
         if show_message("Listeyi kalıcı olarak silmek istediğinizden emin misiniz?", is_question=True):
@@ -119,16 +122,18 @@ class DialogLists(QDialog):
         selected_items = self.list_widget.selectedItems()
         if selected_items:
             current_name = selected_items[0].text()
-            new_name, ok = QInputDialog.getText(self, "Listeyi Yeniden Adlandır", f"Yeni ad girin:", text=current_name)
-            new_name = new_name.strip()
-            if ok and new_name:
-                if new_name == current_name:
-                    return  # No change
-                if new_name in self.elements:
-                    show_message("Aynı adda bir liste zaten var!", level="error")
-                    return
+            dialog = DialogEditList(self.media_loader, self.media_list_manager, current_name, self.elements)
+            if dialog.exec_() == QDialog.Accepted:
+                reordered_uuids = [uuid.split(".")[0] for uuid in dialog.get_reordered_keys()]
+                new_name = dialog.get_name()
                 # Update in backend
-                self.media_list_manager.rename_media_list(old_name=current_name, new_name=new_name)
+                if new_name == current_name:
+                    # Overwrite the list
+                    self.media_list_manager.create_media_list(list_name=new_name, uuids=reordered_uuids) 
+                else:
+                    # Add a new list and delete the old one
+                    self.media_list_manager.edit_media_list(old_name=current_name, new_name=new_name, uuids=reordered_uuids) 
+
                 # Update in UI
                 self.elements[self.elements.index(current_name)] = new_name
                 selected_items[0].setText(new_name)

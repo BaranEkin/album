@@ -19,26 +19,26 @@ class ListViewThumbnail(QListView):
             action_add_to_list = QAction("Seçili medyaları listeye Ekle...", self)
             
             action_add_to_list.setEnabled(False)
-            action_add_to_list.triggered.connect(lambda: self.parent.ctrl_select_add())
+            action_add_to_list.triggered.connect(lambda: self.parent.add_selection_to_list())
             context_menu.addAction(action_add_to_list)
 
             action_remove_from_list = QAction("Seçili medyaları listeden Çıkar...", self)
             action_remove_from_list.setEnabled(False)
-            action_remove_from_list.triggered.connect(lambda: self.parent.ctrl_select_remove())
+            action_remove_from_list.triggered.connect(lambda: self.parent.remove_selection())
             context_menu.addAction(action_remove_from_list)
 
             context_menu.addSeparator()
 
             action_select_all = QAction("Hepsini seç", self)
-            action_select_all.triggered.connect(lambda: self.parent.ctrl_select_all())
+            action_select_all.triggered.connect(lambda: self.parent.select_all())
             context_menu.addAction(action_select_all)
 
             action_deselect_all = QAction("Hiçbirini seçme", self)
-            action_deselect_all.triggered.connect(lambda: self.parent.ctrl_select_clear())
+            action_deselect_all.triggered.connect(lambda: self.parent.clear_selection())
             context_menu.addAction(action_deselect_all)
 
             action_reverse_selection = QAction("Seçimi tersine çevir", self)
-            action_reverse_selection.triggered.connect(lambda: self.parent.ctrl_select_reverse())
+            action_reverse_selection.triggered.connect(lambda: self.parent.reverse_selection())
             context_menu.addAction(action_reverse_selection)
 
             context_menu.addSeparator()
@@ -50,7 +50,7 @@ class ListViewThumbnail(QListView):
             if self.parent.selected_rows:
                 action_add_to_list.setEnabled(True)
                 
-                if self.parent.current_list_name:
+                if self.parent.media_list_name:
                     action_remove_from_list.setEnabled(True)
                 
             # Show the context menu at the position of the right-click event

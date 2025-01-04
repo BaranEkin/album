@@ -15,9 +15,15 @@ class MediaListManager:
         with open("res/database/media_lists.pkl", "wb") as f:
             pickle.dump(self.media_lists_dict, f)
 
-    def create_media_list(self, list_name: str, uuids: list[str] = []):
+    def create_media_list(self, list_name: str, uuids: list[str]):
         self.media_lists_dict[list_name] = list(dict.fromkeys(uuids))
         self.save_media_lists_file()
+
+    def edit_media_list(self, old_name: str, new_name: str, uuids: list[str]):
+        if old_name in self.media_lists_dict.keys():
+            self.media_lists_dict[new_name] = list(dict.fromkeys(uuids))
+            del self.media_lists_dict[old_name]
+            self.save_media_lists_file()     
 
     def rename_media_list(self, old_name: str, new_name: str):
         if old_name in self.media_lists_dict.keys():
