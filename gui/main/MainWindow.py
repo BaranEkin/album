@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer, QItemSelectionModel
 from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
+from datetime import datetime
 
 from data.media_list_manager import MediaListManager
 from gui.DialogReorder import DialogReorder
@@ -163,7 +164,7 @@ class MainWindow(QMainWindow):
         self.button_today_in_history = self.make_feature_button(
             "res/icons/Calendar-Jump-To-Date--Streamline-Core-Gradient.png", 
             Constants.TOOLTIP_BUTTON_TODAY_IN_HISTORY, 
-            self.on_latest_media, 
+            self.on_today_in_history, 
             checkable=True)
         
         self.button_explore_forgotten = self.make_feature_button(
@@ -730,6 +731,24 @@ class MainWindow(QMainWindow):
         else:
             self.frame_bottom.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_FAIL)
             self.frame_bottom.status_cloud.setPixmap(QPixmap("res/icons/Cloud-Warning--Streamline-Core.png"))
+    
+    def on_today_in_history(self, checked):
+        if checked:
+            self.handle_feature_buttons(self.button_today_in_history, checked=True)
+
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+            if selected_indexes:
+                self.previous_media_index = self.media_index
+
+            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+            today_day = datetime.now().strftime("%d")
+            today_month = datetime.now().strftime("%m")
+            self.media_filter = MediaFilter(days=today_day, months=today_month)
+            self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
+
+        else:
+            self.handle_feature_buttons(self.button_today_in_history, checked=False)
+            self.return_to_previous_media_state()
     
     def on_same_date_location(self, checked):
         if checked:
