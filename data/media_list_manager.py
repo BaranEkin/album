@@ -3,7 +3,7 @@ from ops import file_ops
 
 class MediaListManager:
     def __init__(self):
-        self.media_lists_dict = {}
+        self.media_lists_dict = {} # {list_name: [uuids]}
         self.load_media_lists_file()
 
     def load_media_lists_file(self):

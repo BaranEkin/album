@@ -197,6 +197,9 @@ class DataManager:
 
         return sorted(list_locations)
     
+    def get_list_uuids(self) -> list[str]:
+        return [media.media_uuid for media in self.get_all_media()]
+    
     def get_media_of_date(self, date: float) -> Sequence[Media]:
         with self.get_session() as session:
             media_list = session.execute(select(Media).where(Media.status != 0).where(Media.date == date).order_by(Media.rank)).scalars().all()

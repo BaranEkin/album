@@ -19,6 +19,7 @@ from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
 from PIL import Image
 from datetime import datetime
 
+from data.display_history_manager import DisplayHistoryManager
 from data.media_list_manager import MediaListManager
 from gui.DialogReorder import DialogReorder
 from gui.add.DialogEditMedia import DialogEditMedia
@@ -45,13 +46,14 @@ from ops import cloud_ops, file_ops
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, data_manager: DataManager, media_list_manager: MediaListManager, media_loader: MediaLoader):
+    def __init__(self, data_manager: DataManager, media_list_manager: MediaListManager, media_loader: MediaLoader, display_history_manager: DisplayHistoryManager):
         super().__init__()
 
         # MAIN DATA HANDLERS_______________________________________________________________
         self.data_manager = data_manager
         self.media_list_manager = media_list_manager
         self.media_loader = media_loader
+        self.display_history_manager = display_history_manager
 
 
         # VARIABLES_________________________________________________________________________
@@ -62,6 +64,7 @@ class MainWindow(QMainWindow):
         self.media_filter = None
         self.displayed_media = None
         self.selected_rows = []
+        self.forgotten_uuids = []
 
         # Previous data
         self.previous_media_index = 0
@@ -69,6 +72,7 @@ class MainWindow(QMainWindow):
 
         # State variables
         self.is_in_list_mode = False
+        self.is_in_forgotten_mode = False
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
@@ -170,7 +174,7 @@ class MainWindow(QMainWindow):
         self.button_explore_forgotten = self.make_feature_button(
             "res/icons/Lens--Streamline-Plump-Gradient.png", 
             Constants.TOOLTIP_BUTTON_EXPLORE_FORGOTTEN, 
-            self.on_latest_media, 
+            self.on_explore_forgotten, 
             checkable=True)
 
         self.layout_group_feature_explore.addWidget(self.button_latest_media)
@@ -550,6 +554,7 @@ class MainWindow(QMainWindow):
         else:
             self.media_index = row
             self.displayed_media = self.media_data[row]
+            self.display_history_manager.update(self.displayed_media.media_uuid)
             
             self.load_media_metadata()
 
@@ -704,6 +709,10 @@ class MainWindow(QMainWindow):
             selected_uuids = self.media_list_manager.get_uuids_from_list(self.media_list_name)
             media_from_list = self.data_manager.get_media_by_uuids(selected_uuids)
             self.update_media_data(media_from_list, self.media_index)
+
+        elif self.is_in_forgotten_mode:
+            media_list = self.data_manager.get_media_by_uuids(self.forgotten_uuids)
+            self.update_media_data(media_list, self.media_index)
         else:
             if self.media_filter:
                 self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.media_index)
@@ -750,6 +759,30 @@ class MainWindow(QMainWindow):
             self.handle_feature_buttons(self.button_today_in_history, checked=False)
             self.return_to_previous_media_state()
     
+    def on_explore_forgotten(self, checked):
+        if checked:
+            self.is_in_forgotten_mode = True
+            self.handle_feature_buttons(self.button_explore_forgotten, checked=True)
+
+            selected_indexes = self.thumbnail_list.selectedIndexes()
+            if selected_indexes:
+                self.previous_media_index = self.media_index
+
+            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+
+            self.display_history_manager.load_display_history_file()
+            thousand_forgotten_uuids = self.display_history_manager.get_ordered_uuids()[:1000]
+            self.forgotten_uuids = random.sample(thousand_forgotten_uuids, 100)
+
+            media_list = self.data_manager.get_media_by_uuids(self.forgotten_uuids, sort=0) # Sort by date
+            self.update_media_data(media_list)
+
+        else:
+            self.is_in_forgotten_mode = False
+            self.handle_feature_buttons(self.button_explore_forgotten, checked=False)
+            self.display_history_manager.save_display_history_file()
+            self.return_to_previous_media_state()
+
     def on_same_date_location(self, checked):
         if checked:
             self.handle_feature_buttons(self.button_same_date_location, checked=True)
