@@ -1,3 +1,4 @@
+import os
 import random
 import copy
 from PyQt5.QtWidgets import (
@@ -24,12 +25,13 @@ from data.media_list_manager import MediaListManager
 from gui.DialogReorder import DialogReorder
 from gui.add.DialogEditMedia import DialogEditMedia
 from gui.constants import Constants
+from gui.export.DialogExportMedia import DialogExportMedia
 from gui.lists.DialogLists import DialogLists
 from gui.main.DialogProcess import DialogProcess
 from gui.main.ListViewThumbnail import ListViewThumbnail
 from media_loader import MediaLoader
 from logger import log
-from data.helpers import get_unix_time_days_ago
+from data.helpers import get_unix_time_days_ago, generate_export_filename
 from data.media_filter import MediaFilter
 from data.data_manager import DataManager
 from gui.message import show_message
@@ -465,8 +467,35 @@ class MainWindow(QMainWindow):
 
 
     def on_export_selected(self):
-        pass
+        dialog_export = DialogExportMedia()
+        if dialog_export.exec_() == QDialog.Accepted:
+            export_folder = dialog_export.get_selected_folder_path()
+            procceed = show_message(f"Seçili {len(self.selected_rows)} medyayı\n'{export_folder}' klasörüne kopyalamak istediğinize emin misiniz?", is_question=True)
+            if procceed:
+                self.export_selected_media(export_folder)
 
+    
+    def export_selected_media(self, export_folder):
+        def export_procedure():
+            selected_uuids = [self.media_data[row].media_uuid for row in self.selected_rows]
+            selected_extensions = [self.media_data[row].extension for row in self.selected_rows]
+            selected_export_filenames = [generate_export_filename(self.media_data[row]) for row in self.selected_rows]
+            
+            for uuid, extension, filename in zip(selected_uuids, selected_extensions, selected_export_filenames):
+                media_path = self.media_loader.get_media_path(uuid, extension)
+                file_ops.copy_file(media_path, os.path.join(export_folder, filename))
+
+        dialog = DialogProcess(operation=export_procedure,
+                               title="Medyaları Dışa Aktar",
+                               message="Medyalar dışa aktarılıyor...")
+        
+        if dialog.exec_() == QDialog.Accepted:
+            show_message(f"Dışa aktarma işlemi tamamlandı.", level="info")
+            return
+        else:
+            show_message(f"Dışa aktarma tamamlanamadı.", level="warning")
+        
+    
     def on_bulk_edit_selected(self):
         pass
 

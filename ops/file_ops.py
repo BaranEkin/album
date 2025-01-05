@@ -274,3 +274,12 @@ def delete_file(path) -> bool:
     except Exception as e:
         log("file_ops.delete_file", f"Error deleting the file at:'{path}': {e}", level="error")
         return False
+    
+def copy_file(source_path: Union[str, bytes, os.PathLike], destination_path: Union[str, os.PathLike]) -> bool:
+    try:
+        shutil.copy2(source_path, destination_path)
+        log("file_ops.copy_file", f"Copied file from '{source_path}' to '{destination_path}'", level="info")
+        return True
+    except Exception as e:
+        log("file_ops.copy_file", f"Error copying file from '{source_path}' to '{destination_path}': {e}", level="error")
+        return False

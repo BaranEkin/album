@@ -73,7 +73,7 @@ class DataManager:
         media.date = date
         media.date_text = date_text
         media.date_est = date_est
-        media.rank = self.get_last_rank(date) + 1.0
+        media.rank = None # Assigned at insertion
         media.tags = tags or None
         media.notes = notes or None
         media.albums = albums or None
@@ -123,6 +123,7 @@ class DataManager:
             media_dict = {media.media_uuid: media for media in media_list}
 
             for i, uuid in enumerate(ordered_uuids):
+                print(f"i:{i}, uuid:{uuid}, title:{media_dict[uuid].title}, old_rank:{media_dict[uuid].rank}, new_rank:{i + 1.0}")
                 media_dict[uuid].rank = i + 1.0
                 media_dict[uuid].modified_at = current_time_in_unix_subsec()
                 media_dict[uuid].modified_by = cloud_ops.get_user_name()
@@ -258,7 +259,20 @@ class DataManager:
     def insert_media_list_to_local(self, media_list: list[Media]):
         with self.get_session() as session:
             user_name = cloud_ops.get_user_name()
+
+            current_date = media_list[0].date
+            last_rank = self.get_last_rank(current_date)
+
             for media in media_list:
+                if media.date == current_date:
+                    media.rank = last_rank + 1.0
+                    last_rank += 1.0
+                else:
+                    current_date = media.date
+                    last_rank = self.get_last_rank(current_date)
+                    media.rank = last_rank + 1.0
+                    last_rank += 1.0
+                
                 media.created_by = user_name
                 session.add(media)
             session.commit()

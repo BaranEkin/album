@@ -3,6 +3,8 @@ from typing import Literal
 from datetime import datetime, timedelta
 from time import time_ns
 
+from data.orm import Media
+
 turkish_months = {
     "ocak": 1,
     "şubat": 2,
@@ -217,3 +219,7 @@ def date_includes(date_str: str, precision: int, input_list: list[str],
 
     else:
         raise ValueError("Mode must be 'day', 'month', 'year', or 'weekday'.")
+    
+def generate_export_filename(media: Media):
+    day, month, year = media.date_text.split(".")
+    return f"M{year}{month}{day}_{int(media.rank):03d}{media.extension}"
