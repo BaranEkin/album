@@ -943,6 +943,7 @@ class MainWindow(QMainWindow):
                                             message="Medya sıralaması güncelleniyor...")
             dialog_process.exec_()
             self.refresh_current_media_state()
+            show_message("Medya sıralaması başarı ile güncellendi.", level="info")
             
     def simulate_keypress(self, window, key):
         """Simulates a keypress event."""

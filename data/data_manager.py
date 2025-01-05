@@ -123,7 +123,6 @@ class DataManager:
             media_dict = {media.media_uuid: media for media in media_list}
 
             for i, uuid in enumerate(ordered_uuids):
-                print(f"i:{i}, uuid:{uuid}, title:{media_dict[uuid].title}, old_rank:{media_dict[uuid].rank}, new_rank:{i + 1.0}")
                 media_dict[uuid].rank = i + 1.0
                 media_dict[uuid].modified_at = current_time_in_unix_subsec()
                 media_dict[uuid].modified_by = cloud_ops.get_user_name()
