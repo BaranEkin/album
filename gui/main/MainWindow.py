@@ -312,6 +312,7 @@ class MainWindow(QMainWindow):
         self.update_db()
         self.media_data = self.data_manager.get_all_media()
         self.update_frame_bottom_top_label()
+        self.handle_selection_feature_buttons()
 
         self.dialog_filter = DialogFilter(self.data_manager, parent=self)
 
@@ -577,6 +578,7 @@ class MainWindow(QMainWindow):
 
             self.update_thumbnail_highlights()
             self.update_frame_bottom_top_label()
+            self.handle_selection_feature_buttons()
             model_index = self.thumbnail_model.index(self.media_index, 0)
             self.thumbnail_list.selectionModel().select(model_index, QItemSelectionModel.Select)
 
@@ -887,6 +889,7 @@ class MainWindow(QMainWindow):
         self.thumbnail_model.signal.loaded.connect(lambda: self.try_select_item(index))
 
         self.update_frame_bottom_top_label()
+        self.handle_selection_feature_buttons()
 
     def update_frame_bottom_top_label(self):
         self.frame_bottom.top_label.setText(f"{len(self.selected_rows)} / {len(self.media_data)}")
@@ -897,14 +900,17 @@ class MainWindow(QMainWindow):
     def select_all(self):
         self.selected_rows = [*range(0, len(self.media_data), 1)]
         self.update_frame_bottom_top_label()
+        self.handle_selection_feature_buttons()
 
     def clear_selection(self):
         self.selected_rows.clear()
         self.update_frame_bottom_top_label()
+        self.handle_selection_feature_buttons()
 
     def reverse_selection(self):
         self.selected_rows = [row for row in range(0, len(self.media_data), 1) if row not in self.selected_rows]
         self.update_frame_bottom_top_label()
+        self.handle_selection_feature_buttons()
 
     def add_selection_to_list(self):
         dialog = DialogLists(media_loader=self.media_loader, media_list_manager=self.media_list_manager, mode="add")
@@ -921,6 +927,16 @@ class MainWindow(QMainWindow):
                 self.media_list_manager.remove_uuids_from_media_list(list_name=self.media_list_name, uuids=self.get_uuids_of_selected_rows())
                 self.refresh_current_media_state()
                 show_message(f"Medyalar '{self.media_list_name}' listesinden çıkarıldı.")
+
+    def handle_selection_feature_buttons(self):
+        if len(self.selected_rows) > 0:
+            self.button_export_selected_media.setEnabled(True)
+            self.button_bulk_edit_selected_media.setEnabled(True)
+            self.button_add_to_list.setEnabled(True)
+        else:
+            self.button_export_selected_media.setEnabled(False)
+            self.button_bulk_edit_selected_media.setEnabled(False)
+            self.button_add_to_list.setEnabled(False)
 
     def reorder_date(self, index):
         def reorder_date_procedure(date, reordered_keys):
