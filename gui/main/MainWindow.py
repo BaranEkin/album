@@ -71,11 +71,13 @@ class MainWindow(QMainWindow):
 
         # Previous data
         self.previous_media_index = 0
+        self.previous_mode_media_index = 0
         self.previous_media_filter = None
+        self.previous_mode_media_data = None
+        self.previous_mode_media_filter = None
 
         # State variables
-        self.is_in_list_mode = False
-        self.is_in_forgotten_mode = False
+        self.mode = ""
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
@@ -382,25 +384,53 @@ class MainWindow(QMainWindow):
             self.go_to_previous_media()
 
     def handle_feature_buttons(self, from_button, checked):
-        buttons = [self.button_lists,
+        group_1 = [self.button_lists,
                    self.button_latest_media,
                    self.button_explore_forgotten,
-                   self.button_today_in_history,
-                   self.button_filter, 
-                   self.button_same_date, 
+                   self.button_today_in_history]
+        
+        group_2 = [self.button_same_date,
                    self.button_same_location, 
                    self.button_same_date_location]
         
         if checked:
             from_button.setChecked(True)
-            for button in buttons:
-                if button != from_button:
-                    button.setEnabled(False)
-                    button.setChecked(False)
+            if from_button in group_1:
+                for b in group_1:
+                    if b != from_button:
+                        b.setEnabled(False)
+                        b.setChecked(False)
+                self.button_filter.setEnabled(False)
+                for b in group_2:
+                    b.setEnabled(True)
+            
+            elif from_button in group_2:
+                for b in group_1:
+                    b.setEnabled(False)
+                self.button_filter.setEnabled(False)
+                
+                for b in group_2:
+                    if b != from_button:
+                        b.setEnabled(False)
+                        b.setChecked(False)
+
         else:
             from_button.setChecked(False)
-            for button in buttons:
-                button.setEnabled(True)
+            if from_button in group_1:
+                for b in group_1:
+                    b.setEnabled(True)
+                for b in group_2:
+                    b.setEnabled(True)
+                self.button_filter.setEnabled(True)
+
+            elif from_button in group_2:
+                for b in group_1:
+                    b.setEnabled(b.isChecked())
+                for b in group_1:
+                    if b.isChecked():
+                        self.button_filter.setEnabled(False)
+                for b in group_2:
+                    b.setEnabled(True)
 
     
     def try_select_item(self, i=0, attempt=0):
@@ -458,12 +488,12 @@ class MainWindow(QMainWindow):
                     self.previous_media_index = self.media_index
                     self.update_media_data(media_from_list)
                     self.media_list_name = selected_list_name
-                    self.is_in_list_mode = True
+                    self.mode = "list"
                     self.handle_feature_buttons(self.button_lists, checked=True)
                 
         else:
             self.media_list_name = None
-            self.is_in_list_mode = False
+            self.mode = ""
             self.handle_feature_buttons(self.button_lists, checked=False)
             self.return_to_previous_media_state()
 
@@ -648,6 +678,7 @@ class MainWindow(QMainWindow):
     def on_latest_media(self, checked):
         if checked:
             self.handle_feature_buttons(self.button_latest_media, checked=True)
+            self.mode = "latest"
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
@@ -658,6 +689,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
 
         else:
+            self.mode = ""
             self.handle_feature_buttons(self.button_latest_media, checked=False)
             self.return_to_previous_media_state()
 
@@ -749,21 +781,36 @@ class MainWindow(QMainWindow):
                 self.refresh_current_media_state()
 
     def return_to_previous_media_state(self):
-        self.media_filter = copy.deepcopy(self.previous_media_filter) if self.previous_media_filter else None
-        if self.media_filter:
-            self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.previous_media_index)
+        if self.mode in ["list", "explore_forgotten"]:
+            if self.previous_mode_media_data:
+                self.update_media_data(self.previous_mode_media_data, index=self.previous_mode_media_index)
+                self.previous_mode_media_data = None
+                self.previous_mode_media_index = 0
+        
+        elif self.mode in ["today_in_history", "latest"]:
+            self.media_filter = copy.deepcopy(self.previous_mode_media_filter) if self.previous_mode_media_filter else None
+            if self.media_filter:
+                self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.previous_mode_media_index)
+            else:
+                self.update_media_data(self.data_manager.get_all_media(), index=self.previous_mode_media_index)
+
         else:
-            self.update_media_data(self.data_manager.get_all_media(), index=self.previous_media_index)
+            self.media_filter = copy.deepcopy(self.previous_media_filter) if self.previous_media_filter else None
+            if self.media_filter:
+                self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.previous_media_index)
+            else:
+                self.update_media_data(self.data_manager.get_all_media(), index=self.previous_media_index)
 
     def refresh_current_media_state(self):
-        if self.is_in_list_mode:
+        if self.mode == "list":
             selected_uuids = self.media_list_manager.get_uuids_from_list(self.media_list_name)
             media_from_list = self.data_manager.get_media_by_uuids(selected_uuids)
             self.update_media_data(media_from_list, self.media_index)
 
-        elif self.is_in_forgotten_mode:
+        elif self.mode == "explore_forgotten":
             media_list = self.data_manager.get_media_by_uuids(self.forgotten_uuids)
             self.update_media_data(media_list, self.media_index)
+
         else:
             if self.media_filter:
                 self.update_media_data(self.data_manager.get_filtered_media(self.media_filter), index=self.media_index)
@@ -795,6 +842,7 @@ class MainWindow(QMainWindow):
     def on_today_in_history(self, checked):
         if checked:
             self.handle_feature_buttons(self.button_today_in_history, checked=True)
+            self.mode = "today_in_history"
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
             if selected_indexes:
@@ -807,12 +855,13 @@ class MainWindow(QMainWindow):
             self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
 
         else:
+            self.mode = ""
             self.handle_feature_buttons(self.button_today_in_history, checked=False)
             self.return_to_previous_media_state()
     
     def on_explore_forgotten(self, checked):
         if checked:
-            self.is_in_forgotten_mode = True
+            self.mode = "explore_forgotten"
             self.handle_feature_buttons(self.button_explore_forgotten, checked=True)
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
@@ -829,7 +878,7 @@ class MainWindow(QMainWindow):
             self.update_media_data(media_list)
 
         else:
-            self.is_in_forgotten_mode = False
+            self.mode = ""
             self.handle_feature_buttons(self.button_explore_forgotten, checked=False)
             self.display_history_manager.save_display_history_file()
             self.return_to_previous_media_state()
@@ -839,8 +888,17 @@ class MainWindow(QMainWindow):
             self.handle_feature_buttons(self.button_same_date_location, checked=True)
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
-            self.previous_media_index = self.media_index if selected_indexes else 0
-            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+            
+            if self.mode in ["list", "explore_forgotten"]:
+                self.previous_mode_media_index = self.media_index if selected_indexes else 0
+                self.previous_mode_media_data = copy.deepcopy(self.media_data)
+
+            elif self.mode in ["today_in_history", "latest"]:
+                self.previous_mode_media_index = self.media_index if selected_indexes else 0
+                self.previous_mode_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+            else:
+                self.previous_media_index = self.media_index if selected_indexes else 0
+                self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
 
             date = self.displayed_media.date_text
             location = self.displayed_media.location
@@ -857,8 +915,17 @@ class MainWindow(QMainWindow):
             self.handle_feature_buttons(self.button_same_date, checked=True)
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
-            self.previous_media_index = self.media_index if selected_indexes else 0
-            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+
+            if self.mode in ["list", "explore_forgotten"]:
+                self.previous_mode_media_index = self.media_index if selected_indexes else 0
+                self.previous_mode_media_data = copy.deepcopy(self.media_data)
+
+            elif self.mode in ["today_in_history", "latest"]:
+                self.previous_mode_media_index = self.media_index if selected_indexes else 0
+                self.previous_mode_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+            else:
+                self.previous_media_index = self.media_index if selected_indexes else 0
+                self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
 
             date = self.displayed_media.date_text
             self.media_filter = MediaFilter(date_range=(date, ""))
@@ -873,8 +940,17 @@ class MainWindow(QMainWindow):
             self.handle_feature_buttons(self.button_same_location, checked=True)
 
             selected_indexes = self.thumbnail_list.selectedIndexes()
-            self.previous_media_index = self.media_index if selected_indexes else 0
-            self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+
+            if self.mode in ["list", "explore_forgotten"]:
+                self.previous_mode_media_index = self.media_index if selected_indexes else 0
+                self.previous_mode_media_data = copy.deepcopy(self.media_data)
+
+            elif self.mode in ["today_in_history", "latest"]:
+                self.previous_mode_media_index = self.media_index if selected_indexes else 0
+                self.previous_mode_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
+            else:
+                self.previous_media_index = self.media_index if selected_indexes else 0
+                self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
 
             location = self.displayed_media.location
             self.media_filter = MediaFilter(location_exact=location)
