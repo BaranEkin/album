@@ -123,8 +123,8 @@ class LabelImageViewer(QLabel):
         new_click_y = new_height * rel_click_y
 
         # Calculate the scroll position to center the clicked pixel
-        scroll_x = new_click_x - viewport_width // 2
-        scroll_y = new_click_y - viewport_height // 2
+        scroll_x = int(new_click_x - viewport_width // 2)
+        scroll_y = int(new_click_y - viewport_height // 2)
 
         # Clamp scroll positions to valid range based on the new dimensions
         max_scroll_x = int(max(0, new_width - viewport_width))
@@ -157,8 +157,8 @@ class LabelImageViewer(QLabel):
         global_viewport_position = self.scroll_area.viewport().mapToGlobal(QPoint(0, 0))
 
         # Calculate the global position of the pixel in the viewport
-        cursor_x = global_viewport_position.x() + actual_x
-        cursor_y = global_viewport_position.y() + actual_y
+        cursor_x = int(global_viewport_position.x() + actual_x)
+        cursor_y = int(global_viewport_position.y() + actual_y)
 
         # Move the cursor to the calculated position
         QCursor.setPos(cursor_x, cursor_y)
