@@ -127,8 +127,8 @@ class LabelImageViewer(QLabel):
         scroll_y = new_click_y - viewport_height // 2
 
         # Clamp scroll positions to valid range based on the new dimensions
-        max_scroll_x = max(0, new_width - viewport_width)
-        max_scroll_y = max(0, new_height - viewport_height)
+        max_scroll_x = int(max(0, new_width - viewport_width))
+        max_scroll_y = int(max(0, new_height - viewport_height))
 
         # Explicitly synchronize the scrollbar ranges to prevent overshooting
         self.scroll_area.horizontalScrollBar().setRange(0, max_scroll_x)
