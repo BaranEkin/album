@@ -135,8 +135,8 @@ class LabelImageViewer(QLabel):
         self.scroll_area.verticalScrollBar().setRange(0, max_scroll_y)
 
         # Recalculate and clamp scroll positions
-        scroll_x = max(0, min(scroll_x, max_scroll_x))
-        scroll_y = max(0, min(scroll_y, max_scroll_y))
+        scroll_x = int(max(0, min(scroll_x, max_scroll_x)))
+        scroll_y = int(max(0, min(scroll_y, max_scroll_y)))
 
         # Set the scrollbar positions
         self.scroll_area.horizontalScrollBar().setValue(scroll_x)
