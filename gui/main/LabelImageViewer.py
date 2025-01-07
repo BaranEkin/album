@@ -86,8 +86,8 @@ class LabelImageViewer(QLabel):
         self.update_image_size(click_pos)
 
     def zoom_out(self, click_pos):
-        if self.scale_modifier >= 2.0:
-            self.scale_modifier -= 2.0
+        if self.scale_modifier > 3.0:
+            self.scale_modifier -= 1.0
         elif self.scale_modifier > 0:
             self.scale_modifier = 0
         self.update_image_size(click_pos)
