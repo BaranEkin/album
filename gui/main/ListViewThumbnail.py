@@ -16,19 +16,6 @@ class ListViewThumbnail(QListView):
             context_menu = QMenu(self)
 
             # Add actions to the context menu
-            action_add_to_list = QAction("Seçili medyaları listeye Ekle...", self)
-            
-            action_add_to_list.setEnabled(False)
-            action_add_to_list.triggered.connect(lambda: self.parent.add_selection_to_list())
-            context_menu.addAction(action_add_to_list)
-
-            action_remove_from_list = QAction("Seçili medyaları listeden Çıkar...", self)
-            action_remove_from_list.setEnabled(False)
-            action_remove_from_list.triggered.connect(lambda: self.parent.remove_selection())
-            context_menu.addAction(action_remove_from_list)
-
-            context_menu.addSeparator()
-
             action_select_all = QAction("Hepsini seç", self)
             action_select_all.triggered.connect(lambda: self.parent.select_all())
             context_menu.addAction(action_select_all)
@@ -43,12 +30,38 @@ class ListViewThumbnail(QListView):
 
             context_menu.addSeparator()
 
-            action_reorder_date = QAction("Aynı güne ait medyaları yeniden sırala", self)
+            action_reorder_date = QAction("Aynı güne ait medyaları yeniden sırala...", self)
             action_reorder_date.triggered.connect(lambda: self.parent.reorder_date(index))
             context_menu.addAction(action_reorder_date)
 
+            context_menu.addSeparator()
+
+            action_edit_bulk = QAction("Seçili medyaları toplu düzenle...", self)
+            action_edit_bulk.setEnabled(False)
+            action_edit_bulk.triggered.connect(lambda: self.parent.on_bulk_edit_selected())
+            context_menu.addAction(action_edit_bulk)
+
+            action_export_media = QAction("Seçili medyaları dışa aktar...", self)
+            action_export_media.setEnabled(False)
+            action_export_media.triggered.connect(lambda: self.parent.on_export_selected())
+            context_menu.addAction(action_export_media)
+
+            context_menu.addSeparator()
+
+            action_add_to_list = QAction("Seçili medyaları bir listeye ekle...", self)
+            action_add_to_list.setEnabled(False)
+            action_add_to_list.triggered.connect(lambda: self.parent.add_selection_to_list())
+            context_menu.addAction(action_add_to_list)
+
+            action_remove_from_list = QAction("Seçili medyaları bu listeden çıkar", self)
+            action_remove_from_list.setEnabled(False)
+            action_remove_from_list.triggered.connect(lambda: self.parent.remove_selection())
+            context_menu.addAction(action_remove_from_list)
+
             if self.parent.selected_rows:
                 action_add_to_list.setEnabled(True)
+                action_edit_bulk.setEnabled(True)
+                action_export_media.setEnabled(True)
                 
                 if self.parent.media_list_name:
                     action_remove_from_list.setEnabled(True)

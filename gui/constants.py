@@ -18,7 +18,7 @@ class Constants:
     TOOLTIP_BUTTON_BULK_EDIT = "Seçili medyaları toplu düzenle"
     TOOLTIP_BUTTON_EXPORT = "Seçili medyaları dışa aktar"
     TOOLTIP_BUTTON_TODAY_IN_HISTORY = "Tarihte bugün"
-    TOOLTIP_BUTTON_ADD_TO_LIST = "Seçili medyaları listeye ekle"
+    TOOLTIP_BUTTON_ADD_TO_LIST = "Seçili medyaları bir listeye ekle"
     TOOLTIP_BUTTON_EXPLORE_FORGOTTEN = "Unutulanlardan 100 medya"
 
     TOOLTIP_CLOUD_FAIL = "Bulut bağlantısı sağlanamadı"
