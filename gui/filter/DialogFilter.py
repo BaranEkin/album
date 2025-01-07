@@ -26,7 +26,7 @@ class DialogFilter(QDialog):
         self.data_manager = data_manager
         self.parent = parent
         self.albums = self.data_manager.get_all_albums()
-        self.media_list = []
+        self.media_filter = None
 
         self.checkbox_include_child = QCheckBox("Alt albümleri dahil et")
         self.checkbox_include_child.setChecked(True)
@@ -174,9 +174,7 @@ class DialogFilter(QDialog):
         return media_filter
 
     def filter_media(self):
-        media_filter = self.build_filter()
-        self.media_list = self.data_manager.get_filtered_media(media_filter)
-        self.parent.previous_media_filter = media_filter
+        self.media_filter = self.build_filter()
         self.accept()
 
     def reset_filter(self):

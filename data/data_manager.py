@@ -73,7 +73,7 @@ class DataManager:
         media.date = date
         media.date_text = date_text
         media.date_est = date_est
-        media.rank = self.get_last_rank(date) + 1.0
+        media.rank = None # Assigned at insertion
         media.tags = tags or None
         media.notes = notes or None
         media.albums = albums or None
@@ -114,6 +114,20 @@ class DataManager:
 
             else:
                 pass
+
+    def reorder_within_date(self, date: float, ordered_uuids: list[str]):
+        with self.get_session() as session:
+            media_list = session.execute(select(Media).where(Media.status != 0).where(Media.date == date).order_by(Media.rank)).scalars().all()
+
+            # Create a dictionary for quick lookup by media_uuid
+            media_dict = {media.media_uuid: media for media in media_list}
+
+            for i, uuid in enumerate(ordered_uuids):
+                media_dict[uuid].rank = i + 1.0
+                media_dict[uuid].modified_at = current_time_in_unix_subsec()
+                media_dict[uuid].modified_by = cloud_ops.get_user_name()
+            session.commit()
+
     
     def set_media_deleted(self, media_uuid):
         with self.get_session() as session:
@@ -130,6 +144,34 @@ class DataManager:
     def get_all_deleted_media(self) -> Sequence[Media]:
         with self.get_session() as session:
             media_list = session.execute(select(Media).where(Media.status == 0).order_by(Media.date, Media.rank)).scalars().all()
+            return media_list
+        
+    def get_media_by_uuids(self, uuids: list, sort: int = -1) -> Sequence[Media]:
+        with self.get_session() as session:
+            
+            selection = select(Media).where(Media.media_uuid.in_(uuids))
+            
+            if sort == -1:
+                media_list = session.execute(selection).scalars().all()
+
+                # Create a dictionary for quick lookup by media_uuid
+                media_dict = {media.media_uuid: media for media in media_list}
+                
+                # Reorder the results based on the input UUID order
+                media_list = [media_dict[uuid] for uuid in uuids if uuid in media_dict]
+            
+            else:
+                column_mapping = {
+                    0: Media.date,
+                    1: Media.title,
+                    2: Media.location,
+                    3: Media.type,
+                    4: Media.people,
+                    5: Media.extension
+                }
+                selection = selection.order_by(column_mapping[sort], Media.rank)
+                media_list = session.execute(selection).scalars().all()
+            
             return media_list
 
     def get_list_people(self) -> list[str]:
@@ -154,6 +196,9 @@ class DataManager:
                 list_locations.append(location)
 
         return sorted(list_locations)
+    
+    def get_list_uuids(self) -> list[str]:
+        return [media.media_uuid for media in self.get_all_media()]
     
     def get_media_of_date(self, date: float) -> Sequence[Media]:
         with self.get_session() as session:
@@ -213,7 +258,20 @@ class DataManager:
     def insert_media_list_to_local(self, media_list: list[Media]):
         with self.get_session() as session:
             user_name = cloud_ops.get_user_name()
+
+            current_date = media_list[0].date
+            last_rank = self.get_last_rank(current_date)
+
             for media in media_list:
+                if media.date == current_date:
+                    media.rank = last_rank + 1.0
+                    last_rank += 1.0
+                else:
+                    current_date = media.date
+                    last_rank = self.get_last_rank(current_date)
+                    media.rank = last_rank + 1.0
+                    last_rank += 1.0
+                
                 media.created_by = user_name
                 session.add(media)
             session.commit()

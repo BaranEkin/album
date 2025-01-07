@@ -105,7 +105,7 @@ def create_video_thumbnail(media_key: str, thumbnail_key: str):
             level="warning")
 
     # Load banner
-    banner = cv2.imread("res/video_banner.jpg")
+    banner = cv2.imread("res/icons/video_banner.jpg")
     
     # Stack banners and thumbnail horizontally
     thumbnail_image = np.hstack((banner, cropped_frame, banner))
@@ -273,4 +273,13 @@ def delete_file(path) -> bool:
         return True
     except Exception as e:
         log("file_ops.delete_file", f"Error deleting the file at:'{path}': {e}", level="error")
+        return False
+    
+def copy_file(source_path: Union[str, bytes, os.PathLike], destination_path: Union[str, os.PathLike]) -> bool:
+    try:
+        shutil.copy2(source_path, destination_path)
+        log("file_ops.copy_file", f"Copied file from '{source_path}' to '{destination_path}'", level="info")
+        return True
+    except Exception as e:
+        log("file_ops.copy_file", f"Error copying file from '{source_path}' to '{destination_path}': {e}", level="error")
         return False

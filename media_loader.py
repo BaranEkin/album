@@ -86,17 +86,12 @@ class MediaLoader:
                 log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} couldn't be retrieved from local storage: {e}", level="error")
 
         else:
-            log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} is not found on local storage.")
             try:
                 pil_image = cloud_ops.get_image_from_cloudfront(thumbnail_key, prefix="thumbnails/")
-                log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} is retrieved from cloud storage.")
 
                 try:
                     self.save_thumbnail(pil_image, thumbnail_key)
-                    log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} is saved to local storage.")
-
                     image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
-                    log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} is retrieved from local storage.")
 
                 except OSError as e:
                     image = QImage(

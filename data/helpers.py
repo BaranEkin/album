@@ -3,6 +3,8 @@ from typing import Literal
 from datetime import datetime, timedelta
 from time import time_ns
 
+from data.orm import Media
+
 turkish_months = {
     "ocak": 1,
     "şubat": 2,
@@ -73,6 +75,8 @@ def turkish_lower(text) -> str:
     return translated_text.lower()
 
 def is_valid_people(people_str):
+    if not people_str:
+        return True
     # Define a regex pattern for Turkish names and multiple surnames
     pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+(?:\s[A-ZÇĞİÖŞÜ]+)*)$"
     people_list = people_str.split(",")
@@ -217,3 +221,7 @@ def date_includes(date_str: str, precision: int, input_list: list[str],
 
     else:
         raise ValueError("Mode must be 'day', 'month', 'year', or 'weekday'.")
+    
+def generate_export_filename(media: Media):
+    day, month, year = media.date_text.split(".")
+    return f"M{year}{month}{day}_{int(media.rank):03d}{media.extension}"

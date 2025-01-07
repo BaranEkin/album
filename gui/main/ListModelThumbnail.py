@@ -8,8 +8,12 @@ from PyQt5.QtCore import (
     QModelIndex,
     QAbstractListModel,
     QRect,
+    QIODevice,
+    QDataStream,
+    QMimeData,
+    QByteArray,
 )
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QBrush, QColor
 from PyQt5.QtWidgets import QApplication, QStyledItemDelegate, QStyle
 
 
@@ -18,9 +22,10 @@ class ThumbnailSignal(QObject):
 
 class ListModelThumbnail(QAbstractListModel):
 
-    def __init__(self, thumbnail_keys, media_loader, parent=None):
+    def __init__(self, thumbnail_keys, media_loader, is_reorder=False, parent=None):
         super().__init__(parent)
         self.media_loader = media_loader
+        self.is_reorder = is_reorder
         self.thumbnail_keys = thumbnail_keys
         self.thumbnail_keys_loaded = []
         self.thumbnails = {}  # Cache of loaded thumbnails
@@ -48,11 +53,20 @@ class ListModelThumbnail(QAbstractListModel):
                 self.load_thumbnail(index.row())
                 # Return a placeholder pixmap
                 return self.placeholder_pixmap
+        
         elif role == Qt.UserRole:
             return self.thumbnail_keys_loaded[index.row()]
+        
         elif role == Qt.SizeHintRole:
-            return QSize(160, 100)
+            return QSize(160, 105)
+        
+        elif role == Qt.BackgroundRole:
+            # Ask the MainWindow for selection state
+            if index.row() in self.parent().selected_rows:
+                return QBrush(QColor(200, 255, 0))  # Highlight selected items
+        
         return None
+
 
     def canFetchMore(self, parent=QModelIndex()):
         return self.loaded_count < len(self.thumbnail_keys)
@@ -84,6 +98,111 @@ class ListModelThumbnail(QAbstractListModel):
         index = self.index(row)
         self.dataChanged.emit(index, index, [Qt.DecorationRole])
 
+    def flags(self, index):
+        """Enable dragging and dropping for the thumbnails."""
+        default_flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable
+        if index.isValid():
+            # Allow dragging from valid indices
+            return default_flags | Qt.ItemIsDragEnabled
+        else:
+            # Allow dropping only between items, not on top of them
+            return default_flags | Qt.ItemIsDropEnabled
+
+        
+    def supportedDropActions(self):
+        """Specify the drop actions supported by the model."""
+        return Qt.MoveAction
+
+    def mimeTypes(self):
+        """Specify the MIME types supported by the model."""
+        return ["application/x-qabstractitemmodeldatalist"]
+
+    def mimeData(self, indexes):
+        """Package the data for dragging."""
+        mime_data = QMimeData()
+        encoded_data = QByteArray()
+        stream = QDataStream(encoded_data, QIODevice.WriteOnly)
+
+        for index in indexes:
+            if index.isValid() and 0 <= index.row() < len(self.thumbnail_keys_loaded):
+                stream.writeInt32(index.row())  # Only valid indices are written
+            else:
+                print(f"Skipping invalid index: {index.row()}")
+
+        mime_data.setData("application/x-qabstractitemmodeldatalist", encoded_data)
+        return mime_data
+
+
+    def dropMimeData(self, data, action, row, column, parent):
+        """Handle dropping an item into the list."""
+
+        if action != Qt.MoveAction or not data.hasFormat("application/x-qabstractitemmodeldatalist"):
+            print("Action not MoveAction or invalid MIME format.")
+            return False
+
+        # Reject drops directly ON an item (parent is valid when dropping ON)
+        if parent.isValid():
+            print("Dropping ON an item is disallowed.")
+            return False
+
+        # Decode the MIME data
+        encoded_data = data.data("application/x-qabstractitemmodeldatalist")
+        stream = QDataStream(encoded_data, QIODevice.ReadOnly)
+        rows = []
+        while not stream.atEnd():
+            src_row = stream.readInt32()
+            if 0 <= src_row < len(self.thumbnail_keys_loaded):  # Validate src_row
+                rows.append(src_row)
+
+        if not rows:
+            return False
+
+        rows.sort()
+
+        # Adjust the drop row
+        if row == -1:
+            row = self.rowCount()  # Dropping at the end of the list
+
+        if row > len(self.thumbnail_keys_loaded):
+            row = len(self.thumbnail_keys_loaded)  # Prevent overflow
+
+        # Collect the items to move
+        items_to_move = [self.thumbnail_keys_loaded.pop(src_row) for src_row in reversed(rows)]
+
+        # Adjust the destination row for downward movement
+        if row > rows[-1]:
+            row -= len(items_to_move)
+
+        # Insert the items at the new position
+        for i, item in enumerate(items_to_move):
+            self.thumbnail_keys_loaded.insert(row + i, item)
+
+        # Update the full list to reflect the changes in loaded items
+        self.thumbnail_keys = self.thumbnail_keys_loaded + self.thumbnail_keys[len(self.thumbnail_keys_loaded):]
+
+        # Reinitialize and reattach the model to the view
+        parent_view = self.parent().thumbnail_list
+        if parent_view:
+            new_model = ListModelThumbnail(self.thumbnail_keys, self.media_loader, parent=self.parent())
+            parent_view.setModel(new_model)
+
+        return True
+
+
+    def moveRow(self, sourceParent, sourceRow, destinationParent, destinationRow):
+        """Reorder the underlying thumbnail data."""
+        if sourceRow == destinationRow or sourceRow < 0 or destinationRow < 0:
+            return False
+
+        self.beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationRow)
+        
+        item = self.thumbnail_keys_loaded.pop(sourceRow)
+        self.thumbnail_keys_loaded.insert(destinationRow if destinationRow > sourceRow else destinationRow, item)
+
+        self.endMoveRows()
+        return True
+
+
 class WorkerSignals(QObject):
     # Signal to emit the row and loaded pixmap
     finished = pyqtSignal(int, QPixmap)
@@ -110,37 +229,45 @@ class ThumbnailLoaderRunnable(QRunnable):
             self.signals.finished.emit(self.row, placeholder_pixmap)
 
 class ThumbnailDelegate(QStyledItemDelegate):
+    def __init__(self, is_reorder=False):
+        super().__init__()
+        self.is_reorder = is_reorder
+        
     def paint(self, painter, option, index):
         # Save the painter's state
         painter.save()
 
-        # Draw the default item (background, selection, etc.)
-        if option.state & QStyle.State_Selected:
+        # Check if the item is selected
+        if self.is_reorder:
+            is_selected = False
+        else:
+            is_selected = index.row() in index.model().parent().selected_rows
+        
+        # If selected, fill the background with yellow, otherwise use default behavior
+        if is_selected:
+            painter.fillRect(option.rect, QColor(255, 255, 0))  # Yellow background for selected items
+        elif option.state & QStyle.State_Selected:
+            # Default selection behavior (blue highlight)
             painter.fillRect(option.rect, option.palette.highlight())
+
+        # Draw the default item (background, selection, etc.)
         else:
             painter.fillRect(option.rect, option.palette.base())
 
-        # Get the pixmap from the model
+        # Get the pixmap from the model and draw it centered
         pixmap = index.data(Qt.DecorationRole)
         if pixmap:
-            # Calculate the position to center the pixmap
             item_rect = option.rect
             pixmap_size = pixmap.size()
             x = item_rect.x() + (item_rect.width() - pixmap_size.width()) / 2
             y = item_rect.y() + (item_rect.height() - pixmap_size.height()) / 2
-
-            # Draw the pixmap centered
             painter.drawPixmap(int(x), int(y), pixmap)
 
         # Draw focus rectangle if item has focus
         if option.state & QStyle.State_HasFocus:
-            option_rect = QRect(
-                int(x), int(y), pixmap_size.width(), pixmap_size.height()
-            )
+            option_rect = QRect(int(x), int(y), pixmap_size.width(), pixmap_size.height())
             option.rect = option_rect
-            QApplication.style().drawPrimitive(
-                QStyle.PE_FrameFocusRect, option, painter
-            )
+            QApplication.style().drawPrimitive(QStyle.PE_FrameFocusRect, option, painter)
 
         # Restore the painter's state
         painter.restore()
