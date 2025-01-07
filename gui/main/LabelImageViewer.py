@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtCore import Qt, QPoint, QDateTime
+from PyQt5.QtGui import QCursor
 from media_loader import MediaLoader
 from gui.main.DialogProcess import DialogProcess
 from gui.message import show_message
@@ -80,20 +81,24 @@ class LabelImageViewer(QLabel):
                     self.is_panning = False
 
     def zoom_in(self, click_pos):
-        if self.scale_modifier < 5.0:
-            self.scale_modifier += 0.5
+        if self.scale_modifier < 6:
+            self.scale_modifier += 1.0
         self.update_image_size(click_pos)
 
     def zoom_out(self, click_pos):
-        if self.scale_modifier >= 1.0:
-            self.scale_modifier -= 1.0
+        if self.scale_modifier >= 2.0:
+            self.scale_modifier -= 2.0
         elif self.scale_modifier > 0:
             self.scale_modifier = 0
         self.update_image_size(click_pos)
 
+    
     def update_image_size(self, click_pos):
         if not self.pixmap():
             return
+
+        viewport_width = self.scroll_area.viewport().width()
+        viewport_height = self.scroll_area.viewport().height()
 
         # Calculate the new scale factor
         scale_factor = self.initial_scale * (self.scale_modifier + 1)
@@ -106,26 +111,54 @@ class LabelImageViewer(QLabel):
         new_width = self.original_size.width() * scale_factor
         new_height = self.original_size.height() * scale_factor
 
-        # Access the scrollbars
-        horizontal_scroll = self.scroll_area.horizontalScrollBar()
-        vertical_scroll = self.scroll_area.verticalScrollBar()
-
-        # Calculate the relative position of the clicked pixel within the QLabel
-        rel_x = (horizontal_scroll.value() + click_pos.x()) / old_width
-        rel_y = (vertical_scroll.value() + click_pos.y()) / old_height
+        # Calculate the relative click position in the old image
+        rel_click_x = click_pos.x() / old_width
+        rel_click_y = click_pos.y() / old_height
 
         # Update QLabel size
         self.setFixedSize(int(new_width), int(new_height))
 
-        # Calculate the new scroll positions based on the relative position
-        new_h_scroll = int(rel_x * new_width - click_pos.x())
-        new_v_scroll = int(rel_y * new_height - click_pos.y())
+        # Map the relative position to the new image size
+        new_click_x = new_width * rel_click_x
+        new_click_y = new_height * rel_click_y
 
-        # Clamp scroll values to ensure they stay within valid bounds
-        new_h_scroll = max(0, min(new_h_scroll, horizontal_scroll.maximum()))
-        new_v_scroll = max(0, min(new_v_scroll, vertical_scroll.maximum()))
+        # Calculate the scroll position to center the clicked pixel
+        scroll_x = new_click_x - viewport_width // 2
+        scroll_y = new_click_y - viewport_height // 2
 
-        # Update the scrollbar positions
-        horizontal_scroll.setValue(new_h_scroll)
-        vertical_scroll.setValue(new_v_scroll)
+        # Clamp scroll positions to valid range based on the new dimensions
+        max_scroll_x = max(0, new_width - viewport_width)
+        max_scroll_y = max(0, new_height - viewport_height)
 
+        # Explicitly synchronize the scrollbar ranges to prevent overshooting
+        self.scroll_area.horizontalScrollBar().setRange(0, max_scroll_x)
+        self.scroll_area.verticalScrollBar().setRange(0, max_scroll_y)
+
+        # Recalculate and clamp scroll positions
+        scroll_x = max(0, min(scroll_x, max_scroll_x))
+        scroll_y = max(0, min(scroll_y, max_scroll_y))
+
+        # Set the scrollbar positions
+        self.scroll_area.horizontalScrollBar().setValue(scroll_x)
+        self.scroll_area.verticalScrollBar().setValue(scroll_y)
+
+        # Calculate the pixel's position within the viewport
+        if new_width < viewport_width:
+            actual_x = new_click_x + (viewport_width - new_width) // 2
+        else:
+            actual_x = new_click_x - self.scroll_area.horizontalScrollBar().value()
+
+        if new_height < viewport_height:
+            actual_y = new_click_y + (viewport_height - new_height) // 2
+        else:
+            actual_y = new_click_y - self.scroll_area.verticalScrollBar().value()
+
+        # Get the global position of the viewport
+        global_viewport_position = self.scroll_area.viewport().mapToGlobal(QPoint(0, 0))
+
+        # Calculate the global position of the pixel in the viewport
+        cursor_x = global_viewport_position.x() + actual_x
+        cursor_y = global_viewport_position.y() + actual_y
+
+        # Move the cursor to the calculated position
+        QCursor.setPos(cursor_x, cursor_y)
