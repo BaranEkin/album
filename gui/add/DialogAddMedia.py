@@ -200,7 +200,8 @@ class DialogAddMedia(QDialog):
             return people
 
     def get_people_count(self):
-        return len(self.frame_add_info.get_people().split(","))
+        people = self.frame_add_info.get_people()
+        return len(people.split(",")) if people else 0
 
     def on_media_add(self):
 

@@ -26,12 +26,13 @@ from gui.DialogReorder import DialogReorder
 from gui.add.DialogEditMedia import DialogEditMedia
 from gui.constants import Constants
 from gui.export.DialogExportMedia import DialogExportMedia
+from gui.lists.DialogEditBulk import DialogEditBulk
 from gui.lists.DialogLists import DialogLists
 from gui.main.DialogProcess import DialogProcess
 from gui.main.ListViewThumbnail import ListViewThumbnail
 from media_loader import MediaLoader
 from logger import log
-from data.helpers import get_unix_time_days_ago, generate_export_filename
+from data.helpers import get_unix_time_days_ago, generate_export_filename, is_valid_people
 from data.media_filter import MediaFilter
 from data.data_manager import DataManager
 from gui.message import show_message
@@ -498,7 +499,26 @@ class MainWindow(QMainWindow):
         
     
     def on_bulk_edit_selected(self):
-        pass
+        def bulk_edit_procedure(edited_media_list):
+            self.data_manager.update_local_db()
+            for media in edited_media_list:
+                self.data_manager.edit_media(media)  
+            cloud_ops.upload_database()     
+
+        if self.check_cloud_connected():
+            selected_media_list = [self.media_data[row] for row in self.selected_rows]
+            dialog_edit_bulk = DialogEditBulk(selected_media_list)
+            if dialog_edit_bulk.exec_() == QDialog.Accepted:
+                edited_media_list = dialog_edit_bulk.edited_media_list
+                dialog = DialogProcess(operation=lambda: bulk_edit_procedure(edited_media_list),
+                                    title="Medyaları Toplu Düzenle",
+                                    message="Toplu düzenleme işlemi devam ediyor...")
+            
+                if dialog.exec_() == QDialog.Accepted:
+                    show_message(f"Toplu düzenleme işlemi tamamlandı.", level="info")
+                    self.refresh_current_media_state()
+                else:
+                    show_message(f"Toplu düzenleme işlemi tamamlanamadı.", level="warning")
 
 
     def run_slideshow(self):

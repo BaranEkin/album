@@ -75,6 +75,8 @@ def turkish_lower(text) -> str:
     return translated_text.lower()
 
 def is_valid_people(people_str):
+    if not people_str:
+        return True
     # Define a regex pattern for Turkish names and multiple surnames
     pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+(?:\s[A-ZÇĞİÖŞÜ]+)*)$"
     people_list = people_str.split(",")
