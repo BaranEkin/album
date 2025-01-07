@@ -822,8 +822,8 @@ class MainWindow(QMainWindow):
             self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
 
             self.display_history_manager.load_display_history_file()
-            thousand_forgotten_uuids = self.display_history_manager.get_ordered_uuids()[:1000]
-            self.forgotten_uuids = random.sample(thousand_forgotten_uuids, 100)
+            all_forgotten_uuids = self.display_history_manager.get_ordered_uuids()[:5000]
+            self.forgotten_uuids = random.sample(all_forgotten_uuids, 100)
 
             media_list = self.data_manager.get_media_by_uuids(self.forgotten_uuids, sort=0) # Sort by date
             self.update_media_data(media_list)
