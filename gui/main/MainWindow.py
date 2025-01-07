@@ -1070,3 +1070,7 @@ class MainWindow(QMainWindow):
         
         # Post the key release event
         QApplication.postEvent(window, release_event)
+
+    def closeEvent(self, event):
+        self.display_history_manager.save_display_history_file()
+        event.accept()
