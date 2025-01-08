@@ -426,6 +426,7 @@ class MainWindow(QMainWindow):
             elif from_button in group_2:
                 for b in group_1:
                     b.setEnabled(b.isChecked())
+                self.button_filter.setEnabled(True)
                 for b in group_1:
                     if b.isChecked():
                         self.button_filter.setEnabled(False)
