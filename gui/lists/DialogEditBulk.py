@@ -277,28 +277,32 @@ class DialogEditBulk(QDialog):
                 if edit_data["topic"]["mode"] == "overwrite":
                     topic = edit_data["topic"]["input"]
                 elif edit_data["topic"]["mode"] == "replace":
-                    topic = media.topic.replace(edit_data["topic"]["from"], edit_data["topic"]["to"])
+                    if media.topic:
+                        topic = media.topic.replace(edit_data["topic"]["from"], edit_data["topic"]["to"])
 
             title = media.title
             if edit_data.get("title"):
                 if edit_data["title"]["mode"] == "overwrite":
                     title = edit_data["title"]["input"]
                 elif edit_data["title"]["mode"] == "replace":
-                    title = media.title.replace(edit_data["title"]["from"], edit_data["title"]["to"])
+                    if media.title:
+                        title = media.title.replace(edit_data["title"]["from"], edit_data["title"]["to"])
 
             location = media.location
             if edit_data.get("location"):
                 if edit_data["location"]["mode"] == "overwrite":
                     location = edit_data["location"]["input"]
                 elif edit_data["location"]["mode"] == "replace":
-                    location = media.location.replace(edit_data["location"]["from"], edit_data["location"]["to"])
+                    if media.location:
+                        location = media.location.replace(edit_data["location"]["from"], edit_data["location"]["to"])
             
             notes = media.notes
             if edit_data.get("notes"):
                 if edit_data["notes"]["mode"] == "overwrite":
                     notes = edit_data["notes"]["input"]
                 elif edit_data["notes"]["mode"] == "replace":
-                    notes = media.notes.replace(edit_data["notes"]["from"], edit_data["notes"]["to"])
+                    if media.notes:
+                        notes = media.notes.replace(edit_data["notes"]["from"], edit_data["notes"]["to"])
             
             people = media.people
             if edit_data.get("people"):
@@ -306,10 +310,11 @@ class DialogEditBulk(QDialog):
                     people = edit_data["people"]["input"]
 
                 elif edit_data["people"]["mode"] == "replace":
-                    people_list = media.people.split(",")
-                    people_list_replaced = [p.replace(edit_data["people"]["from"], edit_data["people"]["to"]) for p in people_list]
-                    people_new = ", ".join(people_list_replaced)
-                    people = people_new
+                    if people:
+                        people_list = media.people.split(",")
+                        people_list_replaced = [p.replace(edit_data["people"]["from"], edit_data["people"]["to"]) for p in people_list]
+                        people_new = ", ".join(people_list_replaced)
+                        people = people_new
 
                 elif edit_data["people"]["mode"] == "add":
                     people_to_add = edit_data["people"]["input"]
@@ -339,9 +344,10 @@ class DialogEditBulk(QDialog):
                     tags = edit_data["tags"]["input"]
 
                 elif edit_data["tags"]["mode"] == "replace":
-                    tags_list = media.tags.split(",")
-                    tags_list_replaced = [t.replace(edit_data["tags"]["from"], edit_data["tags"]["to"]) for t in tags_list]
-                    tags = ", ".join(tags_list_replaced)
+                    if tags:
+                        tags_list = media.tags.split(",")
+                        tags_list_replaced = [t.replace(edit_data["tags"]["from"], edit_data["tags"]["to"]) for t in tags_list]
+                        tags = ", ".join(tags_list_replaced)
 
                 elif edit_data["tags"]["mode"] == "add":
                     tags_to_add = edit_data["tags"]["input"]
