@@ -388,6 +388,7 @@ class DialogEditBulk(QDialog):
             edited_media.people_count = len(people.split(",")) if people else 0
             edited_media.date_text = date_text
             edited_media.date_est = date_est
+            edited_media.albums = media.albums
 
             self.edited_media_list.append(edited_media)
         
