@@ -497,7 +497,7 @@ class DataManager:
             """Replace custom operators with Python logical operators and wrap words in quotes"""
 
             # Wrap all names (words) with function_name()
-            expr = re.sub(r'([a-zA-ZıİğĞüÜşŞöÖçÇ_][a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_ ]*)', rf'{function_name}("\1")', expr)
+            expr = re.sub(r'([a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_][a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_ .!@#$%^&*\-?;:"\'/\\]*)', rf'{function_name}("\1")', expr)
 
             return expr
         
