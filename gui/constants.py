@@ -71,8 +71,8 @@ class Constants:
     SETTINGS_LATEST_6MONTHS = "Son 6 ay"
     SETTINGS_LATEST_1YEAR = "Son 1 yıl"
     SETTINGS_INITIAL_INDEX = "Açılıştaki Medya:"
-    SETTINGS_INITIAL_BEGINNING = "İlk (En eski)"
-    SETTINGS_INITIAL_END = "Son (En yeni)"
+    SETTINGS_INITIAL_BEGINNING = "İlk - En eski -"
+    SETTINGS_INITIAL_END = "Son - En yeni -"
     SETTINGS_DELETE_ORIGINAL = "Yüklemeden Sonra Orijinal Dosyayı Sil:"
     
     # Storage Tab

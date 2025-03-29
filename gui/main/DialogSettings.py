@@ -50,7 +50,7 @@ class DialogSettings(QDialog):
         
         # Theme selection
         self.theme_combo = QComboBox()
-        self.theme_combo.addItems([Constants.SETTINGS_THEME_LIGHT, Constants.SETTINGS_THEME_DARK])
+        self.theme_combo.addItems([Constants.SETTINGS_THEME_LIGHT, Constants.SETTINGS_THEME_DARK, Constants.SETTINGS_THEME_CLASSIC])
         current_theme = self.config_data.get("THEME", Constants.SETTINGS_THEME_DARK)
         self.theme_combo.setCurrentText(current_theme)
         general_layout.addRow(Constants.SETTINGS_THEME, self.theme_combo)
@@ -58,7 +58,7 @@ class DialogSettings(QDialog):
         # Media privacy limit (0-9)
         self.privacy_spin = QSpinBox()
         self.privacy_spin.setRange(0, 9)
-        self.privacy_spin.setValue(self.config_data.get("MEDIA_PRIVACY_LEVEL", 5))
+        self.privacy_spin.setValue(int(self.config_data.get("MEDIA_PRIVACY_LEVEL", 0)))
         general_layout.addRow(Constants.SETTINGS_PRIVACY_LIMIT, self.privacy_spin)
         
         # Latest media duration
