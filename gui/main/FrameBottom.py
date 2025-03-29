@@ -1,12 +1,15 @@
 from PyQt5.QtWidgets import QFrame, QLabel, QGroupBox, QPushButton, QHBoxLayout, QVBoxLayout, QGridLayout
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from data.orm import Media
 from gui.main.FrameInfo import FrameInfo
 from gui.constants import Constants
 
 
 class FrameBottom(QFrame):
+    # Add signal for settings button
+    settings_clicked = pyqtSignal()
+    
     def __init__(self):
         super().__init__()
 
@@ -59,11 +62,9 @@ class FrameBottom(QFrame):
         self.button_settings.setFocusPolicy(Qt.NoFocus)
         self.button_settings.setFixedSize(80, 30)
         self.button_settings.setIcon(QIcon("res/icons/Setting--Streamline-Unicons.png"))
+        self.button_settings.setToolTip(Constants.TOOLTIP_BUTTON_SETTINGS)
+        self.button_settings.clicked.connect(self.on_settings_clicked)
         self.button_layout.addWidget(self.button_settings)
-
-        self.group_box_cloud.setLayout(self.button_layout)
-        self.layout_cloud.addWidget(self.group_box_cloud)
-        self.frame_cloud.setLayout(self.layout_cloud)
 
         self.group_box_cloud.setLayout(self.button_layout)
         self.layout_cloud.addWidget(self.group_box_cloud)
@@ -160,7 +161,6 @@ class FrameBottom(QFrame):
         else:
             self.button_people.setEnabled(False)
 
-
     def get_slideway_direction(self):
         return self.slideway_direction
 
@@ -176,3 +176,6 @@ class FrameBottom(QFrame):
         elif self.slideway_direction == "R":
             self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png"))
             self.slideway_direction = "F"
+
+    def on_settings_clicked(self):
+        self.settings_clicked.emit()

@@ -29,6 +29,7 @@ from gui.export.DialogExportMedia import DialogExportMedia
 from gui.lists.DialogEditBulk import DialogEditBulk
 from gui.lists.DialogLists import DialogLists
 from gui.main.DialogProcess import DialogProcess
+from gui.main.DialogSettings import DialogSettings
 from gui.main.ListViewThumbnail import ListViewThumbnail
 from media_loader import MediaLoader
 from logger import log
@@ -43,6 +44,7 @@ from gui.main.LabelImageViewer import LabelImageViewer
 from gui.add.DialogAddMedia import DialogAddMedia
 from gui.main.DialogPeople import DialogPeople
 from gui.main.DialogNotes import DialogNotes
+from config.config import Config
 
 import face_detection
 from ops import cloud_ops, file_ops
@@ -308,6 +310,9 @@ class MainWindow(QMainWindow):
         self.slideshow_timer.setInterval(5000)
         self.slideshow_timer.timeout.connect(self.run_slideshow)
 
+        # Connect settings button signal
+        self.frame_bottom.settings_clicked.connect(self.show_settings_dialog)
+
         main_layout.addWidget(self.frame_bottom)
 
 
@@ -316,6 +321,7 @@ class MainWindow(QMainWindow):
         self.media_data = self.data_manager.get_all_media()
         self.update_frame_bottom_top_label()
         self.handle_selection_feature_buttons()
+        self.update_local_storage_status()
 
         self.dialog_filter = DialogFilter(self.data_manager, parent=self)
 
@@ -441,6 +447,12 @@ class MainWindow(QMainWindow):
         try:
             # Check if the model has any loaded items
             if self.thumbnail_model.rowCount() > 0:
+                # Use the INITIAL_MEDIA_INDEX setting to determine where to start
+                if i == 0 and attempt == 0:  # Only apply on first attempt with default index
+                    initial_index = Config.INITIAL_MEDIA_INDEX
+                    if initial_index == Constants.SETTINGS_INITIAL_END and self.thumbnail_model.rowCount() > 0:
+                        i = self.thumbnail_model.rowCount() - 1
+                
                 index = self.thumbnail_model.index(i, 0)
 
                 self.thumbnail_list.setCurrentIndex(index)
@@ -842,6 +854,24 @@ class MainWindow(QMainWindow):
         else:
             self.frame_bottom.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_FAIL)
             self.frame_bottom.status_cloud.setPixmap(QPixmap("res/icons/Cloud-Warning--Streamline-Core.png"))
+    
+    def show_settings_dialog(self):
+        """Show the settings dialog and apply changes if accepted"""
+        dialog = DialogSettings(parent=self)
+        if dialog.exec_() == QDialog.Accepted:
+            # Update local storage status indicator
+            self.update_local_storage_status()
+    
+    def update_local_storage_status(self):
+        """Update the local storage status indicator based on config"""
+        from config.config import Config
+        
+        if Config.LOCAL_STORAGE_ENABLED:
+            self.frame_bottom.status_storage.setToolTip(Constants.TOOLTIP_STORAGE_ON)
+            self.frame_bottom.status_storage.setPixmap(QPixmap("res/icons/Download-Computer--Streamline-Core-Green.png"))
+        else:
+            self.frame_bottom.status_storage.setToolTip(Constants.TOOLTIP_STORAGE_OFF)
+            self.frame_bottom.status_storage.setPixmap(QPixmap("res/icons/Download-Computer--Streamline-Core-Red.png"))
     
     def on_today_in_history(self, checked):
         if checked:
