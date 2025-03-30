@@ -1,6 +1,7 @@
 import json
 import os
 from logger import log
+from gui.constants import Constants
 
 
 class Config:
@@ -12,11 +13,11 @@ class Config:
     CLOUDFRONT_KEY_PATH = ""
     CLOUDFRONT_DOMAIN = ""
     CLOUDFRONT_KEY_ID = ""
-    THEME = "Açık"
+    THEME = Constants.SETTINGS_THEME_LIGHT
     MEDIA_PRIVACY_LEVEL = 0
     LATEST_DURATION_DAYS = 7
     DELETE_ORIGINAL_AFTER_UPLOAD = False
-    INITIAL_MEDIA_INDEX = "İlk - En eski -"
+    INITIAL_MEDIA_INDEX = Constants.SETTINGS_INITIAL_END
 
     CONFIG_FILE_PATH = "res/config.json"
 
