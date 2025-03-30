@@ -1,4 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QTextBrowser, QVBoxLayout
+from config.config import Config
+from gui.ThemeManager import ThemeManager
 
 
 class DialogPeople(QDialog):
@@ -13,9 +15,10 @@ class DialogPeople(QDialog):
 
         # Create a QTextBrowser for displaying text
         text_browser = QTextBrowser()
+        text_browser.setObjectName("peopleBrowser")  # Set object name for styling
 
-        # Set custom font and color
-        text_browser.setStyleSheet("font-family: Arial; font-size: 18px; color: darkgreen;")
+        # Set custom font - color will be handled by theme
+        text_browser.setStyleSheet("font-family: Arial; font-size: 18px;")
 
         text_browser.setText(self.people_text)
 

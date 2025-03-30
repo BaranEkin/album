@@ -20,6 +20,7 @@ class Constants:
     TOOLTIP_BUTTON_TODAY_IN_HISTORY = "Tarihte bugün"
     TOOLTIP_BUTTON_ADD_TO_LIST = "Seçili medyaları bir listeye ekle"
     TOOLTIP_BUTTON_EXPLORE_FORGOTTEN = "Unutulanlardan 100 medya"
+    TOOLTIP_BUTTON_SETTINGS = "Uygulama Ayarları"
 
     TOOLTIP_CLOUD_FAIL = "Bulut bağlantısı sağlanamadı"
     TOOLTIP_CLOUD_SUCCESS = "Bulut bağlantısı etkin"
@@ -49,3 +50,36 @@ class Constants:
 
     WINDOW_DIALOG_ASSIGN_PERSON = "Kişiyi Ekle"
     WINDOW_DIALOG_ASSIGN_LOCATION = "Yer Seç"
+    
+    # Settings Dialog Constants
+    SETTINGS_DIALOG_TITLE = "Ayarlar"
+    SETTINGS_TAB_GENERAL = "Genel"
+    SETTINGS_TAB_STORAGE = "Depolama"
+    SETTINGS_TAB_CLOUD = "Bulut"
+    
+    # General Tab
+    SETTINGS_THEME = "Tema:"
+    SETTINGS_THEME_LIGHT = "Açık"
+    SETTINGS_THEME_DARK = "Koyu"
+    SETTINGS_THEME_CLASSIC = "Albüm Klasik"
+    SETTINGS_PRIVACY_LIMIT = "Medya Gizlilik Limiti:"
+    SETTINGS_LATEST_DURATION = "Yeni Eklenenler:"
+    SETTINGS_INITIAL_INDEX = "Açılıştaki Medya:"
+    SETTINGS_INITIAL_BEGINNING = "İlk - En eski -"
+    SETTINGS_INITIAL_END = "Son - En yeni -"
+    SETTINGS_DELETE_ORIGINAL = "Yüklemeden Sonra Orijinal Dosyaları Sil:"
+    
+    # Storage Tab
+    SETTINGS_LOCAL_STORAGE = "Yerel Depolamayı Etkinleştir:"
+    SETTINGS_MEDIA_DIR = "Medya Dizini:"
+    SETTINGS_THUMBNAILS_DIR = "Önizleme Dizini:"
+    
+    # Cloud Tab
+    SETTINGS_S3_BUCKET = "S3 Bucket Adı:"
+    SETTINGS_CLOUDFRONT_DOMAIN = "CloudFront Alan Adı:"
+    SETTINGS_CLOUDFRONT_KEY_ID = "CloudFront Anahtar ID:"
+    SETTINGS_CLOUDFRONT_KEY_PATH = "CloudFront Anahtar Yolu:"
+    
+    # Buttons
+    SETTINGS_BUTTON_SAVE = "Kaydet"
+    SETTINGS_BUTTON_CANCEL = "İptal"

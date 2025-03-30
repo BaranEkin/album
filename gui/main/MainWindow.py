@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QApplication
 )
 from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer, QItemSelectionModel
-from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
+from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage, QColor
 from PIL import Image
 from datetime import datetime
 
@@ -29,6 +29,7 @@ from gui.export.DialogExportMedia import DialogExportMedia
 from gui.lists.DialogEditBulk import DialogEditBulk
 from gui.lists.DialogLists import DialogLists
 from gui.main.DialogProcess import DialogProcess
+from gui.main.DialogSettings import DialogSettings
 from gui.main.ListViewThumbnail import ListViewThumbnail
 from media_loader import MediaLoader
 from logger import log
@@ -43,6 +44,7 @@ from gui.main.LabelImageViewer import LabelImageViewer
 from gui.add.DialogAddMedia import DialogAddMedia
 from gui.main.DialogPeople import DialogPeople
 from gui.main.DialogNotes import DialogNotes
+from config.config import Config
 
 import face_detection
 from ops import cloud_ops, file_ops
@@ -78,24 +80,22 @@ class MainWindow(QMainWindow):
 
         # State variables
         self.mode = ""
+        self.is_first_selection = True  # Flag to track first selection after startup
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
-        self.setWindowTitle("Albüm (v1.1.1)")
+        self.setWindowTitle("Albüm (v1.2.0)")
         self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
-
-        #self.file_menu = QMenu("&Dosya", self)
-        #self.file_menu.addAction(QAction("&Aç...", self))
-        #self.menuBar().addMenu(self.file_menu)
-        #self.menuBar().setFixedWidth(50)
-
+        
         # Main container widget
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
 
         # Create the layout for the main widget
         main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
         # Create a horizontal layout to hold the left frame and image container
         horizontal_layout = QHBoxLayout()
@@ -103,22 +103,30 @@ class MainWindow(QMainWindow):
 
         # Create the frame for the menu on the left side 
         self.frame_menu = QFrame()
-        self.frame_menu.setFixedWidth(160)
-        horizontal_layout.addWidget(self.frame_menu)
+        self.frame_menu.setFixedWidth(170)
+        self.frame_menu.setFrameShape(QFrame.StyledPanel)
+        self.frame_menu.setFrameShadow(QFrame.Raised)
+        self.frame_menu.setObjectName("menuFrame")  # Set object name for styling
 
         # Set a layout for the frame_menu
         menu_layout = QVBoxLayout(self.frame_menu)
         # Remove margins for full use of space
-        menu_layout.setContentsMargins(0, 0, 0, 0)
+        menu_layout.setContentsMargins(5, 5, 5, 5)
+        menu_layout.setSpacing(10)
+        menu_layout.setAlignment(Qt.AlignTop)
+
+        # Add the menu frame to the horizontal layout
+        horizontal_layout.addWidget(self.frame_menu)
 
         # Create right QFrame with fixed width and height, and add buttons in a grid
         self.frame_features_area = QFrame()
-        self.frame_features_area.setFixedWidth(160)
-        self.frame_features_area.setFixedHeight(360)
+        self.frame_features_area.setFixedWidth(170)
+        self.frame_features_area.setFixedHeight(400)
+        self.frame_features_area.setObjectName("featuresFrame")  # Set object name for styling
 
         # Create a grid layout for the buttons inside the right frame
         self.layout_features_area = QVBoxLayout()
-        self.layout_features_area.setContentsMargins(0,0,0,0)
+        self.layout_features_area.setContentsMargins(0,0,10,0)
 
         self.group_feature_main = QGroupBox("Ana İşlemler")
         self.group_feature_explore = QGroupBox("Keşfet")
@@ -272,6 +280,7 @@ class MainWindow(QMainWindow):
         self.thumbnail_list.setSpacing(1)
         self.thumbnail_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.thumbnail_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.thumbnail_list.setObjectName("thumbnailList")  # Set object name for styling
         menu_layout.addWidget(self.thumbnail_list)
 
         # Create the scroll area to display the selected image
@@ -280,6 +289,7 @@ class MainWindow(QMainWindow):
         self.scroll_area.setBackgroundRole(QPalette.Dark)
         self.scroll_area.setVisible(False)
         self.scroll_area.setFocusPolicy(Qt.NoFocus)
+        self.scroll_area.setObjectName("imageViewer")  # Set object name for styling
 
         # Create a ImageViewerLabel for the image and add it to the scroll area
         self.image_label = LabelImageViewer(self.scroll_area, self.media_loader)
@@ -297,6 +307,7 @@ class MainWindow(QMainWindow):
         self.frame_bottom = FrameBottom()
         self.frame_bottom.setFixedHeight(110)
         self.frame_bottom.setFocusPolicy(Qt.NoFocus)      
+        self.frame_bottom.setObjectName("bottomFrame")  # Set object name for styling
 
         self.frame_bottom.button_people.clicked.connect(self.on_button_people_clicked)
         self.frame_bottom.button_notes.clicked.connect(self.on_button_notes_clicked)
@@ -308,14 +319,20 @@ class MainWindow(QMainWindow):
         self.slideshow_timer.setInterval(5000)
         self.slideshow_timer.timeout.connect(self.run_slideshow)
 
+        # Connect settings button signal
+        self.frame_bottom.settings_clicked.connect(self.show_settings_dialog)
+
         main_layout.addWidget(self.frame_bottom)
 
+        # Apply theme-specific styling
+        self.apply_theme_styling()
 
         # LOAD DATA AND SETUP_______________________________________________________________
         self.update_db()
         self.media_data = self.data_manager.get_all_media()
         self.update_frame_bottom_top_label()
         self.handle_selection_feature_buttons()
+        self.update_local_storage_status()
 
         self.dialog_filter = DialogFilter(self.data_manager, parent=self)
 
@@ -441,6 +458,12 @@ class MainWindow(QMainWindow):
         try:
             # Check if the model has any loaded items
             if self.thumbnail_model.rowCount() > 0:
+                # Use the INITIAL_MEDIA_INDEX setting only on first selection after startup
+                if i == 0 and attempt == 0 and self.is_first_selection:
+                    initial_index = Config.INITIAL_MEDIA_INDEX
+                    if initial_index == Constants.SETTINGS_INITIAL_END and self.thumbnail_model.rowCount() > 0:
+                        i = self.thumbnail_model.rowCount() - 1
+                
                 index = self.thumbnail_model.index(i, 0)
 
                 self.thumbnail_list.setCurrentIndex(index)
@@ -651,6 +674,10 @@ class MainWindow(QMainWindow):
             else:
                 self.load_video_audio_thumbnail()
 
+            if self.is_first_selection:
+                self.is_first_selection = False
+                # Perform any actions you want to do on the first selection here
+
     def load_media_metadata(self):
         self.frame_bottom.set_media_info(self.displayed_media)
 
@@ -689,7 +716,9 @@ class MainWindow(QMainWindow):
                 self.previous_media_index = self.media_index
 
             self.previous_media_filter = copy.deepcopy(self.media_filter) if self.media_filter else None
-            self.media_filter = MediaFilter(created_at_range_enabled=True, created_at_range=(get_unix_time_days_ago(7), -1.0))
+            # Use the LATEST_DURATION_DAYS setting from Config instead of hardcoded 7 days
+            days = Config.LATEST_DURATION_DAYS
+            self.media_filter = MediaFilter(created_at_range_enabled=True, created_at_range=(get_unix_time_days_ago(days), -1.0))
             self.update_media_data(self.data_manager.get_filtered_media(self.media_filter))
 
         else:
@@ -843,6 +872,26 @@ class MainWindow(QMainWindow):
             self.frame_bottom.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_FAIL)
             self.frame_bottom.status_cloud.setPixmap(QPixmap("res/icons/Cloud-Warning--Streamline-Core.png"))
     
+    def show_settings_dialog(self):
+        """Show the settings dialog and apply changes if accepted"""
+        dialog = DialogSettings(parent=self)
+        if dialog.exec_() == QDialog.Accepted:
+            # Update local storage status indicator
+            self.update_local_storage_status()
+            
+            # Theme changes will take effect after restart, so we don't call apply_theme_styling
+
+    def update_local_storage_status(self):
+        """Update the local storage status indicator based on config"""
+        from config.config import Config
+        
+        if Config.LOCAL_STORAGE_ENABLED:
+            self.frame_bottom.status_storage.setToolTip(Constants.TOOLTIP_STORAGE_ON)
+            self.frame_bottom.status_storage.setPixmap(QPixmap("res/icons/Download-Computer--Streamline-Core-Green.png"))
+        else:
+            self.frame_bottom.status_storage.setToolTip(Constants.TOOLTIP_STORAGE_OFF)
+            self.frame_bottom.status_storage.setPixmap(QPixmap("res/icons/Download-Computer--Streamline-Core-Blue.png"))
+    
     def on_today_in_history(self, checked):
         if checked:
             self.handle_feature_buttons(self.button_today_in_history, checked=True)
@@ -878,7 +927,7 @@ class MainWindow(QMainWindow):
             all_forgotten_uuids = self.display_history_manager.get_ordered_uuids()[:5000]
             self.forgotten_uuids = random.sample(all_forgotten_uuids, 100)
 
-            media_list = self.data_manager.get_media_by_uuids(self.forgotten_uuids, sort=0) # Sort by date
+            media_list = self.data_manager.get_media_by_uuids(self.forgotten_uuids)
             self.update_media_data(media_list)
 
         else:
@@ -1078,3 +1127,12 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.display_history_manager.save_display_history_file()
         event.accept()
+
+    def apply_theme_styling(self):
+        """Apply theme-specific styling to MainWindow components"""
+        # We're now using a minimal approach that preserves the native windowsvista style
+        # Most styling is handled by the application palette in ThemeManager.apply_theme
+        # Only specific background colors are set via stylesheet in ThemeManager.get_stylesheet
+        
+        # No additional styling needed here as it's handled by the ThemeManager
+        pass

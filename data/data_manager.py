@@ -4,7 +4,10 @@ from typing import Sequence, Literal
 from contextlib import contextmanager
 
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, and_, or_, select
+from sqlalchemy import create_engine, and_, or_, select, func, desc
+from sqlalchemy.sql import text
+from sqlalchemy.engine import Engine
+from typing import Sequence, List, Tuple, Dict, Optional
 
 from logger import log
 from config.config import Config
@@ -117,7 +120,12 @@ class DataManager:
 
     def reorder_within_date(self, date: float, ordered_uuids: list[str]):
         with self.get_session() as session:
-            media_list = session.execute(select(Media).where(Media.status != 0).where(Media.date == date).order_by(Media.rank)).scalars().all()
+            media_list = session.execute(
+                select(Media)
+                .where(Media.status != 0)
+                .where(Media.date == date)
+                .order_by(Media.rank)
+            ).scalars().all()
 
             # Create a dictionary for quick lookup by media_uuid
             media_dict = {media.media_uuid: media for media in media_list}
@@ -138,12 +146,21 @@ class DataManager:
 
     def get_all_media(self) -> Sequence[Media]:
         with self.get_session() as session:
-            media_list = session.execute(select(Media).where(Media.status != 0).order_by(Media.date, Media.rank)).scalars().all()
+            media_list = session.execute(
+                select(Media)
+                .where(Media.status != 0)
+                .where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
+                .order_by(Media.date, Media.rank)
+            ).scalars().all()
             return media_list
 
     def get_all_deleted_media(self) -> Sequence[Media]:
         with self.get_session() as session:
-            media_list = session.execute(select(Media).where(Media.status == 0).order_by(Media.date, Media.rank)).scalars().all()
+            media_list = session.execute(
+                select(Media)
+                .where(Media.status == 0)
+                .order_by(Media.date, Media.rank)
+            ).scalars().all()
             return media_list
         
     def get_media_by_uuids(self, uuids: list, sort: int = -1) -> Sequence[Media]:
@@ -202,7 +219,12 @@ class DataManager:
     
     def get_media_of_date(self, date: float) -> Sequence[Media]:
         with self.get_session() as session:
-            media_list = session.execute(select(Media).where(Media.status != 0).where(Media.date == date).order_by(Media.rank)).scalars().all()
+            media_list = session.execute(
+                select(Media)
+                .where(Media.status != 0)
+                .where(Media.date == date)
+                .order_by(Media.rank)
+            ).scalars().all()
             return media_list
 
 
@@ -305,7 +327,7 @@ class DataManager:
 
     @staticmethod
     def _build_selection(media_filter: MediaFilter):
-        selection = select(Media).where(Media.status != 0)
+        selection = select(Media).where(Media.status != 0).where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
 
         if media_filter.albums[0]:
             selection = selection.where(or_(*[Media.albums.contains(album) for album in media_filter.albums]))
@@ -427,6 +449,9 @@ class DataManager:
                 5: Media.extension
             }
             selection = selection.order_by(column_mapping[media_filter.sort[0]], column_mapping[media_filter.sort[1]], Media.rank)
+
+        # Add privacy level constraint
+        selection = selection.where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
 
         return selection
 
