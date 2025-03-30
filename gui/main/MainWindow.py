@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
-        self.setWindowTitle("Albüm (v1.1.1)")
+        self.setWindowTitle("Albüm (v1.2.0)")
         self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
         

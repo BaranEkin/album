@@ -29,7 +29,10 @@ class Config:
                     config = json.load(f)
 
                 for key, value in config.items():
-                    setattr(Config, key, value)
+                    if hasattr(Config, key) and not key.startswith('__') and not callable(getattr(Config, key)):
+                        setattr(Config, key, value)
+                    else:
+                        log("Config.read_config", f"Unexpected config key: {key}", level="warning")
         except Exception as e:
             log("Config.read_config", f"Error reading config file: {e}", level="error")
 
