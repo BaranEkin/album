@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import (QFrame, QLabel, QVBoxLayout, QHBoxLayout, QSizePoli
 
 from data.orm import Media
 from gui.main.TextBrowserDate import TextBrowserDate
+from config.config import Config
+from gui.ThemeManager import ThemeManager
 
 
 class FrameInfo(QFrame):
@@ -26,11 +28,13 @@ class FrameInfo(QFrame):
         self.topic_title_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
         self.topic_title_browser = TextBrowserDate()
+        self.topic_title_browser.setObjectName("titleBrowser")  # Set object name for styling
         self.topic_title_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
         self.topic_title_browser.setFixedHeight(40)  # Set height for consistency
         self.topic_title_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.topic_title_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.topic_title_browser.setStyleSheet("font-family: Arial; font-size: 20px; color: darkblue;")  # Title style
+        # Font styling only, colors are handled by theme
+        self.topic_title_browser.setStyleSheet("font-family: Arial; font-size: 20px;")
 
         # Mock-up value for title
         self.topic_title_browser.setHtml('<div style="line-height:27px;">BAŞLIK DENEME YAZISI BAŞLIK DENEME YAZISI</div>')
@@ -49,10 +53,12 @@ class FrameInfo(QFrame):
             "font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
         self.location_browser = TextBrowserDate()
+        self.location_browser.setObjectName("locationBrowser")  # Set object name for styling
         self.location_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
         self.location_browser.setFixedHeight(40)  # Set height for consistency
         self.location_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.location_browser.setStyleSheet("font-family: Arial; font-size: 18px; color: darkred;")  # Location style
+        # Font styling only, colors are handled by theme
+        self.location_browser.setStyleSheet("font-family: Arial; font-size: 18px;")
         self.location_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.location_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -70,10 +76,12 @@ class FrameInfo(QFrame):
         self.date_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
 
         self.date_browser = TextBrowserDate()
+        self.date_browser.setObjectName("dateBrowser")  # Set object name for styling
         self.date_browser.setAlignment(Qt.AlignHCenter)  # Align text to the left
         self.date_browser.setFixedHeight(40)  # Set height for consistency
         self.date_browser.setFixedWidth(250)  # Set the fixed width for the date
-        self.date_browser.setStyleSheet("font-family: Arial; font-size: 18px; color: darkgreen;")  # Date style
+        # Font styling only, colors are handled by theme
+        self.date_browser.setStyleSheet("font-family: Arial; font-size: 18px;")
         self.date_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.date_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -99,6 +107,6 @@ class FrameInfo(QFrame):
         else:
             topic_title_text = media.title
 
-        self.topic_title_browser.set_text(27, topic_title_text)
-        self.location_browser.set_text(26, media.location)
+        self.topic_title_browser.set_text(27, topic_title_text if topic_title_text else "")
+        self.location_browser.set_text(26, media.location if media.location else "")
         self.date_browser.set_date(26, media.date_text, media.date_est)

@@ -1,15 +1,15 @@
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, 
     QComboBox, QCheckBox, QSpinBox, QPushButton, QTabWidget,
-    QFormLayout, QFrame, QLineEdit
+    QFormLayout, QFrame, QLineEdit, QFileDialog, QMessageBox, QWidget
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
+from gui.constants import Constants
 from config.config import Config
 from logger import log
 from gui.message import show_message
-from gui.constants import Constants
 
 
 class DialogSettings(QDialog):
@@ -32,6 +32,9 @@ class DialogSettings(QDialog):
         self.tab_widget = QTabWidget()
         self.main_layout.addWidget(self.tab_widget)
         
+        # Track original theme to detect changes
+        self.original_theme = self.config_data.get("THEME", Constants.SETTINGS_THEME_DARK)
+        
         # Create tabs
         self.create_general_tab()
         self.create_storage_tab()
@@ -45,7 +48,10 @@ class DialogSettings(QDialog):
     
     def create_general_tab(self):
         """Create the general settings tab"""
-        general_tab = QFrame()
+        general_tab = QWidget()
+        self.tab_widget.addTab(general_tab, Constants.SETTINGS_TAB_GENERAL)
+        
+        # Create layout for general tab
         general_layout = QFormLayout(general_tab)
         
         # Theme selection
@@ -55,25 +61,21 @@ class DialogSettings(QDialog):
         self.theme_combo.setCurrentText(current_theme)
         general_layout.addRow(Constants.SETTINGS_THEME, self.theme_combo)
         
+        # Connect theme combo box change signal
+        self.theme_combo.currentTextChanged.connect(self.on_theme_changed)
+        
         # Media privacy limit (0-9)
         self.privacy_spin = QSpinBox()
         self.privacy_spin.setRange(0, 9)
         self.privacy_spin.setValue(int(self.config_data.get("MEDIA_PRIVACY_LEVEL", 0)))
         general_layout.addRow(Constants.SETTINGS_PRIVACY_LIMIT, self.privacy_spin)
         
-        # Latest media duration
-        self.latest_combo = QComboBox()
-        self.latest_combo.addItems([
-            Constants.SETTINGS_LATEST_1WEEK, 
-            Constants.SETTINGS_LATEST_2WEEKS, 
-            Constants.SETTINGS_LATEST_1MONTH, 
-            Constants.SETTINGS_LATEST_3MONTHS, 
-            Constants.SETTINGS_LATEST_6MONTHS, 
-            Constants.SETTINGS_LATEST_1YEAR
-        ])
-        latest_duration = self.config_data.get("LATEST_DURATION", Constants.SETTINGS_LATEST_2WEEKS)
-        self.latest_combo.setCurrentText(latest_duration)
-        general_layout.addRow(Constants.SETTINGS_LATEST_DURATION, self.latest_combo)
+        # Latest media duration in days (1-365)
+        self.latest_days_spin = QSpinBox()
+        self.latest_days_spin.setRange(1, 365)
+        self.latest_days_spin.setValue(int(self.config_data.get("LATEST_DURATION_DAYS", 7)))
+        self.latest_days_spin.setSuffix(" gün")
+        general_layout.addRow(Constants.SETTINGS_LATEST_DURATION, self.latest_days_spin)
         
         # Initial media index
         self.initial_index_combo = QComboBox()
@@ -86,8 +88,6 @@ class DialogSettings(QDialog):
         self.delete_original_check = QCheckBox()
         self.delete_original_check.setChecked(self.config_data.get("DELETE_ORIGINAL_AFTER_UPLOAD", False))
         general_layout.addRow(Constants.SETTINGS_DELETE_ORIGINAL, self.delete_original_check)
-        
-        self.tab_widget.addTab(general_tab, Constants.SETTINGS_TAB_GENERAL)
     
     def create_storage_tab(self):
         """Create the storage settings tab"""
@@ -149,13 +149,22 @@ class DialogSettings(QDialog):
         
         self.main_layout.addLayout(button_layout)
     
+    def on_theme_changed(self, new_theme):
+        """Handle theme combo box changes"""
+        if new_theme != self.original_theme:
+            log("DialogSettings.on_theme_changed", f"Theme will change to: {new_theme}", level="info")
+            show_message(
+                "Tema değişikliği uygulamanın yeniden başlatılmasından sonra etkin olacaktır.",
+                level="info"
+            )
+    
     def save_settings(self):
         """Save settings using Config class methods"""
         # Update config data with new values
         settings_to_update = {
             "THEME": self.theme_combo.currentText(),
             "MEDIA_PRIVACY_LEVEL": self.privacy_spin.value(),
-            "LATEST_DURATION": self.latest_combo.currentText(),
+            "LATEST_DURATION_DAYS": self.latest_days_spin.value(),
             "INITIAL_MEDIA_INDEX": self.initial_index_combo.currentText(),
             "DELETE_ORIGINAL_AFTER_UPLOAD": self.delete_original_check.isChecked(),
             "LOCAL_STORAGE_ENABLED": self.local_storage_check.isChecked(),
@@ -174,4 +183,4 @@ class DialogSettings(QDialog):
             self.accept()
         else:
             log("DialogSettings.save_settings", "Failed to save settings", level="error")
-            show_message("Failed to save settings", level="error")
+            show_message("Ayarlar kaydedilemedi.", level="error")

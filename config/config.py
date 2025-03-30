@@ -12,11 +12,11 @@ class Config:
     CLOUDFRONT_KEY_PATH = ""
     CLOUDFRONT_DOMAIN = ""
     CLOUDFRONT_KEY_ID = ""
-    THEME = "Dark"
-    MEDIA_PRIVACY_LEVEL = 5  # 0-9 scale, 5 is medium privacy
-    LATEST_DURATION = "Last 2 weeks"
+    THEME = "Açık"
+    MEDIA_PRIVACY_LEVEL = 0
+    LATEST_DURATION_DAYS = 7
     DELETE_ORIGINAL_AFTER_UPLOAD = False
-    INITIAL_MEDIA_INDEX = "Beginning"
+    INITIAL_MEDIA_INDEX = "İlk - En eski -"
 
     CONFIG_FILE_PATH = "res/config.json"
 
@@ -47,7 +47,7 @@ class Config:
             # Ensure directory exists
             os.makedirs(os.path.dirname(Config.CONFIG_FILE_PATH), exist_ok=True)
             
-            with open(Config.CONFIG_FILE_PATH, "w") as f:
+            with open(Config.CONFIG_FILE_PATH, "w", encoding="utf-8") as f:
                 json.dump(config_data, f, indent=4)
             log("Config.save_config", f"Configuration saved to {Config.CONFIG_FILE_PATH}", level="info")
             return True

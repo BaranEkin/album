@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
-    QApplication, QFrame, QVBoxLayout, QScrollArea, QWidget,
-    QCheckBox, QGroupBox, QPushButton, QHBoxLayout
+    QFrame, QVBoxLayout, QScrollArea, QWidget,
+    QCheckBox, QGroupBox, QPushButton
 )
 from PyQt5.QtGui import QIcon
 
@@ -23,6 +23,7 @@ class FrameAction(QFrame):
 
         # Container for the checkboxes
         self.container_albums = QWidget()
+        self.container_albums.setObjectName("albumsContainer")  # Set object name for styling
         self.layout_albums = QVBoxLayout(self.container_albums)
         self.layout_albums.setSpacing(0)
 
@@ -39,7 +40,7 @@ class FrameAction(QFrame):
         self.container_albums.setLayout(self.layout_albums)
         self.container_albums.setMinimumHeight(500)
         self.container_albums.setMinimumWidth(211)
-        self.container_albums.setStyleSheet("background-color: white;")
+        # Background color will be handled by theme
         self.scroll_area_albums.setWidget(self.container_albums)
 
         # Bottom frame containing group box and button

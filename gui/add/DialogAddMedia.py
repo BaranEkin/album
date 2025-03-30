@@ -15,6 +15,7 @@ from gui.add.FrameAddInfo import FrameAddInfo
 from gui.add.FrameAction import FrameAction
 from gui.add.DialogUpload import DialogUpload
 from data.data_manager import DataManager
+from config.config import Config
 
 import face_detection
 from ops import file_ops
@@ -62,8 +63,12 @@ class DialogAddMedia(QDialog):
         # Create the scrollable list widget for media files
         self.media_list = QListWidget(self.frame_navigation)
 
+        # Create checkbox for delete source
         self.checkbox_delete_source = QCheckBox("Yüklemeden sonra orijinal dosyaları sil")
-        self.checkbox_delete_source.setChecked(False)
+        self.checkbox_delete_source.setChecked(Config.DELETE_ORIGINAL_AFTER_UPLOAD)
+        
+        # Add checkbox to layout
+        self.frame_navigation_layout.addWidget(self.checkbox_delete_source)
 
         self.frame_navigation_layout.addWidget(self.folder_tree)
         self.frame_navigation_layout.addWidget(self.media_list)
