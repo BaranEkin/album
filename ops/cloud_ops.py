@@ -18,7 +18,8 @@ from botocore.exceptions import (
     PartialCredentialsError,
     ClientError,
     EndpointConnectionError,
-    ConnectionClosedError)
+    ConnectionClosedError,
+)
 
 from config.config import Config
 from logger import log
@@ -35,7 +36,7 @@ def get_user_name() -> str:
     """
 
     arn = sts.get_caller_identity()["Arn"]
-    user_name = arn[arn.rfind("/") + 1:]
+    user_name = arn[arn.rfind("/") + 1 :]
     return user_name
 
 
@@ -77,9 +78,7 @@ def generate_signed_url(url: str, expiration_date) -> str:
     """
 
     cloudfront_signer = CloudFrontSigner(Config.CLOUDFRONT_KEY_ID, rsa_signer)
-    return cloudfront_signer.generate_presigned_url(
-        url, date_less_than=expiration_date
-    )
+    return cloudfront_signer.generate_presigned_url(url, date_less_than=expiration_date)
 
 
 def get_image_from_cloudfront(image_key: str, prefix: str) -> Image:
@@ -97,17 +96,23 @@ def get_image_from_cloudfront(image_key: str, prefix: str) -> Image:
     """
 
     url = f"https://{Config.CLOUDFRONT_DOMAIN}/{prefix}{image_key}"
-    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+        hours=1
+    )
     signed_url = generate_signed_url(url, expiration)
 
     try:
         with request.urlopen(signed_url) as response:
             image_data = response.read()
             image = Image.open(BytesIO(image_data))
-            image = image.convert('RGB') if image.mode != 'RGB' else image
+            image = image.convert("RGB") if image.mode != "RGB" else image
             return image
     except Exception as e:
-        log("cloud_ops.get_image_from_cloudfront", f"Image '{image_key}' couldn't be retrieved from cloudfront: {e}", level="warning")
+        log(
+            "cloud_ops.get_image_from_cloudfront",
+            f"Image '{image_key}' couldn't be retrieved from cloudfront: {e}",
+            level="warning",
+        )
         raise e
 
 
@@ -126,7 +131,9 @@ def get_video_audio_from_cloudfront(media_key: str, prefix: str) -> bytes:
     """
 
     url = f"https://{Config.CLOUDFRONT_DOMAIN}/{prefix}{media_key}"
-    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+        hours=1
+    )
     signed_url = generate_signed_url(url, expiration)
 
     try:
@@ -134,7 +141,11 @@ def get_video_audio_from_cloudfront(media_key: str, prefix: str) -> bytes:
             data = response.read()
             return data
     except Exception as e:
-        log("cloud_ops.get_video_audio_from_cloudfront", f"Media '{media_key}' couldn't be retrieved from cloudfront: {e}", level="warning")
+        log(
+            "cloud_ops.get_video_audio_from_cloudfront",
+            f"Media '{media_key}' couldn't be retrieved from cloudfront: {e}",
+            level="warning",
+        )
         raise e
 
 
@@ -147,11 +158,18 @@ def check_s3() -> bool:
 
     try:
         s3.head_bucket(Bucket=Config.S3_BUCKET_NAME)
-        log("cloud_ops.check_s3", f"Bucket: {Config.S3_BUCKET_NAME} is reached successfully.")
+        log(
+            "cloud_ops.check_s3",
+            f"Bucket: {Config.S3_BUCKET_NAME} is reached successfully.",
+        )
         return True
 
     except EndpointConnectionError as e:
-        log("cloud_ops.check_s3", f"Unable to reach bucket: {Config.S3_BUCKET_NAME}. Error: {e}", level="error")
+        log(
+            "cloud_ops.check_s3",
+            f"Unable to reach bucket: {Config.S3_BUCKET_NAME}. Error: {e}",
+            level="error",
+        )
         return False
 
 
@@ -173,38 +191,73 @@ def upload_to_s3_bucket(path: Union[str, bytes, os.PathLike], key, prefix=""):
     """
 
     if not os.path.isfile(path):
-        log("cloud_ops.upload_to_s3_bucket", f"The file '{path}' does not exist.", level="error")
+        log(
+            "cloud_ops.upload_to_s3_bucket",
+            f"The file '{path}' does not exist.",
+            level="error",
+        )
         raise FileNotFoundError()
 
     try:
         s3.upload_file(path, Config.S3_BUCKET_NAME, f"{prefix}{key}")
-        log("cloud_ops.upload_to_s3_bucket", f"File {path} uploaded successfully to {prefix}{key}")
+        log(
+            "cloud_ops.upload_to_s3_bucket",
+            f"File {path} uploaded successfully to {prefix}{key}",
+        )
 
     except NoCredentialsError as e:
-        log("cloud_ops.upload_to_s3_bucket", "Credentials not available for AWS.", level="error")
+        log(
+            "cloud_ops.upload_to_s3_bucket",
+            "Credentials not available for AWS.",
+            level="error",
+        )
         raise e
 
     except PartialCredentialsError as e:
-        log("cloud_ops.upload_to_s3_bucket", "Incomplete AWS credentials provided.", level="error")
+        log(
+            "cloud_ops.upload_to_s3_bucket",
+            "Incomplete AWS credentials provided.",
+            level="error",
+        )
         raise e
 
     except ClientError as e:
-        if e.response['Error']['Code'] == 'AccessDenied':
-            log("cloud_ops.upload_to_s3_bucket", f"Access denied to the bucket.", level="error")
+        if e.response["Error"]["Code"] == "AccessDenied":
+            log(
+                "cloud_ops.upload_to_s3_bucket",
+                "Access denied to the bucket.",
+                level="error",
+            )
 
-        elif e.response['Error']['Code'] == 'NoSuchBucket':
-            log("cloud_ops.upload_to_s3_bucket", f"The specified bucket does not exist.", level="error")
+        elif e.response["Error"]["Code"] == "NoSuchBucket":
+            log(
+                "cloud_ops.upload_to_s3_bucket",
+                "The specified bucket does not exist.",
+                level="error",
+            )
 
         else:
-            log("cloud_ops.upload_to_s3_bucket", f"Client error occurred: {e}", level="error")
+            log(
+                "cloud_ops.upload_to_s3_bucket",
+                f"Client error occurred: {e}",
+                level="error",
+            )
         raise e
 
     except PermissionError as e:
-        log("cloud_ops.upload_to_s3_bucket", f"Permission denied: Unable to read '{path}'", level="error")
+        log(
+            "cloud_ops.upload_to_s3_bucket",
+            f"Permission denied: Unable to read '{path}'",
+            level="error",
+        )
         raise e
 
     except Exception as e:
-        log("cloud_ops.upload_to_s3_bucket", f"An unexpected error occurred: {e}", level="error")
+        log(
+            "cloud_ops.upload_to_s3_bucket",
+            f"An unexpected error occurred: {e}",
+            level="error",
+        )
         raise e
 
 
@@ -228,53 +281,104 @@ def download_from_s3_bucket(key, path) -> bool:
 
     try:
         s3.download_file(Config.S3_BUCKET_NAME, key, path)
-        log("cloud_ops.download_from_s3_bucket", f"File downloaded successfully to {path}", level="info")
+        log(
+            "cloud_ops.download_from_s3_bucket",
+            f"File downloaded successfully to {path}",
+            level="info",
+        )
         return True
 
-    except (EndpointConnectionError, ConnectionClosedError) as e:
-        log("cloud_ops.download_from_s3_bucket", "Network connection error encountered.", level="warning")
+    except (EndpointConnectionError, ConnectionClosedError):
+        log(
+            "cloud_ops.download_from_s3_bucket",
+            "Network connection error encountered.",
+            level="warning",
+        )
         return False
 
     except NoCredentialsError as e:
-        log("cloud_ops.download_from_s3_bucket", "Credentials not available for AWS.", level="error")
+        log(
+            "cloud_ops.download_from_s3_bucket",
+            "Credentials not available for AWS.",
+            level="error",
+        )
         raise e
 
     except PartialCredentialsError as e:
-        log("cloud_ops.download_from_s3_bucket", "Incomplete AWS credentials provided.", level="error")
+        log(
+            "cloud_ops.download_from_s3_bucket",
+            "Incomplete AWS credentials provided.",
+            level="error",
+        )
         raise e
 
     except ClientError as e:
-        if e.response['Error']['Code'] == 'AccessDenied':
-            log("cloud_ops.download_from_s3_bucket", f"Access denied {key}.", level="error")
+        if e.response["Error"]["Code"] == "AccessDenied":
+            log(
+                "cloud_ops.download_from_s3_bucket",
+                f"Access denied {key}.",
+                level="error",
+            )
 
-        elif e.response['Error']['Code'] == 'NoSuchKey':
-            log("cloud_ops.download_from_s3_bucket", f"The specified object key does not exist: {key}.", level="error")
+        elif e.response["Error"]["Code"] == "NoSuchKey":
+            log(
+                "cloud_ops.download_from_s3_bucket",
+                f"The specified object key does not exist: {key}.",
+                level="error",
+            )
 
         else:
-            log("cloud_ops.download_from_s3_bucket", f"Client error occurred: {e}", level="error")
+            log(
+                "cloud_ops.download_from_s3_bucket",
+                f"Client error occurred: {e}",
+                level="error",
+            )
         raise e
 
     except PermissionError as e:
-        log("cloud_ops.download_from_s3_bucket", f"Permission denied: Unable to write to {path}.", level="error")
+        log(
+            "cloud_ops.download_from_s3_bucket",
+            f"Permission denied: Unable to write to {path}.",
+            level="error",
+        )
         raise e
 
     except Exception as e:
-        log("cloud_ops.download_from_s3_bucket", f"An unexpected error occurred: {e}", level="error")
+        log(
+            "cloud_ops.download_from_s3_bucket",
+            f"An unexpected error occurred: {e}",
+            level="error",
+        )
         raise e
-    
+
+
 def delete_from_s3_bucket(key, prefix=""):
     try:
         s3.delete_object(Bucket=Config.S3_BUCKET_NAME, Key=f"{prefix}{key}")
-        log("cloud_ops.delete_from_s3_bucket", f"File deleted successfully from s3:'{prefix}{key}'", level="info")
-    
+        log(
+            "cloud_ops.delete_from_s3_bucket",
+            f"File deleted successfully from s3:'{prefix}{key}'",
+            level="info",
+        )
+
     except s3.exceptions.NoSuchKey:
-        log("cloud_ops.delete_from_s3_bucket", f"The specified key does not exist:'{prefix}{key}'", level="error")
-    
+        log(
+            "cloud_ops.delete_from_s3_bucket",
+            f"The specified key does not exist:'{prefix}{key}'",
+            level="error",
+        )
+
     except Exception as e:
-        log("cloud_ops.delete_from_s3_bucket", f"Error occurred while deleting '{prefix}{key}': {e}", level="error")
+        log(
+            "cloud_ops.delete_from_s3_bucket",
+            f"Error occurred while deleting '{prefix}{key}': {e}",
+            level="error",
+        )
+
 
 def upload_database():
     upload_to_s3_bucket(path=f"{Config.DATABASE_DIR}/album.db", key="album_cloud.db")
+
 
 def delete_media(media_uuid: str, extension: str):
     delete_from_s3_bucket(key=f"{media_uuid}{extension}", prefix="media/")

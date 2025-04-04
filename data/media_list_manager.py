@@ -1,9 +1,10 @@
 import pickle
 from ops import file_ops
 
+
 class MediaListManager:
     def __init__(self):
-        self.media_lists_dict = {} # {list_name: [uuids]}
+        self.media_lists_dict = {}  # {list_name: [uuids]}
         self.load_media_lists_file()
 
     def load_media_lists_file(self):
@@ -23,7 +24,7 @@ class MediaListManager:
         if old_name in self.media_lists_dict.keys():
             self.media_lists_dict[new_name] = list(dict.fromkeys(uuids))
             del self.media_lists_dict[old_name]
-            self.save_media_lists_file()     
+            self.save_media_lists_file()
 
     def rename_media_list(self, old_name: str, new_name: str):
         if old_name in self.media_lists_dict.keys():
@@ -46,12 +47,14 @@ class MediaListManager:
 
     def remove_uuids_from_media_list(self, list_name: str, uuids: list[str]):
         if list_name in self.media_lists_dict.keys():
-            self.media_lists_dict[list_name] = [uuid for uuid in self.media_lists_dict[list_name] if uuid not in uuids]
+            self.media_lists_dict[list_name] = [
+                uuid for uuid in self.media_lists_dict[list_name] if uuid not in uuids
+            ]
             self.save_media_lists_file()
 
     def get_media_list_names(self) -> list:
         return list(self.media_lists_dict.keys())
-    
+
     def get_uuids_from_list(self, list_name: str) -> list:
         if list_name in self.media_lists_dict.keys():
             return self.media_lists_dict[list_name].copy()

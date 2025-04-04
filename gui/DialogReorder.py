@@ -4,6 +4,7 @@ from PyQt5.QtGui import QIcon
 
 from gui.main.ListModelThumbnail import ListModelThumbnail, ThumbnailDelegate
 
+
 class DialogReorder(QDialog):
     def __init__(self, thumbnail_keys, media_loader, parent=None):
         super().__init__(parent)
@@ -27,7 +28,9 @@ class DialogReorder(QDialog):
         self.main_layout.addWidget(self.thumbnail_list)
 
         # Thumbnail Model
-        self.thumbnail_model = ListModelThumbnail(self.thumbnail_keys, self.media_loader, is_reorder=True, parent=self)
+        self.thumbnail_model = ListModelThumbnail(
+            self.thumbnail_keys, self.media_loader, is_reorder=True, parent=self
+        )
         self.thumbnail_list.setModel(self.thumbnail_model)
         self.thumbnail_list.setDragDropMode(QListView.InternalMove)
         self.thumbnail_list.setDefaultDropAction(Qt.MoveAction)

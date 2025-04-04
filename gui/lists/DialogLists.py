@@ -1,8 +1,13 @@
-import sys
 from typing import Literal
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QHBoxLayout,
-    QListWidget, QPushButton, QInputDialog, QFrame, QLabel, QComboBox
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QListWidget,
+    QPushButton,
+    QInputDialog,
+    QLabel,
+    QComboBox,
 )
 from PyQt5.QtGui import QIcon
 from gui.lists.DialogEditList import DialogEditList
@@ -10,20 +15,29 @@ from gui.message import show_message
 from data.media_list_manager import MediaListManager
 from media_loader import MediaLoader
 
+
 class DialogLists(QDialog):
-    def __init__(self, media_loader: MediaLoader, media_list_manager: MediaListManager, inital_selection=None, mode: Literal["get", "add"] = "get"):
+    def __init__(
+        self,
+        media_loader: MediaLoader,
+        media_list_manager: MediaListManager,
+        inital_selection=None,
+        mode: Literal["get", "add"] = "get",
+    ):
         super().__init__()
-        
+
         if mode == "get":
             title = "Listeler"
             label_ok_button = "Getir"
-        
-        else: # mode == "add"
+
+        else:  # mode == "add"
             title = "Listeye Ekle"
             label_ok_button = "Listeye Ekle"
 
         self.setWindowTitle(title)
-        self.setWindowIcon(QIcon("res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free.png"))
+        self.setWindowIcon(
+            QIcon("res/icons/Layout-Window-25--Streamline-Sharp-Gradient-Free.png")
+        )
         self.setFixedSize(350, 250)
 
         self.media_loader = media_loader
@@ -37,13 +51,17 @@ class DialogLists(QDialog):
         self.list_widget = QListWidget()
         self.list_widget.addItems(self.elements)
         self.layout.addWidget(self.list_widget)
-        self.selected_element = inital_selection if self.select_by_text(inital_selection) else None
-        
+        self.selected_element = (
+            inital_selection if self.select_by_text(inital_selection) else None
+        )
+
         # Sorting frame
         self.layout_sorting = QHBoxLayout()
         self.label_sorting = QLabel("Medya Sıralaması:")
         self.combo_sorting = QComboBox()
-        self.combo_sorting.addItems(["Liste Varsayılan", "Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"])
+        self.combo_sorting.addItems(
+            ["Liste Varsayılan", "Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"]
+        )
         self.combo_sorting.currentIndexChanged.connect(self.update_sorting)
         self.layout_sorting.addWidget(self.label_sorting)
         self.layout_sorting.addWidget(self.combo_sorting)
@@ -56,7 +74,9 @@ class DialogLists(QDialog):
         self.button_add.setToolTip("Yeni liste ekle")
         self.button_delete = QPushButton()
         self.button_delete.setFixedWidth(25)
-        self.button_delete.setIcon(QIcon("res/icons/Remove--Streamline-Material-Pro.png"))
+        self.button_delete.setIcon(
+            QIcon("res/icons/Remove--Streamline-Material-Pro.png")
+        )
         self.button_delete.setToolTip("Seçili listeyi sil")
         self.button_delete.setEnabled(False)  # Initially disabled
         self.button_edit = QPushButton()
@@ -110,7 +130,10 @@ class DialogLists(QDialog):
             self.media_list_manager.create_media_list(list_name=text, uuids=[])
 
     def delete_element(self):
-        if show_message("Listeyi kalıcı olarak silmek istediğinizden emin misiniz?", is_question=True):
+        if show_message(
+            "Listeyi kalıcı olarak silmek istediğinizden emin misiniz?",
+            is_question=True,
+        ):
             selected_items = self.list_widget.selectedItems()
             for item in selected_items:
                 self.elements.remove(item.text())
@@ -122,17 +145,25 @@ class DialogLists(QDialog):
         selected_items = self.list_widget.selectedItems()
         if selected_items:
             current_name = selected_items[0].text()
-            dialog = DialogEditList(self.media_loader, self.media_list_manager, current_name, self.elements)
+            dialog = DialogEditList(
+                self.media_loader, self.media_list_manager, current_name, self.elements
+            )
             if dialog.exec_() == QDialog.Accepted:
-                reordered_uuids = [uuid.split(".")[0] for uuid in dialog.get_reordered_keys()]
+                reordered_uuids = [
+                    uuid.split(".")[0] for uuid in dialog.get_reordered_keys()
+                ]
                 new_name = dialog.get_name()
                 # Update in backend
                 if new_name == current_name:
                     # Overwrite the list
-                    self.media_list_manager.create_media_list(list_name=new_name, uuids=reordered_uuids) 
+                    self.media_list_manager.create_media_list(
+                        list_name=new_name, uuids=reordered_uuids
+                    )
                 else:
                     # Add a new list and delete the old one
-                    self.media_list_manager.edit_media_list(old_name=current_name, new_name=new_name, uuids=reordered_uuids) 
+                    self.media_list_manager.edit_media_list(
+                        old_name=current_name, new_name=new_name, uuids=reordered_uuids
+                    )
 
                 # Update in UI
                 self.elements[self.elements.index(current_name)] = new_name
@@ -142,7 +173,9 @@ class DialogLists(QDialog):
         has_selection = bool(self.list_widget.selectedItems())
         self.ok_button.setEnabled(has_selection)
         self.button_delete.setEnabled(has_selection)
-        self.button_edit.setEnabled(has_selection)  # Enable Edit button if an item is selected
+        self.button_edit.setEnabled(
+            has_selection
+        )  # Enable Edit button if an item is selected
 
     def clear_selection(self):
         # Clear the selection in the list

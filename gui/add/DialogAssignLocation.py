@@ -1,6 +1,11 @@
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout,
-                             QListWidget, QDialogButtonBox,
-                             QLineEdit, QListWidgetItem)
+from PyQt5.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QListWidget,
+    QDialogButtonBox,
+    QLineEdit,
+    QListWidgetItem,
+)
 
 from gui.constants import Constants
 from data.helpers import turkish_lower
@@ -10,7 +15,7 @@ class DialogAssignLocation(QDialog):
     def __init__(self, location, location_list, parent=None):
         super().__init__(parent)
         self.setWindowTitle(Constants.WINDOW_DIALOG_ASSIGN_LOCATION)
-        self.setFixedSize(550,250)
+        self.setFixedSize(550, 250)
 
         # Layout for the dialog
         layout = QVBoxLayout(self)
@@ -49,7 +54,8 @@ class DialogAssignLocation(QDialog):
 
         # Filter names based on a case-insensitive substring match
         filtered_locations = [
-            loc for loc in self.location_list
+            loc
+            for loc in self.location_list
             if turkish_lower(text) in turkish_lower(loc)
         ]
 

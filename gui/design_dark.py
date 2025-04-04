@@ -1,7 +1,16 @@
 import sys
-from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QTextBrowser, 
-                             QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFrame,
+    QLabel,
+    QTextBrowser,
+    QVBoxLayout,
+    QHBoxLayout,
+    QWidget,
+    QSizePolicy,
+)
 from PyQt5.QtCore import Qt
+
 
 class InfoFrame(QFrame):
     def __init__(self):
@@ -22,12 +31,18 @@ class InfoFrame(QFrame):
         # Create the first row for title
         title_layout = QHBoxLayout()
         title_label = QLabel("Title:")
-        title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        title_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Align text to the right
         title_label.setFixedWidth(label_width)  # Set a fixed width for the label
-        title_label.setStyleSheet("font-family: Arial; font-size: 14px; color: #dcdcdc;")  # Light gray label text
+        title_label.setStyleSheet(
+            "font-family: Arial; font-size: 14px; color: #dcdcdc;"
+        )  # Light gray label text
 
         self.title_browser = QTextBrowser()
-        self.title_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
+        self.title_browser.setAlignment(
+            Qt.AlignLeft | Qt.AlignVCenter
+        )  # Align text to the left
         self.title_browser.setFixedHeight(30)  # Set height for consistency
         self.title_browser.setStyleSheet("""
             font-family: Calibri;
@@ -48,12 +63,18 @@ class InfoFrame(QFrame):
 
         # Location label and browser
         location_label = QLabel("Location:")
-        location_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        location_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Align text to the right
         location_label.setFixedWidth(label_width)  # Set the same fixed width for label
-        location_label.setStyleSheet("font-family: Arial; font-size: 14px; color: #dcdcdc;")  # Light gray label text
+        location_label.setStyleSheet(
+            "font-family: Arial; font-size: 14px; color: #dcdcdc;"
+        )  # Light gray label text
 
         self.location_browser = QTextBrowser()
-        self.location_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
+        self.location_browser.setAlignment(
+            Qt.AlignLeft | Qt.AlignVCenter
+        )  # Align text to the left
         self.location_browser.setFixedHeight(30)  # Set height for consistency
         self.location_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.location_browser.setStyleSheet("""
@@ -72,12 +93,18 @@ class InfoFrame(QFrame):
 
         # Date label and browser
         date_label = QLabel("Date:")
-        date_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        date_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Align text to the right
         date_label.setFixedWidth(label_width)  # Set the same fixed width for label
-        date_label.setStyleSheet("font-family: Arial; font-size: 14px; color: #dcdcdc;")  # Light gray label text
+        date_label.setStyleSheet(
+            "font-family: Arial; font-size: 14px; color: #dcdcdc;"
+        )  # Light gray label text
 
         self.date_browser = QTextBrowser()
-        self.date_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
+        self.date_browser.setAlignment(
+            Qt.AlignLeft | Qt.AlignVCenter
+        )  # Align text to the left
         self.date_browser.setFixedHeight(30)  # Set height for consistency
         self.date_browser.setFixedWidth(150)  # You can change the width as needed
         self.date_browser.setStyleSheet("""
@@ -112,14 +139,22 @@ class ParentFrame(QFrame):
         # Create left QFrame with a fixed width (also dark mode)
         left_frame = QFrame()
         left_frame.setFixedWidth(100)
-        left_frame.setFixedHeight(100)  # Set same height as the middle frame for consistency
-        left_frame.setStyleSheet("background-color: #3a3a3a;")  # Darker gray for side frame
+        left_frame.setFixedHeight(
+            100
+        )  # Set same height as the middle frame for consistency
+        left_frame.setStyleSheet(
+            "background-color: #3a3a3a;"
+        )  # Darker gray for side frame
 
         # Create right QFrame with a fixed width (also dark mode)
         right_frame = QFrame()
         right_frame.setFixedWidth(100)
-        right_frame.setFixedHeight(100)  # Set same height as the middle frame for consistency
-        right_frame.setStyleSheet("background-color: #3a3a3a;")  # Darker gray for side frame
+        right_frame.setFixedHeight(
+            100
+        )  # Set same height as the middle frame for consistency
+        right_frame.setStyleSheet(
+            "background-color: #3a3a3a;"
+        )  # Darker gray for side frame
 
         # Create the middle QFrame (InfoFrame)
         middle_frame = InfoFrame()
@@ -131,6 +166,7 @@ class ParentFrame(QFrame):
 
         # Set the parent layout to this frame
         self.setLayout(parent_layout)
+
 
 # Main app window to hold the Parent QFrame
 class MainWindow(QWidget):
@@ -148,6 +184,7 @@ class MainWindow(QWidget):
 
         # Set the main window layout
         self.setLayout(layout)
+
 
 # Global dark mode stylesheet for the entire application
 def set_dark_mode(app):
@@ -169,8 +206,9 @@ def set_dark_mode(app):
         }
     """)
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv + ['-platform', 'windows:darkmode=1'])
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv + ["-platform", "windows:darkmode=1"])
 
     # Apply global dark mode styling
     set_dark_mode(app)

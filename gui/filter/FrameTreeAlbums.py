@@ -1,5 +1,5 @@
 from typing import Sequence
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QFrame, QVBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QFrame, QVBoxLayout
 
 from data.orm import Album
 
@@ -33,7 +33,7 @@ class FrameTreeAlbums(QFrame):
             tree_item = QTreeWidgetItem([name])
 
             # Determine the parent tag by taking the path excluding the last 3 characters (last node tag)
-            parent_path = path[:-len(tag)]
+            parent_path = path[: -len(tag)]
             parent_tag = parent_path[-3:] if parent_path else None
 
             # If a parent exists, add this as a child of the parent; otherwise, add as a root node
@@ -59,18 +59,18 @@ class FrameTreeAlbums(QFrame):
 
     def get_selected_albums(self):
         return tuple(self.selected_album_tags) if self.selected_album_tags else ("",)
-    
+
     def expand_tree_default(self):
         # Iterate over all top-level items (root items)
         for i in range(self.tree.topLevelItemCount()):
             root_item = self.tree.topLevelItem(i)
             root_item.setExpanded(True)
-            
+
             # Collapse all children of this root item
             for j in range(root_item.childCount()):
                 child_item = root_item.child(j)
                 child_item.setExpanded(False)
-        
+
     def on_select_albums(self):
         selected_items = self.tree.selectedItems()
         if selected_items:
@@ -91,10 +91,11 @@ class FrameTreeAlbums(QFrame):
             # Start collecting children from the selected item
             collect_children(selected_item)
 
-            self.selected_album_tags = [self.get_album_tag(album_name) for album_name in with_children]
-        
+            self.selected_album_tags = [
+                self.get_album_tag(album_name) for album_name in with_children
+            ]
+
     def get_album_tag(self, album_name):
         for album in self.albums:
             if album.name == album_name:
                 return album.tag
-            

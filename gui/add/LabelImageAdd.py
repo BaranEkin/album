@@ -16,16 +16,21 @@ class LabelImageAdd(QLabel):
         self.detections_with_names = []
 
     def set_image(self, image_path: str):
-
         try:
             image = QImage(image_path)
-            self.original_image_size = image.size()  # Store the original size (width, height)
+            self.original_image_size = (
+                image.size()
+            )  # Store the original size (width, height)
 
             pixmap = QPixmap.fromImage(image)
-            scaled_pixmap = pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            scaled_pixmap = pixmap.scaled(
+                self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
             self.setPixmap(scaled_pixmap)  # Set the scaled pixmap in the QLabel
 
-            self.displayed_pixmap_size = scaled_pixmap.size()  # Store the displayed pixmap size
+            self.displayed_pixmap_size = (
+                scaled_pixmap.size()
+            )  # Store the displayed pixmap size
         except Exception as e:
             print(f"EXCEPTION: {e}")
 
@@ -38,8 +43,9 @@ class LabelImageAdd(QLabel):
         margin_y = (self.height() - displayed_size.height()) // 2
 
         # Check if the mouse click is inside the image area (exclude padding)
-        if margin_x <= event_x <= (margin_x + displayed_size.width()) and \
-                margin_y <= event_y <= (margin_y + displayed_size.height()):
+        if margin_x <= event_x <= (
+            margin_x + displayed_size.width()
+        ) and margin_y <= event_y <= (margin_y + displayed_size.height()):
             # Calculate the position inside the displayed pixmap
             click_x = event_x - margin_x
             click_y = event_y - margin_y
@@ -65,18 +71,23 @@ class LabelImageAdd(QLabel):
     def mousePressEvent(self, event: QMouseEvent):
         if self.pixmap():
             if event.button() == Qt.LeftButton:
-                clicked_pixel_coords = self.calculate_clicked_pixel(event.x(), event.y())
+                clicked_pixel_coords = self.calculate_clicked_pixel(
+                    event.x(), event.y()
+                )
                 if clicked_pixel_coords:
                     det_index = self.find_detection_index(
-                        x=clicked_pixel_coords[0],
-                        y=clicked_pixel_coords[1]
+                        x=clicked_pixel_coords[0], y=clicked_pixel_coords[1]
                     )
                     if det_index is not None:
                         person = self.detections_with_names[det_index][4]
 
-                        person = self.show_assign_person_dialog(event.globalPos(), person)
+                        person = self.show_assign_person_dialog(
+                            event.globalPos(), person
+                        )
                         self.detections_with_names[det_index][4] = person
-                        self.parent().parent().update_identifications(self.detections_with_names)
+                        self.parent().parent().update_identifications(
+                            self.detections_with_names
+                        )
             elif event.button() == Qt.RightButton:
                 self.start_pixel = self.calculate_clicked_pixel(event.x(), event.y())
 
@@ -89,10 +100,11 @@ class LabelImageAdd(QLabel):
                 person = self.show_assign_person_dialog(event.globalPos(), "")
                 detection = [x, y, w, h, person, "manual"]
                 self.detections_with_names.append(detection)
-                self.parent().parent().update_identifications(self.detections_with_names)
+                self.parent().parent().update_identifications(
+                    self.detections_with_names
+                )
 
     def show_assign_person_dialog(self, position, person):
-
         dialog = DialogAssignPerson(person, self.people_list, self)
         dialog.move(position)
         previous_input = dialog.input_field.text()

@@ -1,8 +1,16 @@
 import os
 from datetime import datetime
 
-from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout, QCheckBox,
-                             QTreeView, QListWidget, QFrame, QFileSystemModel)
+from PyQt5.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QVBoxLayout,
+    QCheckBox,
+    QTreeView,
+    QListWidget,
+    QFrame,
+    QFileSystemModel,
+)
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtGui import QIcon
 from PIL import Image
@@ -53,8 +61,12 @@ class DialogAddMedia(QDialog):
         # Create and set up the folder tree view
         self.folder_tree = QTreeView(self.frame_navigation)
         self.file_system_model = QFileSystemModel(self.folder_tree)
-        self.file_system_model.setRootPath("")  # Set the root path to show the entire filesystem
-        self.file_system_model.setFilter(QDir.NoDotAndDotDot | QDir.AllDirs)  # Show only directories
+        self.file_system_model.setRootPath(
+            ""
+        )  # Set the root path to show the entire filesystem
+        self.file_system_model.setFilter(
+            QDir.NoDotAndDotDot | QDir.AllDirs
+        )  # Show only directories
 
         self.folder_tree.setModel(self.file_system_model)
         self.folder_tree.setRootIndex(self.file_system_model.index(""))
@@ -64,16 +76,17 @@ class DialogAddMedia(QDialog):
         self.media_list = QListWidget(self.frame_navigation)
 
         # Create checkbox for delete source
-        self.checkbox_delete_source = QCheckBox("Yüklemeden sonra orijinal dosyaları sil")
+        self.checkbox_delete_source = QCheckBox(
+            "Yüklemeden sonra orijinal dosyaları sil"
+        )
         self.checkbox_delete_source.setChecked(Config.DELETE_ORIGINAL_AFTER_UPLOAD)
-        
+
         # Add checkbox to layout
         self.frame_navigation_layout.addWidget(self.checkbox_delete_source)
 
         self.frame_navigation_layout.addWidget(self.folder_tree)
         self.frame_navigation_layout.addWidget(self.media_list)
         self.frame_navigation_layout.addWidget(self.checkbox_delete_source)
-        
 
         # Add the frame_navigation to the main layout
         self.main_layout.addWidget(self.frame_navigation)
@@ -114,7 +127,9 @@ class DialogAddMedia(QDialog):
         self.setWindowIcon(QIcon("res/icons/Image--Add.png"))
 
         # Connect the tree view selection change to update the media list
-        self.folder_tree.selectionModel().selectionChanged.connect(self.on_folder_selected)
+        self.folder_tree.selectionModel().selectionChanged.connect(
+            self.on_folder_selected
+        )
 
         # Connect the media list item click to print the file path
         self.media_list.itemClicked.connect(self.on_media_selected)
@@ -142,25 +157,31 @@ class DialogAddMedia(QDialog):
             for file_name in os.listdir(folder_path):
                 file_path = os.path.join(folder_path, file_name)
                 # Exclude already selected paths
-                if file_path not in self.media_paths_to_be_uploaded + self.media_paths_uploaded:
-
+                if (
+                    file_path
+                    not in self.media_paths_to_be_uploaded + self.media_paths_uploaded
+                ):
                     if os.path.isfile(file_path):
-                        if any(file_name.lower().endswith(ext) for ext in
-                               image_extensions + video_extensions + sound_extensions):
+                        if any(
+                            file_name.lower().endswith(ext)
+                            for ext in image_extensions
+                            + video_extensions
+                            + sound_extensions
+                        ):
                             self.media_list.addItem(file_name)
 
     def on_media_selected(self, item):
-
         self.clear_fields_for_new_media()
 
         media_file_name = item.text()
-        self.selected_media_path = os.path.join(self.current_folder_path, media_file_name)
+        self.selected_media_path = os.path.join(
+            self.current_folder_path, media_file_name
+        )
 
         self.set_auto_date()
 
         # Selected media is an image
         if file_ops.get_file_type(self.selected_media_path) == 1:
-
             self.frame_add_info.set_people_enable(False)
             self.detect_people()
             self.draw_identifications()
@@ -191,25 +212,34 @@ class DialogAddMedia(QDialog):
         image.save("temp/detections.jpg")
 
     def update_identifications(self, detections_with_names):
-        self.detections_with_names = face_detection.preprocess_detections(detections_with_names)
+        self.detections_with_names = face_detection.preprocess_detections(
+            detections_with_names
+        )
         self.draw_identifications()
         self.frame_add_info.set_people(self.get_people())
         self.image_label.set_image("temp/detections.jpg")
 
     def get_people_detect(self):
-        people_detect = ",".join(['-'.join(map(str, det[:4])) for det in self.detections_with_names if det[4] != ""])
+        people_detect = ",".join(
+            [
+                "-".join(map(str, det[:4]))
+                for det in self.detections_with_names
+                if det[4] != ""
+            ]
+        )
         return people_detect
 
     def get_people(self):
-            people = ",".join([det[4] for det in self.detections_with_names if det[4] != ""])
-            return people
+        people = ",".join(
+            [det[4] for det in self.detections_with_names if det[4] != ""]
+        )
+        return people
 
     def get_people_count(self):
         people = self.frame_add_info.get_people()
         return len(people.split(",")) if people else 0
 
     def on_media_add(self):
-
         self.frame_action.set_button_add_enabled(False)
         if file_ops.get_file_type(self.selected_media_path) == 1:
             media_data = self.get_media_data(is_image=True)
@@ -229,7 +259,6 @@ class DialogAddMedia(QDialog):
         self.frame_action.set_button_add_enabled(True)
 
     def get_media_data(self, is_image):
-        
         media_data = {
             "media_path": self.selected_media_path,
             "topic": self.frame_add_info.get_topic(),
@@ -247,46 +276,78 @@ class DialogAddMedia(QDialog):
 
         media_path = media_data["media_path"]
         if not media_path:
-            log("DialogAddMedia.get_media_data", f"Media path '{media_path}' is falsy.", level="warning")
-            show_message("Medya dosyası seçilmedi. Lütfen bir medya dosyası seçin.", level="warning")
+            log(
+                "DialogAddMedia.get_media_data",
+                f"Media path '{media_path}' is falsy.",
+                level="warning",
+            )
+            show_message(
+                "Medya dosyası seçilmedi. Lütfen bir medya dosyası seçin.",
+                level="warning",
+            )
             return None
 
         topic = media_data["topic"]
         title = media_data["title"]
 
         if not (title or topic):
-            log("DialogAddMedia.get_media_data", f"Both topic '{topic}' and title {title} are falsy.", level="warning")
-            show_message("Konu ile başlık alanlarından en az bir tanesini doldurmak zorunludur.", level="warning")
+            log(
+                "DialogAddMedia.get_media_data",
+                f"Both topic '{topic}' and title {title} are falsy.",
+                level="warning",
+            )
+            show_message(
+                "Konu ile başlık alanlarından en az bir tanesini doldurmak zorunludur.",
+                level="warning",
+            )
             return None
-        
+
         location = media_data["location"]
         if not location:
-            log("DialogAddMedia.get_media_data", f"Location '{location}' is falsy.", level="warning")
-            show_message("Yer alanını doldurmak zorunludur. Lütfen bir yer girin.", level="warning")
+            log(
+                "DialogAddMedia.get_media_data",
+                f"Location '{location}' is falsy.",
+                level="warning",
+            )
+            show_message(
+                "Yer alanını doldurmak zorunludur. Lütfen bir yer girin.",
+                level="warning",
+            )
             return None
-        
+
         date_text = media_data["date_text"]
         try:
             # Try parsing date as "DD.MM.YYYY"
             _ = datetime.strptime(date_text, "%d.%m.%Y").strftime("%d.%m.%Y")
-        except ValueError as e:
-            log("DialogAddMedia.get_media_data", f"Date '{date_text}' is incorrectly formatted.", level="warning")
-            show_message("Lütfen tarih alanını GG.AA.YYYY formatında girin.", level="warning")
+        except ValueError:
+            log(
+                "DialogAddMedia.get_media_data",
+                f"Date '{date_text}' is incorrectly formatted.",
+                level="warning",
+            )
+            show_message(
+                "Lütfen tarih alanını GG.AA.YYYY formatında girin.", level="warning"
+            )
             return None
 
         people = media_data["people"]
         if people:
             if not is_valid_people(people):
                 people_log = people.replace("\n", "\\n")
-                log("DialogAddMedia.get_media_data", f"People '{people_log}' is incorrectly formatted.", level="warning")
-                show_message("Kişiler alanını formatı hatalı. Şunlara dikkat edin:\nNoktalama işaretleri, semboller veya rakamlar kullanmayın.\nHer satıra bir kişi girin.\nİsimlerin baş harflerini ve soyisimlerin tüm harflerini büyük yazın.", level="warning")
+                log(
+                    "DialogAddMedia.get_media_data",
+                    f"People '{people_log}' is incorrectly formatted.",
+                    level="warning",
+                )
+                show_message(
+                    "Kişiler alanını formatı hatalı. Şunlara dikkat edin:\nNoktalama işaretleri, semboller veya rakamlar kullanmayın.\nHer satıra bir kişi girin.\nİsimlerin baş harflerini ve soyisimlerin tüm harflerini büyük yazın.",
+                    level="warning",
+                )
                 return None
-        
+
         return media_data
-            
 
     def on_media_upload(self):
-
         self.frame_action.set_button_add_enabled(False)
         self.frame_action.set_button_upload_enabled(False)
 
@@ -304,7 +365,7 @@ class DialogAddMedia(QDialog):
                 people=media_data["people"],
                 people_detect=media_data["people_detect"],
                 people_count=media_data["people_count"],
-                private=0
+                private=0,
             )
 
             self.media_to_be_uploaded.append(media)
@@ -314,15 +375,15 @@ class DialogAddMedia(QDialog):
         dialog_upload = DialogUpload(
             self.media_paths_to_be_uploaded,
             self.media_to_be_uploaded,
-            self.data_manager
+            self.data_manager,
         )
 
         if dialog_upload.exec_() == QDialog.Accepted:
             self.media_paths_uploaded.extend(self.media_paths_to_be_uploaded)
-            
+
             if self.checkbox_delete_source.isChecked():
                 self.delete_source_files()
-            
+
             self.media_paths_to_be_uploaded = []
             self.media_data_to_be_uploaded = []
 

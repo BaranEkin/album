@@ -1,6 +1,12 @@
 from PyQt5.QtWidgets import (
-    QFrame, QLabel, QLineEdit, QCheckBox, QComboBox, QGroupBox,
-    QHBoxLayout, QVBoxLayout, QPushButton
+    QFrame,
+    QLabel,
+    QLineEdit,
+    QCheckBox,
+    QComboBox,
+    QGroupBox,
+    QHBoxLayout,
+    QVBoxLayout,
 )
 from PyQt5.QtCore import Qt
 
@@ -61,7 +67,9 @@ class FrameDetailedFilter(QFrame):
 
         # Checkbox for enabling additional date filters
         self.additional_date_filters_checkbox = QCheckBox("Filtrele")
-        self.additional_date_filters_checkbox.stateChanged.connect(self.toggle_additional_date_filters)
+        self.additional_date_filters_checkbox.stateChanged.connect(
+            self.toggle_additional_date_filters
+        )
 
         # Additional date filters
         self.days_input = QLineEdit()
@@ -173,7 +181,9 @@ class FrameDetailedFilter(QFrame):
         self.people_count_max.setEnabled(False)  # Initially disable the max input
 
         # Connect checkbox state change to enable/disable the max input
-        self.people_count_range_checkbox.stateChanged.connect(self.toggle_people_count_range)
+        self.people_count_range_checkbox.stateChanged.connect(
+            self.toggle_people_count_range
+        )
 
         people_layout = QHBoxLayout()
         label_people = QLabel("Kişiler:")
@@ -202,7 +212,9 @@ class FrameDetailedFilter(QFrame):
         label_sort_primary = QLabel("Birincil:")
         label_sort_primary.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.dropdown_sort_primary = QComboBox()
-        self.dropdown_sort_primary.addItems(["Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"])
+        self.dropdown_sort_primary.addItems(
+            ["Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"]
+        )
         self.dropdown_sort_primary.setFixedWidth(80)
         layout_sort_primary.addWidget(label_sort_primary)
         layout_sort_primary.addWidget(self.dropdown_sort_primary)
@@ -211,7 +223,9 @@ class FrameDetailedFilter(QFrame):
         label_sort_secondary = QLabel("İkincil:")
         label_sort_secondary.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.dropdown_sort_secondary = QComboBox()
-        self.dropdown_sort_secondary.addItems(["Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"])
+        self.dropdown_sort_secondary.addItems(
+            ["Tarih", "Başlık", "Yer", "Tür", "Kişiler", "Uzantı"]
+        )
         self.dropdown_sort_secondary.setFixedWidth(80)
         layout_sort_secondary.addWidget(label_sort_secondary)
         layout_sort_secondary.addWidget(self.dropdown_sort_secondary)
@@ -224,7 +238,7 @@ class FrameDetailedFilter(QFrame):
         layout_bottom_right = QVBoxLayout()
         layout_bottom_right.addWidget(group_box_file)
         layout_bottom_right.addWidget(group_box_sort)
-        
+
         bottom_row_layout.addLayout(layout_bottom_right)
         main_layout.addLayout(bottom_row_layout)
 
@@ -257,7 +271,7 @@ class FrameDetailedFilter(QFrame):
         self.date_end.setText("")
         self.people_count_min.setText("")
         self.people_count_max.setText("")
-        
+
         self.days_input.setText("")
         self.months_input.setText("")
         self.years_input.setText("")
@@ -272,7 +286,7 @@ class FrameDetailedFilter(QFrame):
 
     def get_topic(self):
         return turkish_upper(self.topic_input.text().strip())
-    
+
     def get_title(self):
         return turkish_upper(self.title_input.text().strip())
 
@@ -306,15 +320,23 @@ class FrameDetailedFilter(QFrame):
         if self.date_range_checkbox.isChecked():
             return self.date_start.text().strip(), self.date_end.text().strip()
         return self.date_start.text().strip(), ""
-    
+
     def get_date_range_enabled(self):
         return self.date_range_checkbox.isChecked()
 
     def get_people_count_range(self):
-        count_min = int(self.people_count_min.text()) if self.people_count_min.text().isdigit() else -1
-        count_max = int(self.people_count_max.text()) if self.people_count_max.text().isdigit() else -1
+        count_min = (
+            int(self.people_count_min.text())
+            if self.people_count_min.text().isdigit()
+            else -1
+        )
+        count_max = (
+            int(self.people_count_max.text())
+            if self.people_count_max.text().isdigit()
+            else -1
+        )
         return count_min, count_max
-        
+
     def get_people_count_range_enabled(self):
         return self.people_count_range_checkbox.isChecked()
 
@@ -328,4 +350,6 @@ class FrameDetailedFilter(QFrame):
         return self.tags_input.text().strip()
 
     def get_sort(self):
-        return int(self.dropdown_sort_primary.currentIndex()), int(self.dropdown_sort_secondary.currentIndex())
+        return int(self.dropdown_sort_primary.currentIndex()), int(
+            self.dropdown_sort_secondary.currentIndex()
+        )

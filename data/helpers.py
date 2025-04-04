@@ -17,7 +17,7 @@ turkish_months = {
     "eylül": 9,
     "ekim": 10,
     "kasım": 11,
-    "aralık": 12
+    "aralık": 12,
 }
 
 months_in_turkish = {
@@ -32,7 +32,7 @@ months_in_turkish = {
     9: "eylül",
     10: "ekim",
     11: "kasım",
-    12: "aralık"
+    12: "aralık",
 }
 
 turkish_weekdays = {
@@ -42,7 +42,7 @@ turkish_weekdays = {
     "perşembe": 3,
     "cuma": 4,
     "cumartesi": 5,
-    "pazar": 6
+    "pazar": 6,
 }
 
 weekdays_in_turkish = {
@@ -52,27 +52,33 @@ weekdays_in_turkish = {
     3: "perşembe",
     4: "cuma",
     5: "cumartesi",
-    6: "pazar"
+    6: "pazar",
 }
 
-turkish_uppercase_map = str.maketrans({
-    "i": "İ",  # Convert 'i' to 'İ'
-    "ı": "I",  # Convert 'ı' to 'I'
-})
+turkish_uppercase_map = str.maketrans(
+    {
+        "i": "İ",  # Convert 'i' to 'İ'
+        "ı": "I",  # Convert 'ı' to 'I'
+    }
+)
 
-turkish_lowercase_map = str.maketrans({
-    "İ": "i",
-    "I": "ı",
-})
+turkish_lowercase_map = str.maketrans(
+    {
+        "İ": "i",
+        "I": "ı",
+    }
+)
 
 
 def turkish_upper(text) -> str:
     translated_text = text.translate(turkish_uppercase_map)
     return translated_text.upper()
 
+
 def turkish_lower(text) -> str:
     translated_text = text.translate(turkish_lowercase_map)
     return translated_text.lower()
+
 
 def is_valid_people(people_str):
     if not people_str:
@@ -80,13 +86,13 @@ def is_valid_people(people_str):
     # Define a regex pattern for Turkish names and multiple surnames
     pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+(?:\s[A-ZÇĞİÖŞÜ]+)*)$"
     people_list = people_str.split(",")
-    
+
     # Validate each name in the list
     for person in people_list:
         # Trim whitespace and check if each line matches the full name pattern
         if not re.match(pattern, person):
             return False
-    
+
     return True
 
 
@@ -104,6 +110,7 @@ def current_time_in_unix_subsec() -> float:
 def legacy_time_in_unix_subsec(legacy_time_str: str) -> float:
     dt = datetime.strptime(legacy_time_str, "%d.%m.%Y %H:%M:%S")
     return dt.timestamp()
+
 
 def get_unix_time_days_ago(days: int) -> float:
     """
@@ -157,8 +164,12 @@ def normalize_date(date_str: str) -> str:
     return ""
 
 
-def date_includes(date_str: str, precision: int, input_list: list[str],
-                  mode: Literal["day", "month", "year", "weekday"]):
+def date_includes(
+    date_str: str,
+    precision: int,
+    input_list: list[str],
+    mode: Literal["day", "month", "year", "weekday"],
+):
     """
     Check if a given date includes at least one of the specified values based on precision and mode.
 
@@ -193,9 +204,9 @@ def date_includes(date_str: str, precision: int, input_list: list[str],
         month_without_leading_zeros = str(month_number)
         month_name = months_in_turkish[month_number]
         return (
-                month_without_leading_zeros in input_list or
-                month_name in input_list or
-                month in input_list
+            month_without_leading_zeros in input_list
+            or month_name in input_list
+            or month in input_list
         )
 
     elif mode == "year":
@@ -214,14 +225,15 @@ def date_includes(date_str: str, precision: int, input_list: list[str],
         weekday_name = weekdays_in_turkish[weekday_number]
         weekday_number_in_input_format = str(weekday_number + 1)
         return (
-                weekday_name in input_list or
-                weekday_number_in_input_format in input_list or
-                weekday_number_in_input_format.zfill(2) in input_list
+            weekday_name in input_list
+            or weekday_number_in_input_format in input_list
+            or weekday_number_in_input_format.zfill(2) in input_list
         )
 
     else:
         raise ValueError("Mode must be 'day', 'month', 'year', or 'weekday'.")
-    
+
+
 def generate_export_filename(media: Media):
     day, month, year = media.date_text.split(".")
     return f"M{year}{month}{day}_{int(media.rank):03d}{media.extension}"

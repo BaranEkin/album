@@ -1,7 +1,5 @@
 import os
-from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QProgressBar, QLabel, QMessageBox
-)
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QProgressBar, QLabel, QMessageBox
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QIcon
 
@@ -30,12 +28,24 @@ class UploadThread(QThread):
                     break
 
                 media = self.media_list[i]
-                thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, f"{media.media_uuid}.jpg")
+                thumbnail_path = os.path.join(
+                    Config.THUMBNAILS_DIR, f"{media.media_uuid}.jpg"
+                )
 
-                self.current_operation.emit(f"Medya bulut sistemine yükleniyor:\n\n{media_path}")
+                self.current_operation.emit(
+                    f"Medya bulut sistemine yükleniyor:\n\n{media_path}"
+                )
                 try:
-                    cloud_ops.upload_to_s3_bucket(path=media_path, key=f"{media.media_uuid}{media.extension}", prefix="media/")
-                    cloud_ops.upload_to_s3_bucket(path=thumbnail_path, key=f"{media.media_uuid}.jpg", prefix="thumbnails/")
+                    cloud_ops.upload_to_s3_bucket(
+                        path=media_path,
+                        key=f"{media.media_uuid}{media.extension}",
+                        prefix="media/",
+                    )
+                    cloud_ops.upload_to_s3_bucket(
+                        path=thumbnail_path,
+                        key=f"{media.media_uuid}.jpg",
+                        prefix="thumbnails/",
+                    )
 
                 except Exception as e:
                     self.error_occurred.emit(str(e))
@@ -43,14 +53,14 @@ class UploadThread(QThread):
                 self.progress.emit((i + 1) * 80 // len(self.media_paths))
 
             try:
-                self.current_operation.emit(f"Veri tabanı güncelleniyor...")
+                self.current_operation.emit("Veri tabanı güncelleniyor...")
                 success = self.data_manager.update_local_db()
                 if not success:
                     raise ValueError("Bulut sistemine bağlantı sağlanamadı.")
                 self.data_manager.insert_media_list_to_local(self.media_list)
                 self.progress.emit(90)
 
-                self.current_operation.emit(f"Veri tabanı yükleniyor...")
+                self.current_operation.emit("Veri tabanı yükleniyor...")
                 cloud_ops.upload_database()
 
             except Exception as e:
@@ -76,8 +86,14 @@ class DialogUpload(QDialog):
         self.thread = None
 
         self.setWindowTitle("Medya Yükleme İlerlemesi")
-        self.setWindowIcon(QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png"))
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowIcon(
+            QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png")
+        )
+        self.setWindowFlags(
+            self.windowFlags()
+            & ~Qt.WindowCloseButtonHint
+            & ~Qt.WindowContextHelpButtonHint
+        )
         self.setFixedSize(400, 150)
 
         self.layout = QVBoxLayout(self)

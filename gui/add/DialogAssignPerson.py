@@ -1,6 +1,11 @@
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout,
-                             QListWidget, QDialogButtonBox,
-                             QLineEdit, QListWidgetItem)
+from PyQt5.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QListWidget,
+    QDialogButtonBox,
+    QLineEdit,
+    QListWidgetItem,
+)
 
 from gui.constants import Constants
 

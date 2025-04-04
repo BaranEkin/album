@@ -20,8 +20,8 @@ from PyQt5.QtWidgets import QApplication, QStyledItemDelegate, QStyle
 class ThumbnailSignal(QObject):
     loaded = pyqtSignal()
 
-class ListModelThumbnail(QAbstractListModel):
 
+class ListModelThumbnail(QAbstractListModel):
     def __init__(self, thumbnail_keys, media_loader, is_reorder=False, parent=None):
         super().__init__(parent)
         self.media_loader = media_loader
@@ -35,7 +35,6 @@ class ListModelThumbnail(QAbstractListModel):
         self.placeholder_pixmap = QPixmap(160, 80)
         self.placeholder_pixmap.fill(Qt.gray)
         self.signal = ThumbnailSignal()
-        
 
     def rowCount(self, parent=QModelIndex()):
         return self.loaded_count
@@ -53,20 +52,19 @@ class ListModelThumbnail(QAbstractListModel):
                 self.load_thumbnail(index.row())
                 # Return a placeholder pixmap
                 return self.placeholder_pixmap
-        
+
         elif role == Qt.UserRole:
             return self.thumbnail_keys_loaded[index.row()]
-        
+
         elif role == Qt.SizeHintRole:
             return QSize(160, 105)
-        
+
         elif role == Qt.BackgroundRole:
             # Ask the MainWindow for selection state
             if index.row() in self.parent().selected_rows:
                 return QBrush(QColor(200, 255, 0))  # Highlight selected items
-        
-        return None
 
+        return None
 
     def canFetchMore(self, parent=QModelIndex()):
         return self.loaded_count < len(self.thumbnail_keys)
@@ -78,7 +76,7 @@ class ListModelThumbnail(QAbstractListModel):
             QModelIndex(), self.loaded_count, self.loaded_count + items_to_fetch - 1
         )
         self.thumbnail_keys_loaded.extend(
-            self.thumbnail_keys[self.loaded_count: self.loaded_count + items_to_fetch]
+            self.thumbnail_keys[self.loaded_count : self.loaded_count + items_to_fetch]
         )
         self.loaded_count += items_to_fetch
         self.endInsertRows()
@@ -108,7 +106,6 @@ class ListModelThumbnail(QAbstractListModel):
             # Allow dropping only between items, not on top of them
             return default_flags | Qt.ItemIsDropEnabled
 
-        
     def supportedDropActions(self):
         """Specify the drop actions supported by the model."""
         return Qt.MoveAction
@@ -132,11 +129,12 @@ class ListModelThumbnail(QAbstractListModel):
         mime_data.setData("application/x-qabstractitemmodeldatalist", encoded_data)
         return mime_data
 
-
     def dropMimeData(self, data, action, row, column, parent):
         """Handle dropping an item into the list."""
 
-        if action != Qt.MoveAction or not data.hasFormat("application/x-qabstractitemmodeldatalist"):
+        if action != Qt.MoveAction or not data.hasFormat(
+            "application/x-qabstractitemmodeldatalist"
+        ):
             print("Action not MoveAction or invalid MIME format.")
             return False
 
@@ -167,7 +165,9 @@ class ListModelThumbnail(QAbstractListModel):
             row = len(self.thumbnail_keys_loaded)  # Prevent overflow
 
         # Collect the items to move
-        items_to_move = [self.thumbnail_keys_loaded.pop(src_row) for src_row in reversed(rows)]
+        items_to_move = [
+            self.thumbnail_keys_loaded.pop(src_row) for src_row in reversed(rows)
+        ]
 
         # Adjust the destination row for downward movement
         if row > rows[-1]:
@@ -178,26 +178,34 @@ class ListModelThumbnail(QAbstractListModel):
             self.thumbnail_keys_loaded.insert(row + i, item)
 
         # Update the full list to reflect the changes in loaded items
-        self.thumbnail_keys = self.thumbnail_keys_loaded + self.thumbnail_keys[len(self.thumbnail_keys_loaded):]
+        self.thumbnail_keys = (
+            self.thumbnail_keys_loaded
+            + self.thumbnail_keys[len(self.thumbnail_keys_loaded) :]
+        )
 
         # Reinitialize and reattach the model to the view
         parent_view = self.parent().thumbnail_list
         if parent_view:
-            new_model = ListModelThumbnail(self.thumbnail_keys, self.media_loader, parent=self.parent())
+            new_model = ListModelThumbnail(
+                self.thumbnail_keys, self.media_loader, parent=self.parent()
+            )
             parent_view.setModel(new_model)
 
         return True
-
 
     def moveRow(self, sourceParent, sourceRow, destinationParent, destinationRow):
         """Reorder the underlying thumbnail data."""
         if sourceRow == destinationRow or sourceRow < 0 or destinationRow < 0:
             return False
 
-        self.beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationRow)
-        
+        self.beginMoveRows(
+            sourceParent, sourceRow, sourceRow, destinationParent, destinationRow
+        )
+
         item = self.thumbnail_keys_loaded.pop(sourceRow)
-        self.thumbnail_keys_loaded.insert(destinationRow if destinationRow > sourceRow else destinationRow, item)
+        self.thumbnail_keys_loaded.insert(
+            destinationRow if destinationRow > sourceRow else destinationRow, item
+        )
 
         self.endMoveRows()
         return True
@@ -220,7 +228,9 @@ class ThumbnailLoaderRunnable(QRunnable):
         # Load the image thumbnail
         q_image = self.media_loader.get_thumbnail(self.thumbnail_key)
         if q_image is not None:
-            pixmap = QPixmap.fromImage(q_image).scaled(160, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pixmap = QPixmap.fromImage(q_image).scaled(
+                160, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
             # Emit the signal with the row and pixmap
             self.signals.finished.emit(self.row, pixmap)
         else:
@@ -228,11 +238,12 @@ class ThumbnailLoaderRunnable(QRunnable):
             placeholder_pixmap.fill(Qt.gray)
             self.signals.finished.emit(self.row, placeholder_pixmap)
 
+
 class ThumbnailDelegate(QStyledItemDelegate):
     def __init__(self, is_reorder=False):
         super().__init__()
         self.is_reorder = is_reorder
-        
+
     def paint(self, painter, option, index):
         # Save the painter's state
         painter.save()
@@ -242,10 +253,12 @@ class ThumbnailDelegate(QStyledItemDelegate):
             is_selected = False
         else:
             is_selected = index.row() in index.model().parent().selected_rows
-        
+
         # If selected, fill the background with yellow, otherwise use default behavior
         if is_selected:
-            painter.fillRect(option.rect, QColor(255, 255, 0))  # Yellow background for selected items
+            painter.fillRect(
+                option.rect, QColor(255, 255, 0)
+            )  # Yellow background for selected items
         elif option.state & QStyle.State_Selected:
             # Default selection behavior (blue highlight)
             painter.fillRect(option.rect, option.palette.highlight())
@@ -265,9 +278,13 @@ class ThumbnailDelegate(QStyledItemDelegate):
 
         # Draw focus rectangle if item has focus
         if option.state & QStyle.State_HasFocus:
-            option_rect = QRect(int(x), int(y), pixmap_size.width(), pixmap_size.height())
+            option_rect = QRect(
+                int(x), int(y), pixmap_size.width(), pixmap_size.height()
+            )
             option.rect = option_rect
-            QApplication.style().drawPrimitive(QStyle.PE_FrameFocusRect, option, painter)
+            QApplication.style().drawPrimitive(
+                QStyle.PE_FrameFocusRect, option, painter
+            )
 
         # Restore the painter's state
         painter.restore()

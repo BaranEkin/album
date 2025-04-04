@@ -1,4 +1,12 @@
-from PyQt5.QtWidgets import QFrame, QLabel, QGroupBox, QPushButton, QHBoxLayout, QVBoxLayout, QGridLayout
+from PyQt5.QtWidgets import (
+    QFrame,
+    QLabel,
+    QGroupBox,
+    QPushButton,
+    QHBoxLayout,
+    QVBoxLayout,
+    QGridLayout,
+)
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from data.orm import Media
@@ -9,7 +17,7 @@ from gui.constants import Constants
 class FrameBottom(QFrame):
     # Add signal for settings button
     settings_clicked = pyqtSignal()
-    
+
     def __init__(self):
         super().__init__()
 
@@ -23,7 +31,9 @@ class FrameBottom(QFrame):
         self.frame_cloud.setFixedHeight(100)  # Set height as requested
         # left_frame.setStyleSheet("background-color: lightgray;")  # Optional styling
         self.layout_cloud = QVBoxLayout()
-        self.layout_cloud.setContentsMargins(0, 0, 0, 0)  # Remove margins to make the label start at the top
+        self.layout_cloud.setContentsMargins(
+            0, 0, 0, 0
+        )  # Remove margins to make the label start at the top
         self.layout_cloud.setSpacing(0)  # Remove spacing
 
         # Create and center the QLabel, setting alignment to the top of the frame
@@ -46,7 +56,9 @@ class FrameBottom(QFrame):
         self.status_cloud.setText("")
         self.status_cloud.setFixedSize(25, 25)
         self.status_cloud.setToolTip(Constants.TOOLTIP_CLOUD_SUCCESS)
-        self.status_cloud.setPixmap(QPixmap("res/icons/Cloud-Check--Streamline-Core.png"))
+        self.status_cloud.setPixmap(
+            QPixmap("res/icons/Cloud-Check--Streamline-Core.png")
+        )
         self.status_cloud.setScaledContents(True)
         self.button_layout.addWidget(self.status_cloud)
 
@@ -54,7 +66,9 @@ class FrameBottom(QFrame):
         self.status_storage.setText("")
         self.status_storage.setFixedSize(25, 25)
         self.status_storage.setToolTip(Constants.TOOLTIP_STORAGE_ON)
-        self.status_storage.setPixmap(QPixmap("res/icons/Download-Computer--Streamline-Core-Green.png"))
+        self.status_storage.setPixmap(
+            QPixmap("res/icons/Download-Computer--Streamline-Core-Green.png")
+        )
         self.status_storage.setScaledContents(True)
         self.button_layout.addWidget(self.status_storage)
 
@@ -81,7 +95,9 @@ class FrameBottom(QFrame):
         self.button_back = QPushButton()
         self.button_back.setFocusPolicy(Qt.NoFocus)
         self.button_back.setFixedSize(40, 40)
-        self.button_back.setIcon(QIcon("res/icons/Arrow-Fat-Left-Fill--Streamline-Phosphor-Fill.png"))
+        self.button_back.setIcon(
+            QIcon("res/icons/Arrow-Fat-Left-Fill--Streamline-Phosphor-Fill.png")
+        )
         self.button_back.setIconSize(QSize(30, 30))
         self.button_back.setText("")
         self.button_back.setToolTip(Constants.TOOLTIP_BUTTON_BACK)
@@ -90,7 +106,9 @@ class FrameBottom(QFrame):
         self.button_forward = QPushButton()
         self.button_forward.setFocusPolicy(Qt.NoFocus)
         self.button_forward.setFixedSize(40, 40)
-        self.button_forward.setIcon(QIcon("res/icons/Arrow-Fat-Right-Fill--Streamline-Phosphor-Fill.png"))
+        self.button_forward.setIcon(
+            QIcon("res/icons/Arrow-Fat-Right-Fill--Streamline-Phosphor-Fill.png")
+        )
         self.button_forward.setIconSize(QSize(30, 30))
         self.button_forward.setText("")
         self.button_forward.setToolTip(Constants.TOOLTIP_BUTTON_FORWARD)
@@ -99,7 +117,9 @@ class FrameBottom(QFrame):
         self.button_slideshow = QPushButton()
         self.button_slideshow.setFocusPolicy(Qt.NoFocus)
         self.button_slideshow.setFixedSize(40, 40)
-        self.button_slideshow.setIcon(QIcon("res/icons/Slide-Show-Play--Streamline-Sharp.png"))
+        self.button_slideshow.setIcon(
+            QIcon("res/icons/Slide-Show-Play--Streamline-Sharp.png")
+        )
         self.button_slideshow.setIconSize(QSize(30, 30))
         self.button_slideshow.setText("")
         self.button_slideshow.setToolTip(Constants.TOOLTIP_BUTTON_SLIDESHOW)
@@ -109,7 +129,9 @@ class FrameBottom(QFrame):
         self.button_notes = QPushButton()
         self.button_notes.setFocusPolicy(Qt.NoFocus)
         self.button_notes.setFixedSize(40, 40)
-        self.button_notes.setIcon(QIcon("res/icons/Hand-Held-Tablet-Writing--Streamline-Core.png"))
+        self.button_notes.setIcon(
+            QIcon("res/icons/Hand-Held-Tablet-Writing--Streamline-Core.png")
+        )
         self.button_notes.setIconSize(QSize(30, 30))
         self.button_notes.setText("")
         self.button_notes.setToolTip(Constants.TOOLTIP_BUTTON_NOTES)
@@ -119,7 +141,9 @@ class FrameBottom(QFrame):
         self.button_people = QPushButton()
         self.button_people.setFocusPolicy(Qt.NoFocus)
         self.button_people.setFixedSize(40, 40)
-        self.button_people.setIcon(QIcon("res/icons/User-Profile-Focus--Streamline-Core.png"))
+        self.button_people.setIcon(
+            QIcon("res/icons/User-Profile-Focus--Streamline-Core.png")
+        )
         self.button_people.setIconSize(QSize(30, 30))
         self.button_people.setText("")
         self.button_people.setToolTip(Constants.TOOLTIP_BUTTON_PEOPLE)
@@ -129,7 +153,9 @@ class FrameBottom(QFrame):
         self.button_slideway = QPushButton()
         self.button_slideway.setFocusPolicy(Qt.NoFocus)
         self.button_slideway.setFixedSize(40, 40)
-        self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png"))
+        self.button_slideway.setIcon(
+            QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png")
+        )
         self.button_slideway.setIconSize(QSize(30, 30))
         self.button_slideway.setText("")
         self.button_slideway.setToolTip(Constants.TOOLTIP_BUTTON_SLIDEWAY)
@@ -143,7 +169,9 @@ class FrameBottom(QFrame):
 
         # Add all three frames to the parent layout
         self.layout_main.addWidget(self.frame_cloud)
-        self.layout_main.addWidget(self.frame_info)  # This will stretch to fill the space
+        self.layout_main.addWidget(
+            self.frame_info
+        )  # This will stretch to fill the space
         self.layout_main.addWidget(self.frame_button_area)
 
         # Set the parent layout to this frame
@@ -166,15 +194,21 @@ class FrameBottom(QFrame):
 
     def change_slideway_direction(self):
         if self.slideway_direction == "F":
-            self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Back.png"))
+            self.button_slideway.setIcon(
+                QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Back.png")
+            )
             self.slideway_direction = "B"
 
         elif self.slideway_direction == "B":
-            self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Random.png"))
+            self.button_slideway.setIcon(
+                QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Random.png")
+            )
             self.slideway_direction = "R"
 
         elif self.slideway_direction == "R":
-            self.button_slideway.setIcon(QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png"))
+            self.button_slideway.setIcon(
+                QIcon("res/icons/Investing-And-Banking--Streamline-Sharp-Forward.png")
+            )
             self.slideway_direction = "F"
 
     def on_settings_clicked(self):

@@ -15,7 +15,9 @@ class DialogExportMedia(QDialog):
         super().__init__()
 
         self.setWindowTitle("Medyaları Dışa Aktar")
-        self.setWindowIcon(QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png"))
+        self.setWindowIcon(
+            QIcon("res/icons/Align-Front-1--Streamline-Core-Gradient.png")
+        )
         self.setFixedSize(400, 100)
 
         # Main Layout
@@ -28,7 +30,9 @@ class DialogExportMedia(QDialog):
         self.folder_line_edit = QLineEdit()
         self.folder_line_edit.setReadOnly(True)
         self.browse_button = QPushButton()
-        self.browse_button.setIcon(QIcon("res/icons/Folder-Search-2--Streamline-Lucide.png"))
+        self.browse_button.setIcon(
+            QIcon("res/icons/Folder-Search-2--Streamline-Lucide.png")
+        )
         self.browse_button.clicked.connect(self.browse_folder)
 
         self.folder_layout.addWidget(self.label)
@@ -47,7 +51,7 @@ class DialogExportMedia(QDialog):
 
         self.button_layout.addWidget(self.cancel_button)
         self.button_layout.addWidget(self.ok_button)
-        
+
         self.layout.addLayout(self.button_layout)
 
     def browse_folder(self):
@@ -59,4 +63,6 @@ class DialogExportMedia(QDialog):
             self.ok_button.setEnabled(True)
 
     def get_selected_folder_path(self):
-        return self.folder_line_edit.text() if self.result() == QDialog.Accepted else None
+        return (
+            self.folder_line_edit.text() if self.result() == QDialog.Accepted else None
+        )

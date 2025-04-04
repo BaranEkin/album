@@ -1,6 +1,11 @@
 from PyQt5.QtWidgets import (
-    QFrame, QVBoxLayout, QScrollArea, QWidget,
-    QCheckBox, QGroupBox, QPushButton
+    QFrame,
+    QVBoxLayout,
+    QScrollArea,
+    QWidget,
+    QCheckBox,
+    QGroupBox,
+    QPushButton,
 )
 from PyQt5.QtGui import QIcon
 
@@ -23,7 +28,9 @@ class FrameAction(QFrame):
 
         # Container for the checkboxes
         self.container_albums = QWidget()
-        self.container_albums.setObjectName("albumsContainer")  # Set object name for styling
+        self.container_albums.setObjectName(
+            "albumsContainer"
+        )  # Set object name for styling
         self.layout_albums = QVBoxLayout(self.container_albums)
         self.layout_albums.setSpacing(0)
 
@@ -55,13 +62,17 @@ class FrameAction(QFrame):
         # Button aligned at the bottom-center
         self.button_add = QPushButton(Constants.LABEL_BUTTON_ADD)
         self.button_add.setFixedSize(220, 40)
-        self.button_add.setIcon(QIcon("res/icons/Image-Add-Fill--Streamline-Remix-Fill.png"))
+        self.button_add.setIcon(
+            QIcon("res/icons/Image-Add-Fill--Streamline-Remix-Fill.png")
+        )
         self.bottom_layout.addWidget(self.button_add)
 
         # Button aligned at the bottom-center
         self.button_upload = QPushButton(Constants.LABEL_BUTTON_UPLOAD)
         self.button_upload.setFixedSize(220, 40)
-        self.button_upload.setIcon(QIcon("res/icons/Upload-Cloud-2-Fill--Streamline-Remix-Fill.png"))
+        self.button_upload.setIcon(
+            QIcon("res/icons/Upload-Cloud-2-Fill--Streamline-Remix-Fill.png")
+        )
         self.update_button_upload(0)
         self.bottom_layout.addWidget(self.button_upload)
 
@@ -77,7 +88,7 @@ class FrameAction(QFrame):
                 selected_album_tags.append(tag)
 
         return sorted(selected_album_tags)
-    
+
     def set_selected_album_tags(self, selected_album_tags):
         for checkbox, tag in self.checkbox_to_album_tag.items():
             if tag in selected_album_tags:

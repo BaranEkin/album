@@ -32,40 +32,65 @@ class MediaLoader:
             try:
                 image = QImage(os.path.join(self.media_dir, image_key))
                 return image
-            
+
             except OSError as e:
-                log("MediaLoader.get_image", f"Image {image_key} couldn't be retrieved from local storage: {e}", level="error")
+                log(
+                    "MediaLoader.get_image",
+                    f"Image {image_key} couldn't be retrieved from local storage: {e}",
+                    level="error",
+                )
 
         else:
-            log("MediaLoader.get_image", f"Image {image_key} is not found on local storage.")
+            log(
+                "MediaLoader.get_image",
+                f"Image {image_key} is not found on local storage.",
+            )
             try:
-                pil_image = cloud_ops.get_image_from_cloudfront(image_key, prefix="media/")
-                log("MediaLoader.get_image", f"Image {image_key} is retrieved from cloud storage.")
-                
+                pil_image = cloud_ops.get_image_from_cloudfront(
+                    image_key, prefix="media/"
+                )
+                log(
+                    "MediaLoader.get_image",
+                    f"Image {image_key} is retrieved from cloud storage.",
+                )
+
                 if self.local_storage_enabled:
                     try:
                         self.save_image(pil_image, image_key)
-                        log("MediaLoader.get_image", f"Image {image_key} is saved to local storage.")
-                        
+                        log(
+                            "MediaLoader.get_image",
+                            f"Image {image_key} is saved to local storage.",
+                        )
+
                         image = QImage(os.path.join(self.media_dir, image_key))
 
                     except OSError as e:
-                        log("MediaLoader.get_image", f"Image {image_key} couldn't be retrieved from local storage for the first time: {e}", level="error")
-                
-                else:
-                        image = QImage(
-                            pil_image.tobytes(),
-                            pil_image.size[0],
-                            pil_image.size[1],
-                            QImage.Format_RGB888,
+                        log(
+                            "MediaLoader.get_image",
+                            f"Image {image_key} couldn't be retrieved from local storage for the first time: {e}",
+                            level="error",
                         )
-                        log("MediaLoader.get_image", f"Image {image_key} is directed from cloud storage without saving.")
+
+                else:
+                    image = QImage(
+                        pil_image.tobytes(),
+                        pil_image.size[0],
+                        pil_image.size[1],
+                        QImage.Format_RGB888,
+                    )
+                    log(
+                        "MediaLoader.get_image",
+                        f"Image {image_key} is directed from cloud storage without saving.",
+                    )
 
                 return image
 
             except Exception as e:
-                log("MediaLoader.get_image", f"Image {image_key} couldn't be retrieved: {e}", level="error")
-                
+                log(
+                    "MediaLoader.get_image",
+                    f"Image {image_key} couldn't be retrieved: {e}",
+                    level="error",
+                )
 
     def get_thumbnail(self, thumbnail_key: str):
         """Retrieve a thumbnail image from local storage or cloud storage if not found locally.
@@ -81,19 +106,25 @@ class MediaLoader:
             try:
                 image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
                 return image
-            
+
             except OSError as e:
-                log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} couldn't be retrieved from local storage: {e}", level="error")
+                log(
+                    "MediaLoader.get_thumbnail",
+                    f"Thumbnail {thumbnail_key} couldn't be retrieved from local storage: {e}",
+                    level="error",
+                )
 
         else:
             try:
-                pil_image = cloud_ops.get_image_from_cloudfront(thumbnail_key, prefix="thumbnails/")
+                pil_image = cloud_ops.get_image_from_cloudfront(
+                    thumbnail_key, prefix="thumbnails/"
+                )
 
                 try:
                     self.save_thumbnail(pil_image, thumbnail_key)
                     image = QImage(os.path.join(self.thumbnails_dir, thumbnail_key))
 
-                except OSError as e:
+                except OSError:
                     image = QImage(
                         pil_image.tobytes(),
                         pil_image.size[0],
@@ -104,7 +135,11 @@ class MediaLoader:
                 return image
 
             except Exception as e:
-                log("MediaLoader.get_thumbnail", f"Thumbnail {thumbnail_key} couldn't be retrieved: {e}", level="error")
+                log(
+                    "MediaLoader.get_thumbnail",
+                    f"Thumbnail {thumbnail_key} couldn't be retrieved: {e}",
+                    level="error",
+                )
 
     def get_media_path(self, media_uuid, media_extension):
         return os.path.join(Config.MEDIA_DIR, f"{media_uuid}{media_extension}")
@@ -129,7 +164,10 @@ class MediaLoader:
         """
 
         media_data = cloud_ops.get_video_audio_from_cloudfront(media_key, "media/")
-        log("MediaLoader.play_video_audio_from_cloud", f"Media {media_key} is retrieved from cloud storage.")
+        log(
+            "MediaLoader.play_video_audio_from_cloud",
+            f"Media {media_key} is retrieved from cloud storage.",
+        )
 
         if self.local_storage_enabled:
             path = os.path.join(self.media_dir, media_key)
@@ -138,7 +176,10 @@ class MediaLoader:
 
         file_ops.save_video_audio(media_data, path)
 
-        log("MediaLoader.play_video_audio_from_cloud", f"Playing the media {media_key} from {path}")
+        log(
+            "MediaLoader.play_video_audio_from_cloud",
+            f"Playing the media {media_key} from {path}",
+        )
         file_ops.open_with_default_app(path)
 
     def play_video_audio_from_local(self, media_key: str):
@@ -162,7 +203,7 @@ class MediaLoader:
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        
+
         image = image.convert("RGB")
         image.save(path, "JPEG")
 
@@ -178,6 +219,6 @@ class MediaLoader:
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        
+
         image = image.convert("RGB")
         image.save(path, "JPEG")

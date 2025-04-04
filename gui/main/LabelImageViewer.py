@@ -32,11 +32,18 @@ class LabelImageViewer(QLabel):
                 self.mouse_press_time = QDateTime.currentDateTime()
 
                 # Start the panning process if the image is large enough to be panned
-                if self.size().width() > self.scroll_area.width() or self.size().height() > self.scroll_area.height():
+                if (
+                    self.size().width() > self.scroll_area.width()
+                    or self.size().height() > self.scroll_area.height()
+                ):
                     self.is_panning = True
                     self.pan_start_position = event.globalPos()
-                    self.horizontal_scroll_start = self.scroll_area.horizontalScrollBar().value()
-                    self.vertical_scroll_start = self.scroll_area.verticalScrollBar().value()
+                    self.horizontal_scroll_start = (
+                        self.scroll_area.horizontalScrollBar().value()
+                    )
+                    self.vertical_scroll_start = (
+                        self.scroll_area.verticalScrollBar().value()
+                    )
 
             elif event.button() == Qt.RightButton:
                 self.zoom_out(event.pos())
@@ -45,15 +52,22 @@ class LabelImageViewer(QLabel):
             if self.media_loader.check_video_audio(self.current_media_key):
                 self.media_loader.play_video_audio_from_local(self.current_media_key)
             else:
-                procceed = show_message(("Medya bilgisayarınızda bulunmadığı için bulut sisteminden indirilecek.\n"
-                                         "Bu işlem internet hızınıza bağlı olarak biraz zaman alabilir.\n\n"
-                                         "Devam etmek istiyot musunuz?"), is_question=True)
+                procceed = show_message(
+                    (
+                        "Medya bilgisayarınızda bulunmadığı için bulut sisteminden indirilecek.\n"
+                        "Bu işlem internet hızınıza bağlı olarak biraz zaman alabilir.\n\n"
+                        "Devam etmek istiyot musunuz?"
+                    ),
+                    is_question=True,
+                )
                 if procceed:
                     # Show download dialog
-                    dialog = DialogProcess(operation=self.media_loader.play_video_audio_from_cloud,
-                                           operation_args=(self.current_media_key,),
-                                           title="Medya İndirme İşlemi",
-                                           message="İndirme işlemi devam ediyor...")
+                    dialog = DialogProcess(
+                        operation=self.media_loader.play_video_audio_from_cloud,
+                        operation_args=(self.current_media_key,),
+                        title="Medya İndirme İşlemi",
+                        message="İndirme işlemi devam ediyor...",
+                    )
                     dialog.exec_()
 
     def mouseMoveEvent(self, event):
@@ -65,8 +79,12 @@ class LabelImageViewer(QLabel):
                 delta = event.globalPos() - self.pan_start_position
 
                 # Scroll the scroll area based on the delta
-                self.scroll_area.horizontalScrollBar().setValue(self.horizontal_scroll_start - delta.x())
-                self.scroll_area.verticalScrollBar().setValue(self.vertical_scroll_start - delta.y())
+                self.scroll_area.horizontalScrollBar().setValue(
+                    self.horizontal_scroll_start - delta.x()
+                )
+                self.scroll_area.verticalScrollBar().setValue(
+                    self.vertical_scroll_start - delta.y()
+                )
 
     def mouseReleaseEvent(self, event):
         if self.is_image:
@@ -92,7 +110,6 @@ class LabelImageViewer(QLabel):
             self.scale_modifier = 0
         self.update_image_size(click_pos)
 
-    
     def update_image_size(self, click_pos):
         if not self.pixmap():
             return

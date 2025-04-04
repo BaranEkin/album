@@ -3,13 +3,14 @@ from datetime import datetime
 from data.data_manager import DataManager
 from ops import file_ops
 
+
 class DisplayHistoryManager:
     def __init__(self, data_manager: DataManager):
         self.data_manager = data_manager
-        self.display_history = {} # {uuid: datetime}
+        self.display_history = {}  # {uuid: datetime}
         self.init_display_history()
         self.load_display_history_file()
-    
+
     def init_display_history(self):
         uuids = self.data_manager.get_list_uuids()
         self.display_history = {uuid: datetime.now() for uuid in uuids}
@@ -32,5 +33,6 @@ class DisplayHistoryManager:
 
     def get_ordered_uuids(self) -> list:
         """Return media UUIDs ordered by the last display time. Oldest first."""
-        return sorted(self.display_history.keys(), key=lambda x: self.display_history[x])
-    
+        return sorted(
+            self.display_history.keys(), key=lambda x: self.display_history[x]
+        )

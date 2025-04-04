@@ -1,14 +1,16 @@
-from PyQt5.QtWidgets import (QFrame, 
-                             QDialog, 
-                             QVBoxLayout, 
-                             QHBoxLayout, 
-                             QPushButton,
-                             QCheckBox, 
-                             QGroupBox,
-                             QComboBox, 
-                             QLabel, 
-                             QLineEdit, 
-                             QRadioButton)
+from PyQt5.QtWidgets import (
+    QFrame,
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QCheckBox,
+    QGroupBox,
+    QComboBox,
+    QLabel,
+    QLineEdit,
+    QRadioButton,
+)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 
@@ -32,14 +34,16 @@ class DialogFilter(QDialog):
         self.checkbox_include_child.setChecked(True)
 
         self.frame_tree = FrameTreeAlbums(self.albums, parent=self)
-        self.checkbox_include_child.stateChanged.connect(self.frame_tree.on_select_albums)
+        self.checkbox_include_child.stateChanged.connect(
+            self.frame_tree.on_select_albums
+        )
 
         self.group_box_quick = QGroupBox("Hızlı Süzme")
         self.layout_quick = QHBoxLayout()
         self.label_quick = QLabel("Hepsinde:")
         self.label_quick.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.input_quick = QLineEdit()
-        
+
         self.layout_quick.addWidget(self.label_quick)
         self.layout_quick.addWidget(self.input_quick)
         self.group_box_quick.setLayout(self.layout_quick)
@@ -86,10 +90,22 @@ class DialogFilter(QDialog):
         self.label_latest = QLabel("Eklenme Tarihi:")
         self.combo_latest = QComboBox()
         self.combo_latest.setFixedWidth(90)
-        self.combo_latest.addItems(["Tümü", "Son 1 hafta", "Son 2 hafta", "Son 1 ay", "Son 3 ay", "Son 6 ay", "Son 1 yıl"])
-        
+        self.combo_latest.addItems(
+            [
+                "Tümü",
+                "Son 1 hafta",
+                "Son 2 hafta",
+                "Son 1 ay",
+                "Son 3 ay",
+                "Son 6 ay",
+                "Son 1 yıl",
+            ]
+        )
+
         self.layout_options = QHBoxLayout()
-        self.layout_options.addWidget(self.checkbox_include_child, alignment=Qt.AlignLeft)
+        self.layout_options.addWidget(
+            self.checkbox_include_child, alignment=Qt.AlignLeft
+        )
         self.layout_latest = QHBoxLayout()
         self.layout_latest.addWidget(self.label_latest, alignment=Qt.AlignRight)
         self.layout_latest.addWidget(self.combo_latest)
@@ -102,10 +118,12 @@ class DialogFilter(QDialog):
         self.layout_main.addWidget(self.group_box_quick)
         self.layout_main.addWidget(self.group_box_detailed)
         self.layout_main.addLayout(self.layout_bottom)
-        
+
         self.setLayout(self.layout_main)
         self.setWindowTitle("Süzgeç")
-        self.setWindowIcon(QIcon("res/icons/Filter-2--Streamline-Sharp-Gradient--Free.png"))
+        self.setWindowIcon(
+            QIcon("res/icons/Filter-2--Streamline-Sharp-Gradient--Free.png")
+        )
         self.on_change_mode()
 
     def recenter(self):
@@ -131,7 +149,7 @@ class DialogFilter(QDialog):
 
     def get_quick(self):
         return self.input_quick.text().strip()
-    
+
     def get_latest(self):
         if self.combo_latest.currentIndex() != 0:
             selection_to_days = {1: 7, 2: 14, 3: 30, 4: 90, 5: 180, 6: 365}
@@ -139,19 +157,22 @@ class DialogFilter(QDialog):
             return (get_unix_time_days_ago(days), -1.0)
 
     def build_filter(self) -> MediaFilter:
-
         if self.radio_quick.isChecked():
             media_filter = MediaFilter(
                 albums=self.frame_tree.get_selected_albums(),
-                created_at_range_enabled=True if self.combo_latest.currentIndex() != 0 else False,
+                created_at_range_enabled=True
+                if self.combo_latest.currentIndex() != 0
+                else False,
                 created_at_range=self.get_latest() or (-1.0, -1.0),
-                quick=self.get_quick()
-                )
+                quick=self.get_quick(),
+            )
 
         else:
             media_filter = MediaFilter(
                 albums=self.frame_tree.get_selected_albums(),
-                created_at_range_enabled=True if self.combo_latest.currentIndex() != 0 else False,
+                created_at_range_enabled=True
+                if self.combo_latest.currentIndex() != 0
+                else False,
                 created_at_range=self.get_latest() or (-1.0, -1.0),
                 topic=self.frame_detailed.get_topic(),
                 title=self.frame_detailed.get_title(),
@@ -168,7 +189,7 @@ class DialogFilter(QDialog):
                 months=self.frame_detailed.get_months(),
                 years=self.frame_detailed.get_years(),
                 days_of_week=self.frame_detailed.get_days_of_week(),
-                sort=self.frame_detailed.get_sort()
+                sort=self.frame_detailed.get_sort(),
             )
 
         return media_filter

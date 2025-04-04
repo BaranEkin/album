@@ -4,6 +4,7 @@ from datetime import datetime
 LOG_FILE_PATH = "album.log"
 log_file = None
 
+
 def _get_log_file():
     """Initialize the log file if it hasn't been opened yet and returns the file handle."""
 
@@ -12,7 +13,12 @@ def _get_log_file():
         log_file = open(LOG_FILE_PATH, "a")
     return log_file
 
-def log(headline: str, details: str = "", level: Literal["debug", "info", "warning", "error"] = "info"):
+
+def log(
+    headline: str,
+    details: str = "",
+    level: Literal["debug", "info", "warning", "error"] = "info",
+):
     """
     Log a message to the log file with a timestamp, level, headline, and optional details.
 
@@ -25,18 +31,19 @@ def log(headline: str, details: str = "", level: Literal["debug", "info", "warni
 
     # Get the current timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+
     # Pad to 7 characters for alignment
     level_str = level.upper().ljust(7)
-    
+
     # Format the log message
     if details:
         log_message = f"{timestamp} | {level_str} | {headline} | {details}"
     else:
         log_message = f"{timestamp} | {level_str} | {headline}"
-    
+
     # Write the log message to the log file
     _get_log_file().write(log_message + "\n")
+
 
 def close_log():
     """Close the log file if it is open."""

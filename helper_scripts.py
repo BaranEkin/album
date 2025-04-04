@@ -1,4 +1,3 @@
-from pathlib import Path
 from PIL import Image
 import os
 import re
@@ -35,15 +34,17 @@ def resize_thumbnails(folder_path):
 
 def fix_csv(file_path):
     # Read the content of the file
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         content = file.read()
 
     # Replace all new lines with "\n", except those that come after ";any_digit"
     # The pattern looks for ";[0-9]" followed by a newline and preserves those newlines
-    fixed_content = re.sub(r';\d\n', lambda match: match.group(0), content)
-    fixed_content = fixed_content.replace('\n', '\\n')
+    fixed_content = re.sub(r";\d\n", lambda match: match.group(0), content)
+    fixed_content = fixed_content.replace("\n", "\\n")
     # Restore the newlines after ";any_digit"
-    fixed_content = re.sub(r';\d\\n', lambda match: match.group(0).replace('\\n', '\n'), fixed_content)
+    fixed_content = re.sub(
+        r";\d\\n", lambda match: match.group(0).replace("\\n", "\n"), fixed_content
+    )
 
     # Create a new file name with "_fixed" suffix
     file_dir, file_name = os.path.split(file_path)
@@ -52,7 +53,7 @@ def fix_csv(file_path):
     new_file_path = os.path.join(file_dir, new_file_name)
 
     # Write the fixed content to a new file
-    with open(new_file_path, 'w', encoding='utf-8') as new_file:
+    with open(new_file_path, "w", encoding="utf-8") as new_file:
         new_file.write(fixed_content)
 
     print(f"Fixed file saved as {new_file_path}")

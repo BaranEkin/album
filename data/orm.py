@@ -5,7 +5,7 @@ Base = declarative_base()
 
 
 class Album(Base):
-    __tablename__ = 'Album'
+    __tablename__ = "Album"
 
     album_id = Column(INTEGER, primary_key=True)
     tag = Column(TEXT, nullable=False)

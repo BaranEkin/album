@@ -1,5 +1,4 @@
 import os
-import argparse
 import boto3
 from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm
@@ -12,10 +11,10 @@ def upload_directory_to_s3(root_dir):
     """
     Uploads the contents of a local directory to an S3 bucket, preserving the structure.
     Only uploads files that do not already exist in the bucket.
-    
+
     :param root_dir: The local path of the directory to upload.
     """
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client("s3")
     print("Collecting list of files to upload...")
     # Collect all files to be uploaded
     files_to_upload = []
@@ -34,7 +33,7 @@ def upload_directory_to_s3(root_dir):
                 print(f"File '{s3_path}' already exists in S3. Skipping upload.")
             except s3_client.exceptions.ClientError as e:
                 # If the file does not exist (404 error), upload it
-                if e.response['Error']['Code'] == '404':
+                if e.response["Error"]["Code"] == "404":
                     try:
                         s3_client.upload_file(local_path, BUCKET, s3_path)
                     except NoCredentialsError:

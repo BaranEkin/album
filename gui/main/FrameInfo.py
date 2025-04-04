@@ -1,10 +1,8 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QFrame, QLabel, QVBoxLayout, QHBoxLayout, QSizePolicy)
+from PyQt5.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QSizePolicy
 
 from data.orm import Media
 from gui.main.TextBrowserDate import TextBrowserDate
-from config.config import Config
-from gui.ThemeManager import ThemeManager
 
 
 class FrameInfo(QFrame):
@@ -23,13 +21,23 @@ class FrameInfo(QFrame):
         # Create the first row for title
         self.topic_title_layout = QHBoxLayout()
         self.topic_title_label = QLabel("KONU/BAŞLIK")
-        self.topic_title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
-        self.topic_title_label.setFixedWidth(label_width)  # Set a fixed width for the label
-        self.topic_title_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+        self.topic_title_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Align text to the right
+        self.topic_title_label.setFixedWidth(
+            label_width
+        )  # Set a fixed width for the label
+        self.topic_title_label.setStyleSheet(
+            "font-family: MS Reference Sans Serif; font-size: 16px;"
+        )  # Set label font style
 
         self.topic_title_browser = TextBrowserDate()
-        self.topic_title_browser.setObjectName("titleBrowser")  # Set object name for styling
-        self.topic_title_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
+        self.topic_title_browser.setObjectName(
+            "titleBrowser"
+        )  # Set object name for styling
+        self.topic_title_browser.setAlignment(
+            Qt.AlignLeft | Qt.AlignVCenter
+        )  # Align text to the left
         self.topic_title_browser.setFixedHeight(40)  # Set height for consistency
         self.topic_title_browser.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.topic_title_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -37,7 +45,9 @@ class FrameInfo(QFrame):
         self.topic_title_browser.setStyleSheet("font-family: Arial; font-size: 20px;")
 
         # Mock-up value for title
-        self.topic_title_browser.setHtml('<div style="line-height:27px;">BAŞLIK DENEME YAZISI BAŞLIK DENEME YAZISI</div>')
+        self.topic_title_browser.setHtml(
+            '<div style="line-height:27px;">BAŞLIK DENEME YAZISI BAŞLIK DENEME YAZISI</div>'
+        )
 
         self.topic_title_layout.addWidget(self.topic_title_label)
         self.topic_title_layout.addWidget(self.topic_title_browser)
@@ -47,14 +57,23 @@ class FrameInfo(QFrame):
 
         # Location label and browser
         self.location_label = QLabel("YER")
-        self.location_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
-        self.location_label.setFixedWidth(label_width)  # Set the same fixed width for label
+        self.location_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Align text to the right
+        self.location_label.setFixedWidth(
+            label_width
+        )  # Set the same fixed width for label
         self.location_label.setStyleSheet(
-            "font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+            "font-family: MS Reference Sans Serif; font-size: 16px;"
+        )  # Set label font style
 
         self.location_browser = TextBrowserDate()
-        self.location_browser.setObjectName("locationBrowser")  # Set object name for styling
-        self.location_browser.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left
+        self.location_browser.setObjectName(
+            "locationBrowser"
+        )  # Set object name for styling
+        self.location_browser.setAlignment(
+            Qt.AlignLeft | Qt.AlignVCenter
+        )  # Align text to the left
         self.location_browser.setFixedHeight(40)  # Set height for consistency
         self.location_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         # Font styling only, colors are handled by theme
@@ -64,16 +83,21 @@ class FrameInfo(QFrame):
 
         # Mock-up value for location
         self.location_browser.setHtml(
-            '<div style="line-height:26px;">DENEME ŞEHRİ DENEME SEMTİ DENEME KÖYÜ DENEMELER</div>')
+            '<div style="line-height:26px;">DENEME ŞEHRİ DENEME SEMTİ DENEME KÖYÜ DENEMELER</div>'
+        )
 
         self.location_date_layout.addWidget(self.location_label)
         self.location_date_layout.addWidget(self.location_browser)
 
         # Date label and browser
         self.date_label = QLabel("TARİH")
-        self.date_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Align text to the right
+        self.date_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Align text to the right
         self.date_label.setFixedWidth(label_width)  # Set the same fixed width for label
-        self.date_label.setStyleSheet("font-family: MS Reference Sans Serif; font-size: 16px;")  # Set label font style
+        self.date_label.setStyleSheet(
+            "font-family: MS Reference Sans Serif; font-size: 16px;"
+        )  # Set label font style
 
         self.date_browser = TextBrowserDate()
         self.date_browser.setObjectName("dateBrowser")  # Set object name for styling
@@ -86,7 +110,9 @@ class FrameInfo(QFrame):
         self.date_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # Mock-up value for date
-        self.date_browser.setHtml('<div style="line-height:26px;">09 Ağustos 9999 Cumartesi</div>')
+        self.date_browser.setHtml(
+            '<div style="line-height:26px;">09 Ağustos 9999 Cumartesi</div>'
+        )
 
         self.location_date_layout.addWidget(self.date_label)
         self.location_date_layout.addWidget(self.date_browser)
@@ -107,6 +133,8 @@ class FrameInfo(QFrame):
         else:
             topic_title_text = media.title
 
-        self.topic_title_browser.set_text(27, topic_title_text if topic_title_text else "")
+        self.topic_title_browser.set_text(
+            27, topic_title_text if topic_title_text else ""
+        )
         self.location_browser.set_text(26, media.location if media.location else "")
         self.date_browser.set_date(26, media.date_text, media.date_est)

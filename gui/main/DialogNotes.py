@@ -1,13 +1,18 @@
-from PyQt5.QtWidgets import QDialog, QTextBrowser, QVBoxLayout
-from config.config import Config
-from gui.ThemeManager import ThemeManager
+from PyQt5.QtWidgets import QDialog, QTextBrowser, QVBoxLayout, QApplication
+from PyQt5.QtCore import Qt, QPoint
+import platform
 
 
 class DialogNotes(QDialog):
     def __init__(self, notes: str, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Notlar")
+        # For Wayland compatibility, set the right window flags from the beginning
+        if platform.system() == "Linux":
+            # Use Popup type which has better positioning behavior on Wayland
+            super().__init__(parent, Qt.Popup)
+        else:
+            super().__init__(parent)
 
+        self.setWindowTitle("Notlar")
         self.setFixedSize(500, 250)
 
         self.notes = notes
@@ -25,19 +30,39 @@ class DialogNotes(QDialog):
         # Add the text browser to the layout
         layout.addWidget(text_browser)
         self.setLayout(layout)
-        self.show_at_bottom_right()
 
-    def show_at_bottom_right(self):
-        if self.parent():
-            parent_geometry = self.parent().geometry()
-            parent_x = parent_geometry.x()
-            parent_y = parent_geometry.y()
-            parent_width = parent_geometry.width()
-            parent_height = parent_geometry.height()
+        # Position first, then show
+        self.calculate_position()
+        self.show()
 
-            # Calculate bottom-right position with the desired clearance
-            x = parent_x + parent_width - self.width() - 100  # 100-pixel clearance in the x-direction
-            y = parent_y + parent_height - self.height() - 200  # 200-pixel clearance in the y-direction
+    def calculate_position(self):
+        """Calculate and set the position of the dialog at the bottom right of the parent or screen."""
+        # Get screen geometry
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
 
-            # Move the dialog to the calculated position
-            self.move(x, y)
+        # If we have a parent, position relative to it
+        if self.parent() and self.parent().isVisible():
+            # For Wayland, we need to use global position
+            parent_global_pos = self.parent().mapToGlobal(QPoint(0, 0))
+            parent_width = self.parent().width()
+            parent_height = self.parent().height()
+
+            # Calculate position - bottom right with clearance
+            pos_x = parent_global_pos.x() + parent_width - self.width() - 100
+            pos_y = parent_global_pos.y() + parent_height - self.height() - 200
+        else:
+            # No parent, position at bottom right of screen
+            pos_x = screen_geometry.right() - self.width() - 100
+            pos_y = screen_geometry.bottom() - self.height() - 100
+
+        # Make sure we're on screen
+        pos_x = max(
+            screen_geometry.left(), min(pos_x, screen_geometry.right() - self.width())
+        )
+        pos_y = max(
+            screen_geometry.top(), min(pos_y, screen_geometry.bottom() - self.height())
+        )
+
+        # Move the dialog to the calculated position
+        self.move(pos_x, pos_y)

@@ -1,6 +1,16 @@
 from PyQt5.QtWidgets import (
-    QFrame, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDialog,
-    QComboBox, QGroupBox, QTextEdit, QRadioButton, QButtonGroup, QCompleter
+    QFrame,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QDialog,
+    QComboBox,
+    QGroupBox,
+    QTextEdit,
+    QRadioButton,
+    QButtonGroup,
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -51,7 +61,9 @@ class FrameAddInfo(QFrame):
         self.input_location = QLineEdit()
         self.input_location.setFixedWidth(670)
         self.button_location = QPushButton()
-        self.button_location.setIcon(QIcon("res/icons/List-Search--Streamline-Tabler.png"))
+        self.button_location.setIcon(
+            QIcon("res/icons/List-Search--Streamline-Tabler.png")
+        )
         self.button_location.setFixedSize(25, 25)
         self.button_location.clicked.connect(self.show_location_dialog)
 
@@ -87,8 +99,12 @@ class FrameAddInfo(QFrame):
         # Bottom section inside the date group: Radio buttons
         bottom_date_layout = QHBoxLayout()
         self.radio_label = QLabel(Constants.LABEL_DATE_OPTION)
-        self.radio_date_from_filename = QRadioButton(Constants.LABEL_RADIO_DATE_FROM_FILENAME)
-        self.radio_date_from_filedate = QRadioButton(Constants.LABEL_RADIO_DATE_FROM_FILEDATE)
+        self.radio_date_from_filename = QRadioButton(
+            Constants.LABEL_RADIO_DATE_FROM_FILENAME
+        )
+        self.radio_date_from_filedate = QRadioButton(
+            Constants.LABEL_RADIO_DATE_FROM_FILEDATE
+        )
         self.radio_date_fixed = QRadioButton(Constants.LABEL_RADIO_DATE_FIXED)
 
         # Create a button group to ensure only one radio button can be selected at a time
@@ -143,7 +159,9 @@ class FrameAddInfo(QFrame):
         self.setLayout(main_layout)
 
     def show_location_dialog(self):
-        dialog = DialogAssignLocation(location=self.get_location(), location_list=self.locations, parent=self)
+        dialog = DialogAssignLocation(
+            location=self.get_location(), location_list=self.locations, parent=self
+        )
         if dialog.exec_() == QDialog.Accepted:
             self.set_location(dialog.input_field.text())
 
@@ -203,7 +221,9 @@ class FrameAddInfo(QFrame):
 
     def get_people(self):
         raw_text = self.input_people.toPlainText()
-        processed_lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+        processed_lines = [
+            line.strip() for line in raw_text.splitlines() if line.strip()
+        ]
         return ",".join(processed_lines)
 
     def set_people(self, people: str):

@@ -11,7 +11,11 @@ from media_loader import MediaLoader
 
 from config.config import Config
 from data.orm import Media
-from data.helpers import date_to_julian, legacy_time_in_unix_subsec, current_time_in_unix_subsec
+from data.helpers import (
+    date_to_julian,
+    legacy_time_in_unix_subsec,
+    current_time_in_unix_subsec,
+)
 from ops import cloud_ops, file_ops
 
 Config.read_config()
@@ -35,11 +39,13 @@ def get_people_detect_str(image_key, people):
         detections = face_detection.detect_people(image)
 
         if len(detections) == len(people_list):
-            detections_str = ",".join(['-'.join(map(str, det[:4])) for det in detections])
+            detections_str = ",".join(
+                ["-".join(map(str, det[:4])) for det in detections]
+            )
             return detections_str
 
         return None
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -48,11 +54,17 @@ def make_files(media_uuid, old_entry, foto_folder, preview_folder):
     if file_ops.get_file_type(media_source_path) == 1:
         file_ops.add_media(media_uuid, media_source_path)
     else:
-        media_destination_path = os.path.join("res/media/", f"{media_uuid}{file_ops.get_file_extension(media_source_path)}")
+        media_destination_path = os.path.join(
+            "res/media/",
+            f"{media_uuid}{file_ops.get_file_extension(media_source_path)}",
+        )
         shutil.copy2(media_source_path, media_destination_path)
 
         thumb_source_path = os.path.join(preview_folder, old_entry["GORUNTU"][1:])
-        thumb_destination_path = os.path.join("res/thumbnails/", f"{media_uuid}{file_ops.get_file_extension(thumb_source_path)}")
+        thumb_destination_path = os.path.join(
+            "res/thumbnails/",
+            f"{media_uuid}{file_ops.get_file_extension(thumb_source_path)}",
+        )
         shutil.copy2(thumb_source_path, thumb_destination_path)
 
     return f"{media_uuid}{file_ops.get_file_extension(media_source_path)}"
@@ -64,7 +76,7 @@ def make_entry(old_entry, user_name, foto_folder, preview_folder):
 
     media_uuid = str(uuid.uuid4().hex)
     media_path = make_files(media_uuid, old_entry, foto_folder, preview_folder)
-    
+
     topic = old_entry["KONU"]
     title = old_entry["BASLIK"]
     location = old_entry["YER"]
@@ -76,7 +88,9 @@ def make_entry(old_entry, user_name, foto_folder, preview_folder):
     private = old_entry["OZEL"]
     people = old_entry["KISILER"]
     people_count = old_entry["KISIADET"]
-    people_detect = None # get_people_detect_str(media_path, people) if int(mtype) == 1 else None
+    people_detect = (
+        None  # get_people_detect_str(media_path, people) if int(mtype) == 1 else None
+    )
     notes = old_entry["NOTLAR"]
     albums = old_entry["ALBUMS"]
     tags = None
@@ -85,33 +99,35 @@ def make_entry(old_entry, user_name, foto_folder, preview_folder):
         rank = last_rank + 1.0
     else:
         rank = 1.0
-    
+
     last_rank = rank
     last_date = date
 
     created_at = legacy_time_in_unix_subsec(old_entry["KAYITZAMAN"])
     modified_at = current_time_in_unix_subsec()
 
-    return Media(title=title,
-                 topic=topic,
-                 location=location,
-                 date=date,
-                 date_text=date_text,
-                 date_est=date_est,
-                 type=mtype,
-                 extension=extension,
-                 private=private,
-                 people=people,
-                 people_count=people_count,
-                 people_detect=people_detect,
-                 notes=notes,
-                 albums=albums,
-                 tags=tags,
-                 created_at=created_at,
-                 modified_at=modified_at,
-                 user_name=user_name,
-                 media_uuid=media_uuid,
-                 rank=rank)
+    return Media(
+        title=title,
+        topic=topic,
+        location=location,
+        date=date,
+        date_text=date_text,
+        date_est=date_est,
+        type=mtype,
+        extension=extension,
+        private=private,
+        people=people,
+        people_count=people_count,
+        people_detect=people_detect,
+        notes=notes,
+        albums=albums,
+        tags=tags,
+        created_at=created_at,
+        modified_at=modified_at,
+        user_name=user_name,
+        media_uuid=media_uuid,
+        rank=rank,
+    )
 
 
 last_rank = 1.0
@@ -136,13 +152,18 @@ try:
     for i, row in df.iterrows():
         try:
             print(f"ROW: {i}___")
-            media_entry = make_entry(row, user_name, foto_folder=foto_folder_path, preview_folder=preview_folder_path)
-            
+            media_entry = make_entry(
+                row,
+                user_name,
+                foto_folder=foto_folder_path,
+                preview_folder=preview_folder_path,
+            )
+
         except Exception as e:
             print("ERROR OCCURED at FOTO_ID:", str(row["FOTO_ID"]))
             print("ERROR:", str(e))
             continue
-        
+
         try:
             session.add(media_entry)
             session.commit()
@@ -152,6 +173,5 @@ try:
             continue
 
 finally:
-    
     # Close the session
     session.close()

@@ -2,6 +2,7 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QMessageBox
 
+
 class ProcessThread(QThread):
     current_operation = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
@@ -23,7 +24,7 @@ class ProcessThread(QThread):
             try:
                 # Run the operation with provided arguments
                 self.operation(*self.operation_args)
-                
+
             except Exception as e:
                 self.error_occurred.emit(str(e))
                 return
@@ -44,8 +45,14 @@ class DialogProcess(QDialog):
         self.operation_args = operation_args or ()
         self.message = message
         self.setWindowTitle(title)
-        self.setWindowIcon(QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png"))
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowIcon(
+            QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png")
+        )
+        self.setWindowFlags(
+            self.windowFlags()
+            & ~Qt.WindowCloseButtonHint
+            & ~Qt.WindowContextHelpButtonHint
+        )
         self.setFixedSize(400, 100)
 
         self.layout = QVBoxLayout(self)
@@ -59,9 +66,9 @@ class DialogProcess(QDialog):
 
     def start_process(self):
         self.thread = ProcessThread(
-            operation=self.operation, 
+            operation=self.operation,
             operation_args=self.operation_args,
-            message=self.message
+            message=self.message,
         )
         self.thread.current_operation.connect(self.label.setText)
         self.thread.error_occurred.connect(self.show_error_dialog)
@@ -69,7 +76,7 @@ class DialogProcess(QDialog):
         self.thread.start()
 
     def process_complete(self):
-        self.accept() 
+        self.accept()
 
     def show_error_dialog(self, error_message):
         error_dialog = QMessageBox(self)
@@ -78,7 +85,7 @@ class DialogProcess(QDialog):
         error_dialog.setIcon(QMessageBox.Critical)
         error_dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Cancel)
         error_dialog.setDefaultButton(QMessageBox.Retry)
-        
+
         result = error_dialog.exec_()
         if result == QMessageBox.Retry:
             self.retry = True

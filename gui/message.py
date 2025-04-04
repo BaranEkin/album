@@ -3,15 +3,11 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from typing import Literal
 
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
-from typing import Literal
 
 def show_message(
-    message: str, 
-    level: Literal["info", "warning", "error"] = "info", 
-    is_question: bool = False
+    message: str,
+    level: Literal["info", "warning", "error"] = "info",
+    is_question: bool = False,
 ) -> bool:
     """
     Display a modal message box with the specified message and level.
@@ -20,7 +16,7 @@ def show_message(
     Args:
         message (str): The message to display in the message box.
         level (Literal["info", "warning", "error"], optional): The type of message box to display.
-            Accepted values are "info" for an information message, 
+            Accepted values are "info" for an information message,
             "warning" for a warning message, and "error" for an error message.
             Defaults to "info".
         is_question (bool, optional): If True, show a confirmation dialog with Yes/No buttons.
@@ -33,18 +29,20 @@ def show_message(
     # Create a message box
     msg_box = QMessageBox()
     msg_box.setText(message)
-    
+
     # Make the message box modal
-    msg_box.setWindowModality(Qt.ApplicationModal)  
-    
-    msg_box.setWindowIcon(QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png"))
+    msg_box.setWindowModality(Qt.ApplicationModal)
+
+    msg_box.setWindowIcon(
+        QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png")
+    )
 
     if is_question:
         msg_box.setIcon(QMessageBox.Question)
         msg_box.setWindowTitle("İşlem Onaylama")
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
-        
+
         response = msg_box.exec_()
         return response == QMessageBox.Yes
     else:
@@ -58,8 +56,7 @@ def show_message(
         elif level == "error":
             msg_box.setIcon(QMessageBox.Critical)
             msg_box.setWindowTitle("Hata Mesajı")
-        
+
         # Show the message box and wait for it to close
         msg_box.exec_()
         return False  # No confirmation is needed for info/warning/error
-

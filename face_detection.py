@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from deepface.modules.detection import detect_faces
+import platform
 
 
 def draw_identifications(image: Image, detections_with_names) -> Image:
@@ -25,8 +26,17 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
         box_thickness = 2 + int((image.size[0] + image.size[1]) / 1000)
         font_size = 10 + int(6 * (image.size[0] + image.size[1]) / 1000)
 
-        # Use Arial font for Turkish letters (or any font available in the system)
-        font = ImageFont.truetype("arial.ttf", size=font_size)
+        # Choose font based on operating system
+        current_os = platform.system()
+
+        if current_os == "Windows":
+            font = ImageFont.truetype("arial.ttf", size=font_size)
+        else:  # Linux (Fedora)
+            # font = ImageFont.load_default(size=font_size)
+            font = ImageFont.truetype(
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                size=font_size,
+            )
 
         # Create a draw object from PIL
         image = image.convert("RGBA")
@@ -45,11 +55,17 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             box_color = (255, 255, 255) if name == "" else (0, 200, 0)
 
             # Draw the rectangle (box) for the face
-            draw.rectangle([top_left, bottom_right], outline=box_color, width=box_thickness)
+            draw.rectangle(
+                [top_left, bottom_right], outline=box_color, width=box_thickness
+            )
 
             # Prepare the name label to be displayed
             surname_index = name.rfind(" ")
-            name = name[:surname_index] + '\n' + name[surname_index + 1:] if surname_index != -1 else name
+            name = (
+                name[:surname_index] + "\n" + name[surname_index + 1 :]
+                if surname_index != -1
+                else name
+            )
 
             # Calculate the text's default position above the box
             text_x, text_y = x + 0.5 * font_size, y - 2.5 * font_size
@@ -79,9 +95,11 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
 
             # Draw the background rectangle behind the text
             draw.rectangle(
-                [(text_x - padding_x, text_y - padding_y),
-                 (text_x + text_width + padding_x, text_y + text_height + padding_y)],
-                fill=background_color
+                [
+                    (text_x - padding_x, text_y - padding_y),
+                    (text_x + text_width + padding_x, text_y + text_height + padding_y),
+                ],
+                fill=background_color,
             )
 
             # Draw the text on top of the background rectangle
@@ -90,8 +108,7 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
 
         return image
 
-    except Exception as e:
-        print(f"Error in draw_identifications: {e}")
+    except Exception:
         return original_image
 
 
@@ -111,7 +128,9 @@ def detect_people(image: Image):
 
     try:
         image = np.array(image)
-        detection_results = detect_faces(detector_backend="yolov8", img=image, align=False, expand_percentage=0)
+        detection_results = detect_faces(
+            detector_backend="yolov8", img=image, align=False, expand_percentage=0
+        )
 
         detections = []
         for det in detection_results:
@@ -138,7 +157,11 @@ def preprocess_detections(detections_with_names):
     """
 
     # Remove manually added detections with no name
-    detections_with_names = [det for det in detections_with_names if not (det[4] == "" and det[5] == "manual")]
+    detections_with_names = [
+        det
+        for det in detections_with_names
+        if not (det[4] == "" and det[5] == "manual")
+    ]
 
     # Sort detections on x
     detections_with_names = sorted(detections_with_names, key=lambda x: x[0])
@@ -160,7 +183,9 @@ def build_detections_with_names(detections_str: str, names_str: str):
     """
 
     names = names_str.split(",")
-    detections = [list(map(int, det_str.split("-"))) for det_str in detections_str.split(",")]
+    detections = [
+        list(map(int, det_str.split("-"))) for det_str in detections_str.split(",")
+    ]
 
     assert len(names) == len(detections)
 

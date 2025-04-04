@@ -3,6 +3,8 @@ import os
 import re
 import cv2
 import numpy as np
+import platform
+import subprocess
 
 from typing import Literal, Union
 from datetime import datetime
@@ -23,28 +25,36 @@ def check_file_exists(directory: str, key: str) -> bool:
     Returns:
         bool: True if the file exists, False otherwise.
     """
-
+    # Use os.path.join for cross-platform path handling
     return os.path.exists(os.path.join(directory, key))
 
 
 def add_media(media_uuid: str, media_path: Union[str, bytes, os.PathLike]):
     """Add a media to the media directory with a structured filename and create a thumbnail.
-    Crate directories if needed.
+    Create directories if needed.
 
     Args:
         media_id (Union[str, bytes, os.PathLike]): The unique identifier for the media item.
         media_path (str): The source file path of the media.
     """
+    # Ensure media_path is a string
+    if not isinstance(media_path, str):
+        media_path = str(media_path)
 
     extension = get_file_extension(media_path)
     media_key = f"{media_uuid}{extension}"
 
+    # Ensure destination directory exists
+    os.makedirs(Config.MEDIA_DIR, exist_ok=True)
     destination_path = os.path.join(Config.MEDIA_DIR, media_key)
 
     shutil.copy2(media_path, destination_path)
 
     thumbnail_key = f"{media_uuid}.jpg"
-    
+
+    # Ensure thumbnails directory exists
+    os.makedirs(Config.THUMBNAILS_DIR, exist_ok=True)
+
     file_type = get_file_type(media_path)
     if file_type == 1:
         create_image_thumbnail(media_key, thumbnail_key)
@@ -70,7 +80,6 @@ def create_image_thumbnail(media_key: str, thumbnail_key: str):
 
 
 def create_video_thumbnail(media_key: str, thumbnail_key: str):
-
     # Load video and extract the frame
     video = cv2.VideoCapture(os.path.join(Config.MEDIA_DIR, media_key))
     frame_number = 30
@@ -83,7 +92,7 @@ def create_video_thumbnail(media_key: str, thumbnail_key: str):
         h, w = frame.shape[:2]
         width = 320
         height = 300
-        
+
         # Scale the frame to keep aspect ratio with minimum dimension covering width or height
         scale_w = width / w
         scale_h = height / h
@@ -92,25 +101,32 @@ def create_video_thumbnail(media_key: str, thumbnail_key: str):
         new_w = int(w * scale)
         new_h = int(h * scale)
         resized_frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
-        
+
         # Crop center 320x300
         start_x = (new_w - width) // 2
         start_y = (new_h - height) // 2
-        cropped_frame = resized_frame[start_y:start_y+height, start_x:start_x+width]
+        cropped_frame = resized_frame[
+            start_y : start_y + height, start_x : start_x + width
+        ]
 
     else:
         cropped_frame = np.zeros((300, 320, 3), dtype=np.uint8)
-        log("file_ops.create_video_thumbnail", 
-            f"Video frame could not be extracted from '{media_key}'. Black thumbnail will be used.", 
-            level="warning")
+        log(
+            "file_ops.create_video_thumbnail",
+            f"Video frame could not be extracted from '{media_key}'. Black thumbnail will be used.",
+            level="warning",
+        )
 
     # Load banner
-    banner = cv2.imread("res/icons/video_banner.jpg")
-    
+    banner = cv2.imread(os.path.join("res", "icons", "video_banner.jpg"))
+
     # Stack banners and thumbnail horizontally
     thumbnail_image = np.hstack((banner, cropped_frame, banner))
     thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, thumbnail_key)
-    
+
+    # Ensure the thumbnail directory exists
+    os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
+
     # Save the final image
     cv2.imwrite(thumbnail_path, thumbnail_image)
 
@@ -175,11 +191,11 @@ def get_date_from_file_metadata(file_path: Union[str, bytes, os.PathLike]):
             if exif_data is not None:
                 for tag_id, value in exif_data.items():
                     tag = TAGS.get(tag_id, tag_id)
-                    if tag == 'DateTimeOriginal':
+                    if tag == "DateTimeOriginal":
                         exif_date = value
                         return convert_exif_date_to_date_text(exif_date)
         return ""
-    except Exception as e:
+    except Exception:
         return ""
 
 
@@ -245,11 +261,29 @@ def open_with_default_app(file_path: Union[str, bytes, os.PathLike]):
     """
 
     try:
-        os.startfile(file_path)
+        # Convert to string if it's a PathLike object
+        if not isinstance(file_path, str):
+            file_path = str(file_path)
+
+        # Check the operating system
+        if platform.system() == "Windows":
+            # Windows-specific method
+            os.startfile(file_path)
+        elif platform.system() == "Darwin":
+            # macOS-specific method
+            subprocess.run(["open", file_path], check=True)
+        else:
+            # Linux - just use the system command directly
+            # This is the most reliable way to open files on Linux
+            os.system(f"xdg-open '{file_path}' &")
     except Exception as e:
-        log("file_ops.open_with_default_app", f"Error openining '{file_path}': {e}", level="error")
-        raise e
-    
+        log(
+            "file_ops.open_with_default_app",
+            f"Error opening '{file_path}': {e}",
+            level="error",
+        )
+
+
 def delete_media(media_uuid: str, extension: str) -> bool:
     media_key = f"{media_uuid}{extension}"
     media_path = os.path.join(Config.MEDIA_DIR, media_key)
@@ -260,26 +294,81 @@ def delete_media(media_uuid: str, extension: str) -> bool:
     try:
         os.remove(media_path)
         os.remove(thumbnail_path)
-        log("file_ops.delete_media", f"Removed media with uuid:'{media_uuid}'", level="info")
+        log(
+            "file_ops.delete_media",
+            f"Removed media with uuid:'{media_uuid}'",
+            level="info",
+        )
         return True
     except Exception as e:
-        log("file_ops.delete_media", f"Error removing media with uuid:'{media_uuid}': {e}", level="error")
+        log(
+            "file_ops.delete_media",
+            f"Error removing media with uuid:'{media_uuid}': {e}",
+            level="error",
+        )
         return False
-    
+
+
 def delete_file(path) -> bool:
+    """Delete a file at the specified path.
+
+    Args:
+        path: Path to the file to be deleted.
+
+    Returns:
+        bool: True if deletion was successful, False otherwise.
+    """
     try:
+        # Convert to string if it's a PathLike object
+        if not isinstance(path, str):
+            path = str(path)
+
         os.remove(path)
         log("file_ops.delete_file", f"Deleted the file at:'{path}'", level="info")
         return True
     except Exception as e:
-        log("file_ops.delete_file", f"Error deleting the file at:'{path}': {e}", level="error")
+        log(
+            "file_ops.delete_file",
+            f"Error deleting the file at:'{path}': {e}",
+            level="error",
+        )
         return False
-    
-def copy_file(source_path: Union[str, bytes, os.PathLike], destination_path: Union[str, os.PathLike]) -> bool:
+
+
+def copy_file(
+    source_path: Union[str, bytes, os.PathLike],
+    destination_path: Union[str, os.PathLike],
+) -> bool:
+    """Copy a file from source to destination.
+
+    Args:
+        source_path: Path to the source file.
+        destination_path: Path where the file should be copied.
+
+    Returns:
+        bool: True if copy was successful, False otherwise.
+    """
     try:
+        # Convert to string if they're PathLike objects
+        if not isinstance(source_path, str):
+            source_path = str(source_path)
+        if not isinstance(destination_path, str):
+            destination_path = str(destination_path)
+
+        # Ensure the destination directory exists
+        os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+
         shutil.copy2(source_path, destination_path)
-        log("file_ops.copy_file", f"Copied file from '{source_path}' to '{destination_path}'", level="info")
+        log(
+            "file_ops.copy_file",
+            f"Copied file from '{source_path}' to '{destination_path}'",
+            level="info",
+        )
         return True
     except Exception as e:
-        log("file_ops.copy_file", f"Error copying file from '{source_path}' to '{destination_path}': {e}", level="error")
+        log(
+            "file_ops.copy_file",
+            f"Error copying file from '{source_path}' to '{destination_path}': {e}",
+            level="error",
+        )
         return False
