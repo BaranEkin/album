@@ -279,6 +279,7 @@ class FrameDetailedFilter(QFrame):
 
         self.dropdown_sort_primary.setCurrentIndex(0)
         self.dropdown_sort_secondary.setCurrentIndex(0)
+        self.type_dropdown.setCurrentIndex(0)
 
         self.people_count_range_checkbox.setChecked(False)
         self.date_range_checkbox.setChecked(False)
