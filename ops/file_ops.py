@@ -52,10 +52,10 @@ def add_media(media_uuid: str, media_path: Union[str, bytes, os.PathLike]):
     shutil.copy2(media_path, destination_path)
 
     thumbnail_key = f"{media_uuid}.jpg"
-    
+
     # Ensure thumbnails directory exists
     os.makedirs(Config.THUMBNAILS_DIR, exist_ok=True)
-    
+
     file_type = get_file_type(media_path)
     if file_type == 1:
         create_image_thumbnail(media_key, thumbnail_key)
@@ -81,7 +81,6 @@ def create_image_thumbnail(media_key: str, thumbnail_key: str):
 
 
 def create_video_thumbnail(media_key: str, thumbnail_key: str):
-
     # Load video and extract the frame
     video = cv2.VideoCapture(os.path.join(Config.MEDIA_DIR, media_key))
     frame_number = 30
@@ -94,7 +93,7 @@ def create_video_thumbnail(media_key: str, thumbnail_key: str):
         h, w = frame.shape[:2]
         width = 320
         height = 300
-        
+
         # Scale the frame to keep aspect ratio with minimum dimension covering width or height
         scale_w = width / w
         scale_h = height / h
@@ -103,28 +102,32 @@ def create_video_thumbnail(media_key: str, thumbnail_key: str):
         new_w = int(w * scale)
         new_h = int(h * scale)
         resized_frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
-        
+
         # Crop center 320x300
         start_x = (new_w - width) // 2
         start_y = (new_h - height) // 2
-        cropped_frame = resized_frame[start_y:start_y+height, start_x:start_x+width]
+        cropped_frame = resized_frame[
+            start_y : start_y + height, start_x : start_x + width
+        ]
 
     else:
         cropped_frame = np.zeros((300, 320, 3), dtype=np.uint8)
-        log("file_ops.create_video_thumbnail", 
-            f"Video frame could not be extracted from '{media_key}'. Black thumbnail will be used.", 
-            level="warning")
+        log(
+            "file_ops.create_video_thumbnail",
+            f"Video frame could not be extracted from '{media_key}'. Black thumbnail will be used.",
+            level="warning",
+        )
 
     # Load banner
     banner = cv2.imread(os.path.join("res", "icons", "video_banner.jpg"))
-    
+
     # Stack banners and thumbnail horizontally
     thumbnail_image = np.hstack((banner, cropped_frame, banner))
     thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, thumbnail_key)
-    
+
     # Ensure the thumbnail directory exists
     os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
-    
+
     # Save the final image
     cv2.imwrite(thumbnail_path, thumbnail_image)
 
@@ -189,7 +192,7 @@ def get_date_from_file_metadata(file_path: Union[str, bytes, os.PathLike]):
             if exif_data is not None:
                 for tag_id, value in exif_data.items():
                     tag = TAGS.get(tag_id, tag_id)
-                    if tag == 'DateTimeOriginal':
+                    if tag == "DateTimeOriginal":
                         exif_date = value
                         return convert_exif_date_to_date_text(exif_date)
         return ""
@@ -254,78 +257,85 @@ def save_video_audio(media_data, path: Union[str, bytes, os.PathLike]):
 def open_with_default_app(file_path: Union[str, bytes, os.PathLike]):
     """
     Open a file with the default application for the current platform.
-    
+
     Args:
         file_path: Path to the file to open.
-    
+
     Raises:
         FileNotFoundError: If the file does not exist.
         RuntimeError: If the file could not be opened with any application.
     """
     try:
         file_path = os.fspath(file_path)
-        
+
         # Check if file exists
         if not os.path.exists(file_path):
             error_msg = f"File not found: {file_path}"
             log("file_ops.open_with_default_app", error_msg, level="error")
             raise FileNotFoundError(error_msg)
-            
+
         # Create a clean environment for subprocess
         env = os.environ.copy()
-        
+
         # Remove problematic Qt environment variables
         for key in list(env.keys()):
-            if key.startswith('QT_') or key.startswith('PYQT'):
+            if key.startswith("QT_") or key.startswith("PYQT"):
                 env.pop(key, None)
-        
+
         # Add conda bin to PATH if it exists
-        conda_bin = os.path.join(os.path.dirname(sys.executable), 'condabin')
-        if os.path.exists(conda_bin) and conda_bin not in env.get('PATH', ''):
-            env['PATH'] = f"{conda_bin}:{env.get('PATH', '')}"
+        conda_bin = os.path.join(os.path.dirname(sys.executable), "condabin")
+        if os.path.exists(conda_bin) and conda_bin not in env.get("PATH", ""):
+            env["PATH"] = f"{conda_bin}:{env.get('PATH', '')}"
 
         # Platform-specific handling
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             # Windows
             os.startfile(file_path)
-            
-        elif sys.platform == 'darwin':
+
+        elif sys.platform == "darwin":
             # macOS
-            subprocess.Popen(['open', file_path], env=env, start_new_session=True)
-            
+            subprocess.Popen(["open", file_path], env=env, start_new_session=True)
+
         else:
             # Linux/Unix-specific method
             # First try Flatpak VLC directly (fastest method if installed)
             try:
                 subprocess.Popen(
-                    ['flatpak', 'run', '--filesystem=home', 'org.videolan.VLC',
-                     '--no-qt-privacy-ask', '--play-and-exit', file_path],
+                    [
+                        "flatpak",
+                        "run",
+                        "--filesystem=home",
+                        "org.videolan.VLC",
+                        "--no-qt-privacy-ask",
+                        "--play-and-exit",
+                        file_path,
+                    ],
                     env=env,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    start_new_session=True
+                    start_new_session=True,
                 )
                 return
             except (subprocess.SubprocessError, FileNotFoundError):
                 pass
-            
+
             # Fall back to xdg-open if VLC is not available
             try:
                 subprocess.Popen(
-                    ['xdg-open', file_path],
-                    env=env,
-                    start_new_session=True
+                    ["xdg-open", file_path], env=env, start_new_session=True
                 )
                 return
             except (subprocess.SubprocessError, FileNotFoundError) as e:
-                log("file_ops.open_with_default_app", 
-                    f"Failed to open with xdg-open: {str(e)}", 
-                    level="error")
-                
+                log(
+                    "file_ops.open_with_default_app",
+                    f"Failed to open with xdg-open: {str(e)}",
+                    level="error",
+                )
+
             error_msg = f"Could not open {file_path} with any application"
             log("file_ops.open_with_default_app", error_msg, level="error")
             raise RuntimeError(error_msg)
-            
+
     except Exception as e:
         error_msg = f"Error opening '{file_path}': {e}"
         log(f"file_ops.open_with_default_app: {error_msg}", level="error")
@@ -342,19 +352,27 @@ def delete_media(media_uuid: str, extension: str) -> bool:
     try:
         os.remove(media_path)
         os.remove(thumbnail_path)
-        log("file_ops.delete_media", f"Removed media with uuid:'{media_uuid}'", level="info")
+        log(
+            "file_ops.delete_media",
+            f"Removed media with uuid:'{media_uuid}'",
+            level="info",
+        )
         return True
     except Exception as e:
-        log("file_ops.delete_media", f"Error removing media with uuid:'{media_uuid}': {e}", level="error")
+        log(
+            "file_ops.delete_media",
+            f"Error removing media with uuid:'{media_uuid}': {e}",
+            level="error",
+        )
         return False
 
 
 def delete_file(path) -> bool:
     """Delete a file at the specified path.
-    
+
     Args:
         path: Path to the file to be deleted.
-        
+
     Returns:
         bool: True if deletion was successful, False otherwise.
     """
@@ -362,22 +380,29 @@ def delete_file(path) -> bool:
         # Convert to string if it's a PathLike object
         if not isinstance(path, str):
             path = str(path)
-            
+
         os.remove(path)
         log("file_ops.delete_file", f"Deleted the file at:'{path}'", level="info")
         return True
     except Exception as e:
-        log("file_ops.delete_file", f"Error deleting the file at:'{path}': {e}", level="error")
+        log(
+            "file_ops.delete_file",
+            f"Error deleting the file at:'{path}': {e}",
+            level="error",
+        )
         return False
 
 
-def copy_file(source_path: Union[str, bytes, os.PathLike], destination_path: Union[str, os.PathLike]) -> bool:
+def copy_file(
+    source_path: Union[str, bytes, os.PathLike],
+    destination_path: Union[str, os.PathLike],
+) -> bool:
     """Copy a file from source to destination.
-    
+
     Args:
         source_path: Path to the source file.
         destination_path: Path where the file should be copied.
-        
+
     Returns:
         bool: True if copy was successful, False otherwise.
     """
@@ -387,13 +412,21 @@ def copy_file(source_path: Union[str, bytes, os.PathLike], destination_path: Uni
             source_path = str(source_path)
         if not isinstance(destination_path, str):
             destination_path = str(destination_path)
-            
+
         # Ensure the destination directory exists
         os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-        
+
         shutil.copy2(source_path, destination_path)
-        log("file_ops.copy_file", f"Copied file from '{source_path}' to '{destination_path}'", level="info")
+        log(
+            "file_ops.copy_file",
+            f"Copied file from '{source_path}' to '{destination_path}'",
+            level="info",
+        )
         return True
     except Exception as e:
-        log("file_ops.copy_file", f"Error copying file from '{source_path}' to '{destination_path}': {e}", level="error")
+        log(
+            "file_ops.copy_file",
+            f"Error copying file from '{source_path}' to '{destination_path}': {e}",
+            level="error",
+        )
         return False

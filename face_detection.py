@@ -24,7 +24,7 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
     try:
         # Calculate box thickness and font size based on the image size
         box_thickness = 2 + int((image.size[0] + image.size[1]) / 1000)
-        font_size = 10 + int(6 * (image.size[0] + image.size[1]) / 1000)
+        font_size = 8 + int(5 * (image.size[0] + image.size[1]) / 1000)
 
         # Choose font based on operating system
         current_os = platform.system()
@@ -43,7 +43,8 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
         draw = ImageDraw.Draw(image, "RGBA")
 
         detections_with_names = preprocess_detections(detections_with_names)
-        # Loop through each detection
+        # First pass: Draw all boxes
+        text_elements = []
         for box in detections_with_names:
             x, y, w, h, name, _ = box
 
@@ -58,6 +59,10 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             draw.rectangle(
                 [top_left, bottom_right], outline=box_color, width=box_thickness
             )
+
+            # Skip if no name to display
+            if not name:
+                continue
 
             # Prepare the name label to be displayed
             surname_index = name.rfind(" ")
@@ -75,7 +80,7 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
 
-            # Make the background 10% wider and 20% taller than the text
+            # Make the background 10% wider and 30% taller than the text
             padding_x = int(0.1 * text_width)
             padding_y = int(0.3 * text_height)
             background_width = text_width + 2 * padding_x
@@ -86,25 +91,50 @@ def draw_identifications(image: Image, detections_with_names) -> Image:
             if text_y < 0:
                 text_y = y + h + 0.5 * font_size
 
-                # If text goes to the right of the image, move it to the left
+            # If text goes to the right of the image, move it to the left
             if text_x + background_width > image_width:
                 text_x = x - background_width - 0.5 * font_size
 
-            # 75% black text background
-            background_color = (0, 0, 0, 192)
+            # Store text element for second pass
+            text_elements.append(
+                {
+                    "text": name,
+                    "position": (text_x, text_y),
+                    "width": text_width,
+                    "height": text_height,
+                    "padding_x": padding_x,
+                    "padding_y": padding_y,
+                }
+            )
 
+        # Second pass: Draw all text elements
+        for text_item in text_elements:
             # Draw the background rectangle behind the text
             draw.rectangle(
                 [
-                    (text_x - padding_x, text_y - padding_y),
-                    (text_x + text_width + padding_x, text_y + text_height + padding_y),
+                    (
+                        text_item["position"][0] - text_item["padding_x"],
+                        text_item["position"][1] - text_item["padding_y"],
+                    ),
+                    (
+                        text_item["position"][0]
+                        + text_item["width"]
+                        + text_item["padding_x"],
+                        text_item["position"][1]
+                        + text_item["height"]
+                        + text_item["padding_y"],
+                    ),
                 ],
-                fill=background_color,
+                fill=(0, 0, 0, 128),  # 50% black background
             )
 
             # Draw the text on top of the background rectangle
-            text_color = (255, 255, 255)
-            draw.text((text_x, text_y), name, font=font, fill=text_color)
+            draw.text(
+                text_item["position"],
+                text_item["text"],
+                font=font,
+                fill=(255, 255, 255),
+            )
 
         return image
 

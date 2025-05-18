@@ -1068,7 +1068,9 @@ class MainWindow(QMainWindow):
             ]
             self.forgotten_uuids = random.sample(all_forgotten_uuids, 100)
 
-            media_list = self.data_manager.get_media_by_uuids(self.forgotten_uuids, sort=0)
+            media_list = self.data_manager.get_media_by_uuids(
+                self.forgotten_uuids, sort=0
+            )
             self.update_media_data(media_list)
 
         else:
