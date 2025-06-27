@@ -10,3 +10,5 @@ PyQt5
 PyQt5_sip
 SQLAlchemy
 tqdm
+tf-keras
+ultralytics

@@ -84,6 +84,7 @@ class MainWindow(QMainWindow):
 
         # State variables
         self.mode = ""
+        self.write_permissions = False
         self.is_first_selection = True  # Flag to track first selection after startup
 
         # GUI ELEMENTS______________________________________________________________________
@@ -356,6 +357,7 @@ class MainWindow(QMainWindow):
 
         # LOAD DATA AND SETUP_______________________________________________________________
         self.update_db()
+        self.check_write_permissions()
         self.media_data = self.data_manager.get_all_media()
         self.update_frame_bottom_top_label()
         self.handle_selection_feature_buttons()
@@ -421,6 +423,16 @@ class MainWindow(QMainWindow):
                 level="error",
             )
             self.set_cloud_connected(False)
+
+    def check_write_permissions(self):
+        try:
+            self.write_permissions = cloud_ops.check_s3_write_permissions()
+        except Exception:
+            show_message(
+                "Yazma izinleri kontrol edilemedi. Bu özellikler devre dışı bırakılacak.",
+                level="error",
+            )
+            self.write_permissions = False
 
     def keyPressEvent(self, event):
         """
@@ -488,6 +500,8 @@ class MainWindow(QMainWindow):
 
                 for b in group_2:
                     b.setEnabled(True)
+
+        self.disable_features_by_permission()
 
     def try_select_item(self, i=0, attempt=0):
         try:
@@ -1280,6 +1294,16 @@ class MainWindow(QMainWindow):
                     f"Medyalar '{self.media_list_name}' listesinden çıkarıldı."
                 )
 
+    def disable_features_by_permission(self):
+        if not self.write_permissions:
+            self.button_bulk_edit_selected_media.setEnabled(False)
+            self.button_edit_media.setEnabled(False)
+            self.button_delete_media.setEnabled(False)
+
+            self.button_bulk_edit_selected_media.setToolTip(Constants.TOOLTIP_DISABLED)
+            self.button_edit_media.setToolTip(Constants.TOOLTIP_DISABLED)
+            self.button_delete_media.setToolTip(Constants.TOOLTIP_DISABLED)
+
     def handle_selection_feature_buttons(self):
         if len(self.selected_rows) > 0:
             self.button_export_selected_media.setEnabled(True)
@@ -1289,7 +1313,9 @@ class MainWindow(QMainWindow):
             self.button_export_selected_media.setEnabled(False)
             self.button_bulk_edit_selected_media.setEnabled(False)
             self.button_add_to_list.setEnabled(False)
-
+        
+        self.disable_features_by_permission()
+    
     def reorder_date(self, index):
         def reorder_date_procedure(date, reordered_keys):
             self.data_manager.update_local_db()
