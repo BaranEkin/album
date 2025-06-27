@@ -1299,10 +1299,12 @@ class MainWindow(QMainWindow):
             self.button_bulk_edit_selected_media.setEnabled(False)
             self.button_edit_media.setEnabled(False)
             self.button_delete_media.setEnabled(False)
+            self.button_upload_media.setEnabled(False)
 
             self.button_bulk_edit_selected_media.setToolTip(Constants.TOOLTIP_DISABLED)
             self.button_edit_media.setToolTip(Constants.TOOLTIP_DISABLED)
             self.button_delete_media.setToolTip(Constants.TOOLTIP_DISABLED)
+            self.button_upload_media.setToolTip(Constants.TOOLTIP_DISABLED)
 
     def handle_selection_feature_buttons(self):
         if len(self.selected_rows) > 0:
