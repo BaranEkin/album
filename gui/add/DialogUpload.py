@@ -53,10 +53,10 @@ class UploadThread(QThread):
                 self.progress.emit((i + 1) * 80 // len(self.media_paths))
 
             try:
-                self.current_operation.emit("Veri tabanı güncelleniyor...")
-                success = self.data_manager.update_local_db()
-                if not success:
-                    raise ValueError("Bulut sistemine bağlantı sağlanamadı.")
+                # self.current_operation.emit("Veri tabanı güncelleniyor...")
+                # success = self.data_manager.update_local_db()
+                # if not success:
+                #     raise ValueError("Bulut sistemine bağlantı sağlanamadı.")
                 self.data_manager.insert_media_list_to_local(self.media_list)
                 self.progress.emit(90)
 
