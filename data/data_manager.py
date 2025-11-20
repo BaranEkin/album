@@ -1,10 +1,10 @@
 import re
 import uuid
-from typing import Sequence, Literal
+from typing import Sequence, Literal, Iterator
 from contextlib import contextmanager
 
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, and_, or_, select
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine, and_, or_, select, Engine, Select
 
 from logger import log
 from config.config import Config
@@ -18,22 +18,31 @@ from data.helpers import (
     turkish_upper,
 )
 from ops import cloud_ops, file_ops
+from typing import Final
+
+ALBUM_DATABASE_FILENAME: Final[str] = "album.db"
+
+MediaUUID = str
+AlbumTag = str
+AlbumPath = str
 
 
 class DataManager:
     def __init__(self):
         self.db_engine = None
 
-    def init_db_engine(self):
-        self.db_engine = create_engine(f"sqlite:///{Config.DATABASE_DIR}/album.db")
+    def init_db_engine(self) -> None:
+        self.db_engine = create_engine(
+            f"sqlite:///{Config.DATABASE_DIR}/{ALBUM_DATABASE_FILENAME}"
+        )
 
-    def get_db_engine(self):
+    def get_db_engine(self) -> Engine | None:
         if not self.db_engine:
             self.init_db_engine()
         return self.db_engine
 
     @contextmanager
-    def get_session(self):
+    def get_session(self) -> Iterator[Session]:
         session = sessionmaker(bind=self.get_db_engine())()
         try:
             yield session
@@ -63,36 +72,35 @@ class DataManager:
         created_at = current_time_in_unix_subsec()
 
         # UUID/GUID (Universally/Globally Unique Identifier) using UUID-4 Standard (Random)
-        media_uuid = str(uuid.uuid4().hex)
+        media_uuid = uuid.uuid4().hex
         file_ops.add_media(media_uuid=media_uuid, media_path=path)
 
-        media = Media()
-        media.media_uuid = media_uuid
-        media.created_at = created_at
-        media.created_by = None  # Assigned at insertion
-        media.modified_at = None
-        media.modified_by = None
-        media.status = 1
-        media.topic = topic or None
-        media.title = title or None
-        media.location = location
-        media.date = date
-        media.date_text = date_text
-        media.date_est = date_est
-        media.rank = None  # Assigned at insertion
-        media.tags = tags or None
-        media.notes = notes or None
-        media.albums = albums or None
-        media.people = people or None
-        media.people_detect = people_detect or None
-        media.people_count = people_count or 0
-        media.extension = file_ops.get_file_extension(path)
-        media.type = file_ops.get_file_type(path)
-        media.private = private
+        return Media(
+            media_uuid=media_uuid,
+            created_at=created_at,
+            created_by=None,
+            modified_at=None,
+            modified_by=None,
+            status=1,
+            topic=topic or None,
+            title=title or None,
+            location=location,
+            date=date,
+            date_text=date_text,
+            date_est=date_est,
+            rank=None,
+            type=file_ops.get_file_type(path),
+            extension=file_ops.get_file_extension(path),
+            private=private,
+            people=people or None,
+            people_count=people_count or 0,
+            people_detect=people_detect or None,
+            notes=notes or None,
+            tags=tags or None,
+            albums=albums or None,
+        )
 
-        return media
-
-    def edit_media(self, media: Media):
+    def edit_media(self, media: Media) -> None:
         with self.get_session() as session:
             row = session.query(Media).get(media.media_uuid)
             if row:
@@ -109,7 +117,7 @@ class DataManager:
                 row.people_detect = media.people_detect or None
                 row.people_count = media.people_count or 0
 
-                new_date = date_to_julian(media.date_text)
+                new_date = date_to_julian(str(media.date_text))
                 if row.date != new_date:
                     row.date = new_date
                     row.date_text = media.date_text
@@ -117,11 +125,10 @@ class DataManager:
                     row.rank = self.get_last_rank(new_date) + 1.0
 
                 session.commit()
-
             else:
-                pass
+                raise ValueError(f"Media with UUID {media.media_uuid} not found")
 
-    def reorder_within_date(self, date: float, ordered_uuids: list[str]):
+    def reorder_within_date(self, date: float, ordered_uuids: list[MediaUUID]) -> None:
         with self.get_session() as session:
             media_list = (
                 session.execute(
@@ -135,7 +142,9 @@ class DataManager:
             )
 
             # Create a dictionary for quick lookup by media_uuid
-            media_dict = {media.media_uuid: media for media in media_list}
+            media_dict: dict[MediaUUID, Media] = {
+                media.media_uuid: media for media in media_list
+            }
 
             for i, uuid in enumerate(ordered_uuids):
                 media_dict[uuid].rank = i + 1.0
@@ -143,7 +152,7 @@ class DataManager:
                 media_dict[uuid].modified_by = cloud_ops.get_user_name()
             session.commit()
 
-    def set_media_deleted(self, media_uuid):
+    def set_media_deleted(self, media_uuid: MediaUUID) -> None:
         with self.get_session() as session:
             row = session.query(Media).get(media_uuid)
             if row:
@@ -177,7 +186,9 @@ class DataManager:
             )
             return media_list
 
-    def get_media_by_uuids(self, uuids: list, sort: int = -1) -> Sequence[Media]:
+    def get_media_by_uuids(
+        self, uuids: list[MediaUUID], sort: int = -1
+    ) -> Sequence[Media]:
         with self.get_session() as session:
             selection = select(Media).where(Media.media_uuid.in_(uuids))
 
@@ -185,7 +196,9 @@ class DataManager:
                 media_list = session.execute(selection).scalars().all()
 
                 # Create a dictionary for quick lookup by media_uuid
-                media_dict = {media.media_uuid: media for media in media_list}
+                media_dict: dict[MediaUUID, Media] = {
+                    media.media_uuid: media for media in media_list
+                }
 
                 # Reorder the results based on the input UUID order
                 media_list = [media_dict[uuid] for uuid in uuids if uuid in media_dict]
@@ -244,7 +257,7 @@ class DataManager:
             )
             return media_list
 
-    def get_last_rank(self, date: float):
+    def get_last_rank(self, date: float) -> float:
         media_list = self.get_media_of_date(date)
         if media_list:
             last_rank = max([media.rank for media in media_list])
@@ -257,39 +270,38 @@ class DataManager:
             album_list = session.execute(select(Album)).scalars().all()
             return album_list
 
-    def get_all_album_paths_with_tags(self) -> list[tuple[str, str]]:
+    def get_all_album_paths_with_tags(self) -> list[tuple[AlbumPath, AlbumTag]]:
         album_list = self.get_all_albums()
 
-        if album_list:
-            # Create a mapping from tags to nodes for easy access
-            tag_to_album = {item.tag: item for item in album_list}
+        # Create a mapping from tags to nodes for easy access
+        tag_to_album: dict[AlbumTag, Album] = {item.tag: item for item in album_list}
 
-            # Create a list to store all paths with tags
-            paths = []
+        # Create a list to store all paths with tags
+        paths: list[tuple[AlbumPath, AlbumTag]] = []
 
-            def build_path(album):
-                path_elements = []
-                current_album = album
+        def build_path(album: Album) -> AlbumPath:
+            path_elements = []
+            current_album = album
 
-                # Traverse up to the root node, building the path
-                while current_album:
-                    path_elements.insert(
-                        0, current_album.name
-                    )  # Insert at the beginning to reverse the order
-                    # Find the parent tag by truncating the current node's path
-                    parent_path = current_album.path[: -len(current_album.tag)]
-                    parent_tag = parent_path[-3:] if parent_path else None
-                    current_album = tag_to_album.get(parent_tag)
+            # Traverse up to the root node, building the path
+            while current_album:
+                path_elements.insert(
+                    0, current_album.name
+                )  # Insert at the beginning to reverse the order
+                # Find the parent tag by truncating the current node's path
+                parent_path = current_album.path[: -len(current_album.tag)]
+                parent_tag = parent_path[-3:] if parent_path else None
+                current_album = tag_to_album.get(parent_tag) if parent_tag else None
 
-                # Join the path elements to form the full path
-                return "/".join(path_elements)
+            # Join the path elements to form the full path
+            return "/".join(path_elements)
 
-            # Generate paths for all nodes in the data
-            for album in album_list:
-                full_path = build_path(album)
-                paths.append((full_path, album.tag))
+        # Generate paths for all nodes in the data
+        for album in album_list:
+            full_path = build_path(album)
+            paths.append((full_path, album.tag))
 
-            return sorted(paths, key=lambda x: x[0])
+        return sorted(paths, key=lambda x: x[0])
 
     def update_local_db(self) -> bool:
         return cloud_ops.download_from_s3_bucket(
@@ -297,6 +309,8 @@ class DataManager:
         )
 
     def insert_media_list_to_local(self, media_list: list[Media]):
+        if not media_list:
+            raise ValueError("Media list to insert is empty")
         with self.get_session() as session:
             user_name = cloud_ops.get_user_name()
 
@@ -326,7 +340,6 @@ class DataManager:
                     .scalars()
                     .all()
                 )
-
                 if media_list:
                     if media_filter.days:
                         media_list = DataManager._apply_date_filter(
@@ -344,6 +357,7 @@ class DataManager:
                         media_list = DataManager._apply_date_filter(
                             media_list, media_filter.days_of_week, mode="weekday"
                         )
+                media_list = list(media_list)
             except Exception as e:
                 log(
                     "DataManager.get_filtered_media",
@@ -363,11 +377,10 @@ class DataManager:
                     "DataManager.get_filtered_media",
                     f"Filter returned {len(media_list)} results. Used Filter: {media_filter}",
                 )
-
             return media_list
 
     @staticmethod
-    def _build_selection(media_filter: MediaFilter):
+    def _build_selection(media_filter: MediaFilter) -> Select[tuple[Media]]:
         selection = (
             select(Media)
             .where(Media.status != 0)
@@ -521,25 +534,26 @@ class DataManager:
                 column_mapping[media_filter.sort[1]],
                 Media.rank,
             )
-
-        # Add privacy level constraint
-        selection = selection.where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
-
         return selection
 
     @staticmethod
-    def _build_select_people(filter_string: str):
+    def _build_select_people(filter_string: str) -> Select[tuple[Media]]:
         filter_condition = DataManager._build_filter_condition(
             filter_string, "search_people"
         )
-        return select(Media).where(filter_condition)
+        return (
+            select(Media)
+            .where(filter_condition)
+            .where(Media.status != 0)
+            .where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
+        )
 
     @staticmethod
     def _apply_date_filter(
         result: Sequence[Media],
         days: str,
         mode: Literal["day", "month", "year", "weekday"],
-    ):
+    ) -> list[Media]:
         filtered_results = [
             media
             for media in result
