@@ -382,59 +382,52 @@ def upload_database():
 
 def check_s3_write_permissions() -> bool:
     test_key = f"test/permission_check_{datetime.datetime.now().timestamp()}"
-    
+
     try:
-        s3.put_object(
-            Bucket=Config.S3_BUCKET_NAME,
-            Key=test_key,
-            Body=b''
-        )
-        
-        s3.delete_object(
-            Bucket=Config.S3_BUCKET_NAME,
-            Key=test_key
-        )
-        
+        s3.put_object(Bucket=Config.S3_BUCKET_NAME, Key=test_key, Body=b"")
+
+        s3.delete_object(Bucket=Config.S3_BUCKET_NAME, Key=test_key)
+
         return True
-        
+
     except (NoCredentialsError, PartialCredentialsError) as e:
         log(
             "cloud_ops.check_s3_write_permissions",
             f"Credential error: {e}",
-            level="error"
+            level="error",
         )
         return False
-        
+
     except ClientError as e:
-        error_code = e.response.get('Error', {}).get('Code', '')
-        if error_code == 'AccessDenied':
+        error_code = e.response.get("Error", {}).get("Code", "")
+        if error_code == "AccessDenied":
             log(
                 "cloud_ops.check_s3_write_permissions",
                 "Access denied when checking permissions.",
-                level="warning"
+                level="warning",
             )
             return False
         else:
             log(
                 "cloud_ops.check_s3_write_permissions",
                 f"Client error occurred: {e}",
-                level="error"
+                level="error",
             )
             raise e
-        
+
     except (EndpointConnectionError, ConnectionClosedError) as e:
         log(
             "cloud_ops.check_s3_write_permissions",
             "Network connection error encountered.",
-            level="warning"
+            level="warning",
         )
         raise e
-        
+
     except Exception as e:
         log(
             "cloud_ops.check_s3_write_permissions",
             f"An unexpected error occurred: {e}",
-            level="error"
+            level="error",
         )
         raise e
 

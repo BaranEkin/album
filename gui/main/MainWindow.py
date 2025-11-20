@@ -1315,9 +1315,9 @@ class MainWindow(QMainWindow):
             self.button_export_selected_media.setEnabled(False)
             self.button_bulk_edit_selected_media.setEnabled(False)
             self.button_add_to_list.setEnabled(False)
-        
+
         self.disable_features_by_permission()
-    
+
     def reorder_date(self, index):
         def reorder_date_procedure(date, reordered_keys):
             self.data_manager.update_local_db()

@@ -21,7 +21,7 @@ class Constants:
     TOOLTIP_BUTTON_ADD_TO_LIST = "Seçili medyaları bir listeye ekle"
     TOOLTIP_BUTTON_EXPLORE_FORGOTTEN = "Unutulanlardan 100 medya"
     TOOLTIP_BUTTON_SETTINGS = "Uygulama Ayarları"
-    
+
     TOOLTIP_DISABLED = "Bu özelliğe erişim yetkiniz yok!"
 
     TOOLTIP_CLOUD_FAIL = "Bulut bağlantısı sağlanamadı"
