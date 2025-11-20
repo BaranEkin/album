@@ -184,11 +184,18 @@ class ListModelThumbnail(QAbstractListModel):
         )
 
         # Reinitialize and reattach the model to the view
-        parent_view = self.parent().thumbnail_list
+        parent_dialog = self.parent()
+        parent_view = getattr(parent_dialog, "thumbnail_list", None)
         if parent_view:
             new_model = ListModelThumbnail(
-                self.thumbnail_keys, self.media_loader, parent=self.parent()
+                self.thumbnail_keys,
+                self.media_loader,
+                is_reorder=self.is_reorder,
+                parent=parent_dialog,
             )
+            # Keep the dialog's reference in sync with the view's model
+            if hasattr(parent_dialog, "thumbnail_model"):
+                parent_dialog.thumbnail_model = new_model
             parent_view.setModel(new_model)
 
         return True
