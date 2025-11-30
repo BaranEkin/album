@@ -1,11 +1,11 @@
 import re
-from typing import Literal
+from typing import Final, Literal
 from datetime import datetime, timedelta
 from time import time_ns
 
 from data.orm import Media
 
-turkish_months = {
+TURKISH_MONTHS: Final[dict[str, int]] = {
     "ocak": 1,
     "şubat": 2,
     "mart": 3,
@@ -19,23 +19,8 @@ turkish_months = {
     "kasım": 11,
     "aralık": 12,
 }
-
-months_in_turkish = {
-    1: "ocak",
-    2: "şubat",
-    3: "mart",
-    4: "nisan",
-    5: "mayıs",
-    6: "haziran",
-    7: "temmuz",
-    8: "ağustos",
-    9: "eylül",
-    10: "ekim",
-    11: "kasım",
-    12: "aralık",
-}
-
-turkish_weekdays = {
+MONTHS_IN_TURKISH: Final[dict[int, str]] = {v: k for k, v in TURKISH_MONTHS.items()}
+TURKISH_WEEKDAYS: Final[dict[str, int]] = {
     "pazartesi": 0,
     "salı": 1,
     "çarşamba": 2,
@@ -44,25 +29,14 @@ turkish_weekdays = {
     "cumartesi": 5,
     "pazar": 6,
 }
-
-weekdays_in_turkish = {
-    0: "pazartesi",
-    1: "salı",
-    2: "çarşamba",
-    3: "perşembe",
-    4: "cuma",
-    5: "cumartesi",
-    6: "pazar",
-}
-
-turkish_uppercase_map = str.maketrans(
+WEEKDAYS_IN_TURKISH: Final[dict[int, str]] = {v: k for k, v in TURKISH_WEEKDAYS.items()}
+TURKISH_UPPERCASE_MAP: Final[dict[int, str]] = str.maketrans(
     {
-        "i": "İ",  # Convert 'i' to 'İ'
-        "ı": "I",  # Convert 'ı' to 'I'
+        "i": "İ",
+        "ı": "I",
     }
 )
-
-turkish_lowercase_map = str.maketrans(
+TURKISH_LOWERCASE_MAP: Final[dict[int, str]] = str.maketrans(
     {
         "İ": "i",
         "I": "ı",
@@ -70,26 +44,23 @@ turkish_lowercase_map = str.maketrans(
 )
 
 
-def turkish_upper(text) -> str:
-    translated_text = text.translate(turkish_uppercase_map)
+def turkish_upper(text: str) -> str:
+    translated_text = text.translate(TURKISH_UPPERCASE_MAP)
     return translated_text.upper()
 
 
-def turkish_lower(text) -> str:
-    translated_text = text.translate(turkish_lowercase_map)
+def turkish_lower(text: str) -> str:
+    translated_text = text.translate(TURKISH_LOWERCASE_MAP)
     return translated_text.lower()
 
 
-def is_valid_people(people_str):
+def is_valid_people(people_str: str) -> bool:
     if not people_str:
         return True
-    # Define a regex pattern for Turkish names and multiple surnames
     pattern = r"^(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]*\s)+(?:[A-ZÇĞİÖŞÜ]+(?:\s[A-ZÇĞİÖŞÜ]+)*)$"
-    people_list = people_str.split(",")
+    people_list = [person.strip() for person in people_str.split(",")]
 
-    # Validate each name in the list
     for person in people_list:
-        # Trim whitespace and check if each line matches the full name pattern
         if not re.match(pattern, person):
             return False
 
@@ -103,8 +74,7 @@ def date_to_julian(date_str: str) -> float:
 
 
 def current_time_in_unix_subsec() -> float:
-    time_ms = time_ns() / 1000000
-    return time_ms / 1000
+    return time_ns() / 1_000_000_000
 
 
 def legacy_time_in_unix_subsec(legacy_time_str: str) -> float:
@@ -113,27 +83,16 @@ def legacy_time_in_unix_subsec(legacy_time_str: str) -> float:
 
 
 def get_unix_time_days_ago(days: int) -> float:
-    """
-    Get the Unix timestamp with subsecond precision for a specified number of days ago.
-
-    Args:
-        days (int): Number of days ago to calculate the timestamp.
-
-    Returns:
-        float: Unix timestamp with subsecond precision.
-    """
-
     now = datetime.now()
     time_days_ago = now - timedelta(days=days)
     return time_days_ago.timestamp()
 
 
 def normalize_date(date_str: str) -> str:
-    date_str = date_str.strip().lower()
+    date_str = date_str.strip().casefold()
 
     # Check if the date is in "DD.MM.YYYY" format directly.
     try:
-        # Try parsing as "DD.MM.YYYY".
         return datetime.strptime(date_str, "%d.%m.%Y").strftime("%d.%m.%Y")
     except ValueError:
         pass
@@ -143,19 +102,38 @@ def normalize_date(date_str: str) -> str:
     if len(parts) == 2:
         # Assume format "Month YYYY"
         month_str, year = parts
-        month = turkish_months.get(month_str.capitalize(), 1)
+        month = TURKISH_MONTHS.get(month_str)
+        if month is None or not (year.isdigit() and len(year) == 4):
+            return ""
         return f"01.{month:02d}.{year}"
     elif len(parts) == 3:
         # Assume format "DD Month YYYY"
-        day, month_str, year = parts
-        day = int(day)
-        month = turkish_months.get(month_str.capitalize(), 1)
+        day_str, month_str, year = parts
+        try:
+            day = int(day_str)
+        except ValueError:
+            return ""
+        month = TURKISH_MONTHS.get(month_str)
+        if month is None or not (year.isdigit() and len(year) == 4):
+            return ""
+        if not 1 <= day <= 31:
+            return ""
         return f"{day:02d}.{month:02d}.{year}"
 
     # Check for "MM.YYYY"
-    if "." in date_str and len(date_str.split(".")) == 2:
-        month, year = date_str.split(".")
-        return f"01.{int(month):02d}.{year}"
+    if "." in date_str:
+        mm_yyyy_parts = date_str.split(".")
+        if len(mm_yyyy_parts) == 2:
+            month_str, year = mm_yyyy_parts
+            try:
+                month = int(month_str)
+            except ValueError:
+                return ""
+            if not 1 <= month <= 12:
+                return ""
+            if not (year.isdigit() and len(year) == 4):
+                return ""
+            return f"01.{month:02d}.{year}"
 
     # Check for "YYYY" only.
     if date_str.isdigit() and len(date_str) == 4:
@@ -169,7 +147,7 @@ def date_includes(
     precision: int,
     input_list: list[str],
     mode: Literal["day", "month", "year", "weekday"],
-):
+) -> bool:
     """
     Check if a given date includes at least one of the specified values based on precision and mode.
 
@@ -202,7 +180,7 @@ def date_includes(
             return False
         month_number = int(month)
         month_without_leading_zeros = str(month_number)
-        month_name = months_in_turkish[month_number]
+        month_name = MONTHS_IN_TURKISH[month_number]
         return (
             month_without_leading_zeros in input_list
             or month_name in input_list
@@ -222,7 +200,7 @@ def date_includes(
         except ValueError:
             raise ValueError("Invalid date provided.")
         weekday_number = date_obj.weekday()
-        weekday_name = weekdays_in_turkish[weekday_number]
+        weekday_name = WEEKDAYS_IN_TURKISH[weekday_number]
         weekday_number_in_input_format = str(weekday_number + 1)
         return (
             weekday_name in input_list
@@ -230,10 +208,7 @@ def date_includes(
             or weekday_number_in_input_format.zfill(2) in input_list
         )
 
-    else:
-        raise ValueError("Mode must be 'day', 'month', 'year', or 'weekday'.")
 
-
-def generate_export_filename(media: Media):
+def generate_export_filename(media: Media) -> str:
     day, month, year = media.date_text.split(".")
     return f"M{year}{month}{day}_{int(media.rank):03d}{media.extension}"
