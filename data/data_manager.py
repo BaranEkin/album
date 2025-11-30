@@ -54,19 +54,19 @@ class DataManager:
 
     def build_media(
         self,
-        path,
-        topic,
-        title,
-        location,
-        date_text,
-        date_est,
-        albums,
-        tags,
-        notes,
-        people,
-        people_detect,
-        people_count,
-        private,
+        path: str,
+        topic: str | None,
+        title: str | None,
+        location: str,
+        date_text: str,
+        date_est: int,
+        albums: str | None,
+        tags: str | None,
+        notes: str | None,
+        people: str | None,
+        people_detect: str | None,
+        people_count: int | None,
+        private: int,
     ) -> Media:
         date = date_to_julian(date_text)
         created_at = current_time_in_unix_subsec()
