@@ -67,7 +67,7 @@ class DisplayHistoryManager:
                 uuid: timestamp.isoformat()
                 for uuid, timestamp in self.display_history.items()
             }
-            json.dump(display_history_json, f)
+            json.dump(display_history_json, f, ensure_ascii=False, indent=4)
 
     def update(self, uuid: MediaUUID):
         self.display_history[uuid] = datetime.now()
