@@ -10,18 +10,22 @@ from PyQt5.QtWidgets import (
     QListWidget,
     QFrame,
     QFileSystemModel,
+    QScrollArea,
+    QWidget,
+    QLabel,
 )
-from PyQt5.QtCore import QDir, Qt
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QDir, Qt, QPoint
+from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PIL import Image
 
 from logger import log
 from data.helpers import is_valid_people
 from gui.message import show_message
-from gui.add.LabelImageAdd import LabelImageAdd
 from gui.add.FrameAddInfo import FrameAddInfo
 from gui.add.FrameAction import FrameAction
 from gui.add.DialogUpload import DialogUpload
+from gui.add.DialogAssignPerson import DialogAssignPerson
+from gui.main.FaceOverlayWidget import FaceOverlayWidget
 from data.data_manager import DataManager
 from config.config import Config
 
@@ -97,11 +101,36 @@ class DialogAddMedia(QDialog):
         self.frame_media_layout = QVBoxLayout(self.frame_media)
         self.frame_media.setContentsMargins(0, 0, 0, 0)
 
-        # Create the clickable image label (top part of frame_media)
-        self.image_label = LabelImageAdd(self.people_list, parent=self.frame_media)
+        # Create scroll area for image with zoom/pan support
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setFixedSize(800, 500)
+        self.scroll_area.setWidgetResizable(False)
+        self.scroll_area.setAlignment(Qt.AlignCenter)
+
+        # Create container widget to hold image label and face overlay
+        self.image_container = QWidget()
+        self.image_container.setStyleSheet("background: transparent;")
+
+        # Create image label
+        self.image_label = QLabel(self.image_container)
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setFixedSize(800, 500)
-        self.frame_media_layout.addWidget(self.image_label)
+        self.image_label.setScaledContents(True)
+        self.image_label.move(0, 0)
+        # These attributes are needed by FaceOverlayWidget for coordinate calculations
+        self.image_label.initial_scale = 1.0
+        self.image_label.scale_modifier = 0.0
+
+        # Create interactive face overlay (smaller sizes for dialog windows)
+        self.face_overlay = FaceOverlayWidget(
+            self.image_container, interactive=True, font_size=10, border_width=2
+        )
+        self.face_overlay.set_image_label(self.image_label)
+        self.face_overlay.move(0, 0)
+        self.face_overlay.box_clicked.connect(self._on_face_box_clicked)
+        self.face_overlay.box_drawn.connect(self._on_face_box_drawn)
+
+        self.scroll_area.setWidget(self.image_container)
+        self.frame_media_layout.addWidget(self.scroll_area)
 
         # Create the frame_details (bottom part of frame_media)
         self.frame_add_info = FrameAddInfo(locations=self.locations_list, parent=self)
@@ -184,12 +213,13 @@ class DialogAddMedia(QDialog):
         if file_ops.get_file_type(self.selected_media_path) == 1:
             self.frame_add_info.set_people_enable(False)
             self.detect_people()
-            self.draw_identifications()
-            self.image_label.set_image("temp/detections.jpg")
+            self._load_image_to_viewer(self.selected_media_path)
+            self._update_overlay()
 
         # Selected media is a video/audio
         else:
             self.image_label.clear()
+            self.face_overlay.clear_overlays()
             self.frame_add_info.set_people_enable(True)
             file_ops.open_with_default_app(self.selected_media_path)
 
@@ -200,24 +230,77 @@ class DialogAddMedia(QDialog):
             next_item = self.media_list.item(next_row)
             self.on_media_selected(next_item)
 
+    def _load_image_to_viewer(self, image_path: str):
+        """Load image into the viewer and set up scaling."""
+        q_image = QImage(image_path)
+        if q_image.isNull():
+            return
+
+        pixmap = QPixmap.fromImage(q_image)
+        original_size = pixmap.size()
+
+        # Scale to fit scroll area
+        viewport_size = self.scroll_area.viewport().size()
+        scale_w = viewport_size.width() / original_size.width()
+        scale_h = viewport_size.height() / original_size.height()
+        scale = min(scale_w, scale_h)
+
+        new_width = int(original_size.width() * scale)
+        new_height = int(original_size.height() * scale)
+
+        scaled_pixmap = pixmap.scaled(
+            new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation
+        )
+        self.image_label.setPixmap(scaled_pixmap)
+        self.image_label.setFixedSize(new_width, new_height)
+        self.image_label.initial_scale = scale
+        self.image_label.scale_modifier = 0.0
+
+        # Sync container and overlay sizes
+        self.image_container.setFixedSize(new_width, new_height)
+        self.face_overlay.setFixedSize(new_width, new_height)
+
+    def _update_overlay(self):
+        """Update the face overlay with current detections."""
+        self.face_overlay.set_detections_list(self.detections_with_names)
+        self.frame_add_info.set_people(self.get_people())
+
     def detect_people(self):
+        """Run face detection on the current image."""
         image = Image.open(self.selected_media_path)
         self.detections_with_names = face_detection.detect_people(image)
-        self.image_label.detections_with_names = self.detections_with_names
-
-    def draw_identifications(self):
-        image = Image.open(self.selected_media_path)
-        image = face_detection.draw_identifications(image, self.detections_with_names)
-        image = image.convert("RGB")
-        image.save("temp/detections.jpg")
 
     def update_identifications(self, detections_with_names):
+        """Update detections and refresh the overlay."""
         self.detections_with_names = face_detection.preprocess_detections(
             detections_with_names
         )
-        self.draw_identifications()
-        self.frame_add_info.set_people(self.get_people())
-        self.image_label.set_image("temp/detections.jpg")
+        self._update_overlay()
+
+    def _on_face_box_clicked(self, detection_index: int, global_pos: QPoint):
+        """Handle click on a face detection box - open dialog to edit name."""
+        current_name = self.detections_with_names[detection_index][4]
+
+        dialog = DialogAssignPerson(current_name, self.people_list, self)
+        dialog.move(global_pos)
+        previous_name = dialog.input_field.text()
+
+        if dialog.exec_() != 0:
+            new_name = dialog.input_field.text()
+            self.detections_with_names[detection_index][4] = new_name
+            self.update_identifications(self.detections_with_names)
+
+    def _on_face_box_drawn(self, x: int, y: int, w: int, h: int, global_pos: QPoint):
+        """Handle drawing a new face detection box."""
+        dialog = DialogAssignPerson("", self.people_list, self)
+        dialog.move(global_pos)
+
+        if dialog.exec_() != 0:
+            name = dialog.input_field.text()
+            # Add new detection as manual
+            detection = [x, y, w, h, name, "manual"]
+            self.detections_with_names.append(detection)
+            self.update_identifications(self.detections_with_names)
 
     def get_people_detect(self):
         people_detect = ",".join(
