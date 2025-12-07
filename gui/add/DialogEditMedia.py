@@ -21,7 +21,8 @@ class DialogEditMedia(DialogAddMedia):
 
         self.media = media
         self.media_loader = media_loader
-        self.setFixedSize(1100, 900)
+        self.setMinimumSize(1100, 900)
+        self.resize(1100, 900)
 
         self.frame_navigation.hide()
         self.frame_add_info.radio_label.hide()
