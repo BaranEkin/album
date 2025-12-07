@@ -106,6 +106,7 @@ class DialogAddMedia(QDialog):
         self.scroll_area.setFixedSize(800, 500)
         self.scroll_area.setWidgetResizable(False)
         self.scroll_area.setAlignment(Qt.AlignCenter)
+        self.scroll_area.viewport().installEventFilter(self)
 
         # Create container widget to hold image label and face overlay
         self.image_container = QWidget()
@@ -119,6 +120,16 @@ class DialogAddMedia(QDialog):
         # These attributes are needed by FaceOverlayWidget for coordinate calculations
         self.image_label.initial_scale = 1.0
         self.image_label.scale_modifier = 0.0
+        self.image_label.original_size = None
+
+        # Store original pixmap for quality zooming
+        self._original_pixmap = None
+
+        # Panning state
+        self._is_panning = False
+        self._pan_start = QPoint()
+        self._scroll_start_h = 0
+        self._scroll_start_v = 0
 
         # Create interactive face overlay (smaller sizes for dialog windows)
         self.face_overlay = FaceOverlayWidget(
@@ -236,8 +247,8 @@ class DialogAddMedia(QDialog):
         if q_image.isNull():
             return
 
-        pixmap = QPixmap.fromImage(q_image)
-        original_size = pixmap.size()
+        self._original_pixmap = QPixmap.fromImage(q_image)
+        original_size = self._original_pixmap.size()
 
         # Scale to fit scroll area
         viewport_size = self.scroll_area.viewport().size()
@@ -248,13 +259,14 @@ class DialogAddMedia(QDialog):
         new_width = int(original_size.width() * scale)
         new_height = int(original_size.height() * scale)
 
-        scaled_pixmap = pixmap.scaled(
+        scaled_pixmap = self._original_pixmap.scaled(
             new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
         self.image_label.setPixmap(scaled_pixmap)
         self.image_label.setFixedSize(new_width, new_height)
         self.image_label.initial_scale = scale
         self.image_label.scale_modifier = 0.0
+        self.image_label.original_size = original_size
 
         # Sync container and overlay sizes
         self.image_container.setFixedSize(new_width, new_height)
@@ -301,6 +313,88 @@ class DialogAddMedia(QDialog):
             detection = [x, y, w, h, name, "manual"]
             self.detections_with_names.append(detection)
             self.update_identifications(self.detections_with_names)
+
+    # === Zoom/Pan Support ===
+
+    def eventFilter(self, obj, event):
+        """Handle wheel events for zoom and mouse events for pan."""
+        from PyQt5.QtCore import QEvent
+
+        if obj == self.scroll_area.viewport():
+            # Wheel zoom
+            if event.type() == QEvent.Wheel:
+                if event.angleDelta().y() > 0:
+                    self._zoom_in(event.pos())
+                else:
+                    self._zoom_out(event.pos())
+                return True
+
+            # Middle button pan
+            if event.type() == QEvent.MouseButtonPress:
+                if event.button() == Qt.MiddleButton:
+                    self._is_panning = True
+                    self._pan_start = event.globalPos()
+                    self._scroll_start_h = (
+                        self.scroll_area.horizontalScrollBar().value()
+                    )
+                    self._scroll_start_v = self.scroll_area.verticalScrollBar().value()
+                    return True
+
+            if event.type() == QEvent.MouseMove and self._is_panning:
+                delta = event.globalPos() - self._pan_start
+                self.scroll_area.horizontalScrollBar().setValue(
+                    self._scroll_start_h - delta.x()
+                )
+                self.scroll_area.verticalScrollBar().setValue(
+                    self._scroll_start_v - delta.y()
+                )
+                return True
+
+            if event.type() == QEvent.MouseButtonRelease:
+                if event.button() == Qt.MiddleButton:
+                    self._is_panning = False
+                    return True
+
+        return super().eventFilter(obj, event)
+
+    def _zoom_in(self, pos):
+        """Zoom in on the image."""
+        if not self._original_pixmap:
+            return
+        self.image_label.scale_modifier = min(
+            self.image_label.scale_modifier + 0.15, 4.0
+        )
+        self._apply_zoom()
+
+    def _zoom_out(self, pos):
+        """Zoom out of the image."""
+        if not self._original_pixmap:
+            return
+        self.image_label.scale_modifier = max(
+            self.image_label.scale_modifier - 0.15, 0.0
+        )
+        self._apply_zoom()
+
+    def _apply_zoom(self):
+        """Apply the current zoom level to the image and overlay."""
+        if not self._original_pixmap or not self.image_label.original_size:
+            return
+
+        scale = self.image_label.initial_scale * (self.image_label.scale_modifier + 1)
+        new_width = int(self.image_label.original_size.width() * scale)
+        new_height = int(self.image_label.original_size.height() * scale)
+
+        # Scale from original for quality
+        scaled_pixmap = self._original_pixmap.scaled(
+            new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation
+        )
+        self.image_label.setPixmap(scaled_pixmap)
+        self.image_label.setFixedSize(new_width, new_height)
+
+        # Sync container and overlay
+        self.image_container.setFixedSize(new_width, new_height)
+        self.face_overlay.setFixedSize(new_width, new_height)
+        self.face_overlay.update_positions()
 
     def get_people_detect(self):
         people_detect = ",".join(
