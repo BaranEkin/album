@@ -25,6 +25,9 @@ class LabelImageViewer(QLabel):
         self.media_loader = media_loader
         self.current_media_key = None
 
+        # Callback for notifying parent when image size changes (zoom)
+        self.on_size_changed = None
+
     def mousePressEvent(self, event):
         if self.is_image:
             if event.button() == Qt.LeftButton:
@@ -179,3 +182,7 @@ class LabelImageViewer(QLabel):
 
         # Move the cursor to the calculated position
         QCursor.setPos(cursor_x, cursor_y)
+
+        # Notify parent of size change for overlay synchronization
+        if self.on_size_changed:
+            self.on_size_changed()

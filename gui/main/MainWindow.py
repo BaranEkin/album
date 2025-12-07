@@ -43,6 +43,7 @@ from gui.main.LabelImageViewer import LabelImageViewer
 from gui.add.DialogAddMedia import DialogAddMedia
 from gui.main.DialogPeople import DialogPeople
 from gui.main.DialogNotes import DialogNotes
+from gui.main.FaceOverlayWidget import FaceOverlayWidget
 from config.config import Config
 
 import face_detection
@@ -320,11 +321,34 @@ class MainWindow(QMainWindow):
         self.scroll_area.setFocusPolicy(Qt.NoFocus)
         self.scroll_area.setObjectName("imageViewer")  # Set object name for styling
 
-        # Create a ImageViewerLabel for the image and add it to the scroll area
+        # Create a container widget to hold both image and face overlay
+        self.image_container = QWidget()
+        self.image_container.setStyleSheet("background: transparent;")
+
+        # Create a ImageViewerLabel for the image
         self.image_label = LabelImageViewer(self.scroll_area, self.media_loader)
         self.image_label.setBackgroundRole(QPalette.Base)
         self.image_label.setScaledContents(True)
-        self.scroll_area.setWidget(self.image_label)
+        self.image_label.setParent(self.image_container)
+        self.image_label.move(0, 0)
+
+        # Create face overlay widget (sits on top of image_label)
+        self.face_overlay = FaceOverlayWidget(self.image_container)
+        self.face_overlay.set_image_label(self.image_label)
+        self.face_overlay.move(0, 0)
+        self.face_overlay.hide()  # Hidden by default
+
+        # State variable for overlay visibility
+        self.face_overlay_visible = False
+
+        # Create persistent people dialog (hidden initially)
+        self.dialog_people = DialogPeople(parent=self)
+        self.dialog_people.closed_by_user.connect(self._on_dialog_people_closed)
+
+        # Set callback for zoom operations
+        self.image_label.on_size_changed = self._on_image_size_changed
+
+        self.scroll_area.setWidget(self.image_container)
 
         # Center the image_label within the scroll area
         self.scroll_area.setAlignment(Qt.AlignCenter)
@@ -680,37 +704,42 @@ class MainWindow(QMainWindow):
 
     def on_button_people_clicked(self, checked):
         if checked:
-            media_key = (
-                f"{self.displayed_media.media_uuid}{self.displayed_media.extension}"
-            )
-            q_image = self.media_loader.get_image(media_key)
-            if q_image is None:
-                pass
-            q_image.save("temp/detections.jpg", "JPEG")
-            pil_image = Image.open("temp/detections.jpg")
+            # Toggle overlay and dialog ON
+            self._show_people_overlay_and_dialog()
+        else:
+            # Toggle overlay and dialog OFF
+            self._hide_people_overlay_and_dialog()
 
-            people = self.displayed_media.people
-            people_detect = self.displayed_media.people_detect
+        self.frame_bottom.button_people.setChecked(self.face_overlay_visible)
 
-            if people is not None and people_detect is not None:
-                dwn = face_detection.build_detections_with_names(people_detect, people)
-                pil_image = face_detection.draw_identifications(pil_image, dwn)
-                pil_image = pil_image.convert("RGB")
-                pil_image.save("temp/detections.jpg", "JPEG")
-                q_image = QImage("temp/detections.jpg")
-                pixmap = QPixmap.fromImage(q_image)
-                self.image_label.setPixmap(pixmap)
-                self.fit_to_window()
+    def _show_people_overlay_and_dialog(self):
+        """Show face overlay and people dialog for current media."""
+        self.face_overlay_visible = True
+        people = self.displayed_media.people
+        people_detect = self.displayed_media.people_detect
 
-            dialog_people = DialogPeople(people or "", parent=self)
-            dialog_people.exec_()
-            self.frame_bottom.button_people.setChecked(False)
+        # Update and show overlay
+        self.face_overlay.set_detections(people_detect, people)
+        self.face_overlay.show()
+        self.face_overlay.raise_()
+        self.face_overlay.update_positions()
 
-            selected_indexes = self.thumbnail_list.selectedIndexes()
-            if selected_indexes:
-                current_index = selected_indexes[0].row()
-                item = self.thumbnail_model.index(current_index)
-                self.on_media_selected(item)
+        # Update and show dialog
+        self.dialog_people.set_people(people or "")
+        self.dialog_people.show_at_position()
+
+    def _hide_people_overlay_and_dialog(self):
+        """Hide face overlay and people dialog."""
+        self.face_overlay_visible = False
+        self.face_overlay.clear_overlays()
+        self.face_overlay.hide()
+        self.dialog_people.close_programmatically()
+
+    def _on_dialog_people_closed(self):
+        """Handle when user closes the dialog via X button."""
+        # Sync the system: turn off overlay and uncheck button
+        self._hide_people_overlay_and_dialog()
+        self.frame_bottom.button_people.setChecked(False)
 
     def on_button_notes_clicked(self, checked):
         if checked:
@@ -761,6 +790,14 @@ class MainWindow(QMainWindow):
             if self.is_first_selection:
                 self.is_first_selection = False
                 # Perform any actions you want to do on the first selection here
+
+            # Update face overlay and dialog if visible (when switching media)
+            if self.face_overlay_visible:
+                people = self.displayed_media.people
+                people_detect = self.displayed_media.people_detect
+                self.face_overlay.set_detections(people_detect, people)
+                self.face_overlay.update_positions()
+                self.dialog_people.set_people(people or "")
 
     def load_media_metadata(self):
         self.frame_bottom.set_media_info(self.displayed_media)
@@ -878,6 +915,20 @@ class MainWindow(QMainWindow):
             self.image_label.initial_scale = new_width / (img_size.width() + 0.001)
             self.image_label.original_size = img_size
             self.image_label.scale_modifier = 0.0
+
+            # Sync container and overlay sizes with image label
+            self.image_container.setFixedSize(new_width, new_height)
+            self.face_overlay.setFixedSize(new_width, new_height)
+            if self.face_overlay_visible:
+                self.face_overlay.update_positions()
+
+    def _on_image_size_changed(self):
+        """Handle image zoom/resize for overlay synchronization."""
+        # Sync container and overlay sizes with image label
+        self.image_container.setFixedSize(self.image_label.size())
+        self.face_overlay.setFixedSize(self.image_label.size())
+        if self.face_overlay_visible:
+            self.face_overlay.update_positions()
 
     def adjust_scroll_area(self, click_pos, scale_factor, old_width, old_height):
         horizontal_scroll = self.scroll_area.horizontalScrollBar()

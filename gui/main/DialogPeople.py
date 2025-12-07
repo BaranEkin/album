@@ -1,10 +1,13 @@
 from PyQt5.QtWidgets import QDialog, QTextBrowser, QVBoxLayout, QApplication
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 import platform
 
 
 class DialogPeople(QDialog):
-    def __init__(self, people_str: str, parent=None):
+    # Signal emitted when dialog is closed by user (X button)
+    closed_by_user = pyqtSignal()
+
+    def __init__(self, parent=None):
         # For Wayland compatibility, set the right window flags from the beginning
         if platform.system() == "Linux":
             # Use Popup type which has better positioning behavior on Wayland
@@ -15,25 +18,43 @@ class DialogPeople(QDialog):
         self.setWindowTitle("Kişiler")
         self.setFixedSize(250, 250)
 
-        self.people_text = people_str.replace(",", "\n")
         layout = QVBoxLayout()
 
         # Create a QTextBrowser for displaying text
-        text_browser = QTextBrowser()
-        text_browser.setObjectName("peopleBrowser")  # Set object name for styling
+        self.text_browser = QTextBrowser()
+        self.text_browser.setObjectName("peopleBrowser")  # Set object name for styling
 
         # Set custom font - color will be handled by theme
-        text_browser.setStyleSheet("font-family: Arial; font-size: 18px;")
-
-        text_browser.setText(self.people_text)
+        self.text_browser.setStyleSheet("font-family: Arial; font-size: 18px;")
 
         # Add the text browser to the layout
-        layout.addWidget(text_browser)
+        layout.addWidget(self.text_browser)
         self.setLayout(layout)
 
-        # Position first, then show
+        # Track if close was triggered programmatically
+        self._closing_programmatically = False
+
+    def set_people(self, people_str: str):
+        """Update the displayed people list."""
+        people_text = people_str.replace(",", "\n") if people_str else ""
+        self.text_browser.setText(people_text)
+
+    def show_at_position(self):
+        """Show the dialog at its calculated position."""
         self.calculate_position()
         self.show()
+
+    def close_programmatically(self):
+        """Close the dialog without emitting closed_by_user signal."""
+        self._closing_programmatically = True
+        self.close()
+        self._closing_programmatically = False
+
+    def closeEvent(self, event):
+        """Handle close event - emit signal if closed by user (X button)."""
+        if not self._closing_programmatically:
+            self.closed_by_user.emit()
+        super().closeEvent(event)
 
     def calculate_position(self):
         """Calculate and set the position of the dialog at the bottom right of the parent or screen."""
