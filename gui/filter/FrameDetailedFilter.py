@@ -10,8 +10,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-from data.helpers import turkish_upper
-
 
 class FrameDetailedFilter(QFrame):
     def __init__(self):
@@ -286,13 +284,13 @@ class FrameDetailedFilter(QFrame):
         self.additional_date_filters_checkbox.setChecked(False)
 
     def get_topic(self):
-        return turkish_upper(self.topic_input.text().strip())
+        return self.topic_input.text().strip()
 
     def get_title(self):
-        return turkish_upper(self.title_input.text().strip())
+        return self.title_input.text().strip()
 
     def get_location(self):
-        return turkish_upper(self.location_input.text().strip())
+        return self.location_input.text().strip()
 
     def get_people(self):
         return self.people_input.text().strip()

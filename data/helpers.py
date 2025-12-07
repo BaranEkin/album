@@ -54,6 +54,24 @@ def turkish_lower(text: str) -> str:
     return translated_text.lower()
 
 
+TURKISH_I_NORMALIZE_MAP: Final[dict[int, str]] = str.maketrans(
+    {
+        "İ": "i",
+        "I": "i",
+        "ı": "i",
+        # "i" stays as "i"
+    }
+)
+
+
+def turkish_normalize(text: str | None) -> str:
+    if not text:
+        return ""
+    # First normalize i-variants, then lowercase
+    text = text.translate(TURKISH_I_NORMALIZE_MAP)
+    return text.lower()
+
+
 def is_valid_people(people_str: str) -> bool:
     if not people_str:
         return True

@@ -4,7 +4,7 @@ from typing import Sequence, Literal, Iterator
 from contextlib import contextmanager
 
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import create_engine, and_, or_, select, Engine, Select
+from sqlalchemy import create_engine, and_, or_, select, Engine, Select, event, func
 
 from logger import log
 from config.config import Config
@@ -15,7 +15,7 @@ from data.helpers import (
     current_time_in_unix_subsec,
     normalize_date,
     date_includes,
-    turkish_upper,
+    turkish_normalize,
 )
 from ops import cloud_ops, file_ops
 from typing import Final
@@ -35,6 +35,13 @@ class DataManager:
         self.db_engine = create_engine(
             f"sqlite:///{Config.DATABASE_DIR}/{ALBUM_DATABASE_FILENAME}"
         )
+
+        def _register_turkish_functions(dbapi_connection, connection_record):
+            """Register custom Turkish text functions with SQLite connection."""
+            dbapi_connection.create_function("turkish_normalize", 1, turkish_normalize)
+
+        # Register Turkish text functions for case/i-insensitive search
+        event.listen(self.db_engine, "connect", _register_turkish_functions)
 
     def get_db_engine(self) -> Engine | None:
         if not self.db_engine:
@@ -418,19 +425,12 @@ class DataManager:
                 Media.date_text,
             ]
 
-            conditions = []
-            conditions.extend(
-                [
-                    field.ilike(f"%{media_filter.quick}%")
-                    for field in quick_filter_fields
-                ]
-            )
-            conditions.extend(
-                [
-                    field.ilike(f"%{turkish_upper(media_filter.quick)}%")
-                    for field in quick_filter_fields
-                ]
-            )
+            # Use turkish_normalize for case+i-insensitive search
+            normalized_query = turkish_normalize(media_filter.quick)
+            conditions = [
+                func.turkish_normalize(field).like(f"%{normalized_query}%")
+                for field in quick_filter_fields
+            ]
 
             selection = selection.where(or_(*conditions))
             selection = selection.order_by(Media.date, Media.rank)
@@ -565,20 +565,26 @@ class DataManager:
 
     @staticmethod
     def _parse_filter_string(expr: str, function_name: str):
+        # Use turkish_normalize for case+i-insensitive search
         def search_people(key: str):
-            return Media.people.op("GLOB")(f"*{key}*")
+            normalized_key = turkish_normalize(key)
+            return func.turkish_normalize(Media.people).like(f"%{normalized_key}%")
 
         def search_tags(key: str):
-            return Media.tags.op("GLOB")(f"*{key}*")
+            normalized_key = turkish_normalize(key)
+            return func.turkish_normalize(Media.tags).like(f"%{normalized_key}%")
 
         def search_topic(key: str):
-            return Media.topic.op("GLOB")(f"*{key}*")
+            normalized_key = turkish_normalize(key)
+            return func.turkish_normalize(Media.topic).like(f"%{normalized_key}%")
 
         def search_title(key: str):
-            return Media.title.op("GLOB")(f"*{key}*")
+            normalized_key = turkish_normalize(key)
+            return func.turkish_normalize(Media.title).like(f"%{normalized_key}%")
 
         def search_location(key: str):
-            return Media.location.op("GLOB")(f"*{key}*")
+            normalized_key = turkish_normalize(key)
+            return func.turkish_normalize(Media.location).like(f"%{normalized_key}%")
 
         # Handle , (OR) operator first
         open_parens = 0
