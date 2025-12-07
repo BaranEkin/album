@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QRadioButton,
     QButtonGroup,
+    QSizePolicy,
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -27,6 +28,11 @@ class FrameAddInfo(QFrame):
         # Main vertical layout
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Set size policy and fixed height to not expand vertically
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setFixedHeight(350)
 
         # Frame: Topic
         frame_topic = QFrame(self)
@@ -35,9 +41,9 @@ class FrameAddInfo(QFrame):
         label_topic.setFixedWidth(40)
         label_topic.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.input_topic = QLineEdit()
-        self.input_topic.setFixedWidth(700)
+        self.input_topic.setMinimumWidth(400)
         frame_topic_layout.addWidget(label_topic)
-        frame_topic_layout.addWidget(self.input_topic)
+        frame_topic_layout.addWidget(self.input_topic, stretch=1)
         main_layout.addWidget(frame_topic)
 
         # Frame: Title
@@ -47,9 +53,9 @@ class FrameAddInfo(QFrame):
         label_title.setFixedWidth(40)
         label_title.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.input_title = QLineEdit()
-        self.input_title.setFixedWidth(700)
+        self.input_title.setMinimumWidth(400)
         frame_title_layout.addWidget(label_title)
-        frame_title_layout.addWidget(self.input_title)
+        frame_title_layout.addWidget(self.input_title, stretch=1)
         main_layout.addWidget(frame_title)
 
         # Frame: Location
@@ -59,7 +65,7 @@ class FrameAddInfo(QFrame):
         label_location.setFixedWidth(40)
         label_location.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.input_location = QLineEdit()
-        self.input_location.setFixedWidth(670)
+        self.input_location.setMinimumWidth(370)
         self.button_location = QPushButton()
         self.button_location.setIcon(
             QIcon("res/icons/List-Search--Streamline-Tabler.png")
@@ -68,7 +74,7 @@ class FrameAddInfo(QFrame):
         self.button_location.clicked.connect(self.show_location_dialog)
 
         frame_location_layout.addWidget(label_location)
-        frame_location_layout.addWidget(self.input_location)
+        frame_location_layout.addWidget(self.input_location, stretch=1)
         frame_location_layout.addWidget(self.button_location)
         main_layout.addWidget(frame_location)
 
@@ -131,7 +137,7 @@ class FrameAddInfo(QFrame):
         tags_layout.addWidget(self.input_tags)
         group_tags.setLayout(tags_layout)
 
-        frame_date_and_tags_layout.addWidget(group_tags)
+        frame_date_and_tags_layout.addWidget(group_tags, stretch=1)
         main_layout.addWidget(frame_date_and_tags)
 
         # Frame 4: Notes People
@@ -145,14 +151,14 @@ class FrameAddInfo(QFrame):
         self.input_people.setEnabled(False)
         people_layout.addWidget(self.input_people)
         group_people.setLayout(people_layout)
-        frame_people_notes_layout.addWidget(group_people)
+        frame_people_notes_layout.addWidget(group_people, stretch=0)
 
         group_notes = QGroupBox(Constants.LABEL_NOTES)
         notes_layout = QVBoxLayout()
         self.input_notes = QTextEdit()
         notes_layout.addWidget(self.input_notes)
         group_notes.setLayout(notes_layout)
-        frame_people_notes_layout.addWidget(group_notes)
+        frame_people_notes_layout.addWidget(group_notes, stretch=1)
 
         main_layout.addWidget(frame_people_notes)
 

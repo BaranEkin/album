@@ -50,15 +50,17 @@ class DialogAddMedia(QDialog):
         self.selected_media_path = ""
         self.detections_with_names = []
 
-        self.setFixedSize(1350, 900)
+        self.setMinimumSize(1350, 900)
+        self.resize(1350, 900)  # Start at minimum size
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint)
 
         # Main layout of the dialog (horizontal layout for the 3 frames)
         self.main_layout = QHBoxLayout(self)
         self.main_layout.setSpacing(0)
 
-        # Create left frame: frame_navigation
+        # Create left frame: frame_navigation (fixed width, sticks to left)
         self.frame_navigation = QFrame(self)
-        self.frame_navigation.setFixedWidth(250)  # Set fixed width for frame_navigation
+        self.frame_navigation.setFixedWidth(250)
         self.frame_navigation_layout = QVBoxLayout(self.frame_navigation)
         self.frame_navigation.setContentsMargins(0, 0, 0, 0)
 
@@ -93,17 +95,17 @@ class DialogAddMedia(QDialog):
         self.frame_navigation_layout.addWidget(self.checkbox_delete_source)
 
         # Add the frame_navigation to the main layout
-        self.main_layout.addWidget(self.frame_navigation)
+        self.main_layout.addWidget(self.frame_navigation, stretch=0)
 
-        # Create middle frame: frame_media
+        # Create middle frame: frame_media (expands with window)
         self.frame_media = QFrame(self)
-        self.frame_media.setFixedWidth(800)
+        self.frame_media.setMinimumWidth(800)
         self.frame_media_layout = QVBoxLayout(self.frame_media)
         self.frame_media.setContentsMargins(0, 0, 0, 0)
 
-        # Create scroll area for image with zoom/pan support
+        # Create scroll area for image with zoom/pan support (expands with frame)
         self.scroll_area = QScrollArea()
-        self.scroll_area.setFixedSize(800, 500)
+        self.scroll_area.setMinimumSize(800, 500)
         self.scroll_area.setWidgetResizable(False)
         self.scroll_area.setAlignment(Qt.AlignCenter)
         self.scroll_area.viewport().installEventFilter(self)
@@ -141,25 +143,28 @@ class DialogAddMedia(QDialog):
         self.face_overlay.box_drawn.connect(self._on_face_box_drawn)
 
         self.scroll_area.setWidget(self.image_container)
-        self.frame_media_layout.addWidget(self.scroll_area)
+        self.frame_media_layout.addWidget(
+            self.scroll_area, stretch=1
+        )  # Expands vertically
 
-        # Create the frame_details (bottom part of frame_media)
+        # Create the frame_details (bottom part of frame_media, sticks to bottom)
         self.frame_add_info = FrameAddInfo(locations=self.locations_list, parent=self)
-        self.frame_add_info.setFixedHeight(350)
         self.frame_add_info.setFrameStyle(QFrame.StyledPanel)
         self.frame_add_info.radio_date_from_filename.toggled.connect(self.set_auto_date)
         self.frame_add_info.radio_date_from_filedate.toggled.connect(self.set_auto_date)
-        self.frame_media_layout.addWidget(self.frame_add_info)
+        self.frame_media_layout.addWidget(
+            self.frame_add_info, stretch=0
+        )  # Fixed at bottom
 
         # Add the frame_media to the main layout
-        self.main_layout.addWidget(self.frame_media)
+        self.main_layout.addWidget(self.frame_media, stretch=1)  # Expands horizontally
 
         # Create right frame: frame_action
         self.frame_action = FrameAction(self.album_list, parent=self)
         self.frame_action.button_add.clicked.connect(self.on_media_add)
         self.frame_action.button_upload.clicked.connect(self.on_media_upload)
-        self.frame_action.setFixedWidth(250)
-        self.main_layout.addWidget(self.frame_action)
+        self.frame_action.setFixedWidth(250)  # Fixed width, sticks to right
+        self.main_layout.addWidget(self.frame_action, stretch=0)
 
         # Set the layout for the dialog
         self.setLayout(self.main_layout)
