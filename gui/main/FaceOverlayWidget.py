@@ -23,6 +23,7 @@ class FaceNameLabel(QLabel):
         self.detection_index = detection_index
         self.interactive = interactive
         self.font_size = font_size
+        self._opacity = 1.0
         self._set_formatted_text(name)
         self._apply_style()
 
@@ -43,8 +44,11 @@ class FaceNameLabel(QLabel):
             formatted = name[:surname_index] + "<br>" + name[surname_index + 1 :]
         else:
             formatted = name
-        # HTML with inline style forces the color
-        self.setText(f'<font color="#00c800">{formatted}</font>')
+        # Use hex color - opacity is controlled via stylesheet
+        green = int(200 * self._opacity) + 55  # Keep some visibility at low opacity
+        green = min(255, green)
+        hex_color = f"#{0:02x}{green:02x}{0:02x}"
+        self.setText(f'<font color="{hex_color}">{formatted}</font>')
 
     def _apply_style(self):
         """Apply consistent styling to the name label."""
@@ -53,16 +57,23 @@ class FaceNameLabel(QLabel):
         # Scale padding with font size
         pad_v = max(2, self.font_size // 3)
         pad_h = max(4, self.font_size // 2)
+        bg_alpha = int(160 * self._opacity)
         self.setStyleSheet(
             f"""
             QLabel {{
-                background-color: rgba(0, 0, 0, 160);
+                background-color: rgba(0, 0, 0, {bg_alpha});
                 padding: {pad_v}px {pad_h}px;
                 border-radius: 4px;
             }}
             """
         )
         self.adjustSize()
+
+    def set_opacity(self, opacity: float):
+        """Set the opacity of this label (0.0 to 1.0)."""
+        self._opacity = max(0.0, min(1.0, opacity))
+        self._set_formatted_text(self.full_name)
+        self._apply_style()
 
 
 class FaceBoxWidget(QFrame):
@@ -83,6 +94,7 @@ class FaceBoxWidget(QFrame):
         self.detection_index = detection_index
         self.interactive = interactive
         self.border_width = border_width
+        self._opacity = 1.0
         self._apply_style()
 
         if interactive:
@@ -96,8 +108,14 @@ class FaceBoxWidget(QFrame):
 
     def _apply_style(self):
         """Apply styling based on whether the face has a name assigned."""
-        # Green for named faces, white for unnamed
-        border_color = "rgb(0, 200, 0)" if self.has_name else "rgb(255, 255, 255)"
+        # Green for named faces, white for unnamed - with opacity
+        if self.has_name:
+            g = int(200 * self._opacity)
+            border_color = f"rgba(0, {g}, 0, {self._opacity})"
+        else:
+            w = int(255 * self._opacity)
+            border_color = f"rgba({w}, {w}, {w}, {self._opacity})"
+
         hover_width = self.border_width + 1
         hover_style = (
             f"""
@@ -119,6 +137,11 @@ class FaceBoxWidget(QFrame):
             {hover_style}
             """
         )
+
+    def set_opacity(self, opacity: float):
+        """Set the opacity of this box (0.0 to 1.0)."""
+        self._opacity = max(0.0, min(1.0, opacity))
+        self._apply_style()
 
 
 class FaceOverlayWidget(QWidget):
@@ -170,6 +193,9 @@ class FaceOverlayWidget(QWidget):
 
         # Reference to image label for coordinate transformation
         self._image_label = None
+
+        # Visibility state for toggle support (empty = show all)
+        self._visible_indices = set()
 
         # Drawing state (for interactive mode)
         self._is_drawing = False
@@ -226,6 +252,7 @@ class FaceOverlayWidget(QWidget):
         self._box_widgets.clear()
         self._label_widgets.clear()
         self._detections.clear()
+        self._visible_indices.clear()
 
     def _create_overlay_widgets(self):
         """Create box and label widgets for each detection."""
@@ -287,10 +314,14 @@ class FaceOverlayWidget(QWidget):
             screen_w = int(w * scale)
             screen_h = int(h * scale)
 
+            # Check if this detection should be visible
+            show_all = len(self._visible_indices) == 0
+            is_visible = show_all or i in self._visible_indices
+
             # Position the box
             box = self._box_widgets[i]
             box.setGeometry(screen_x, screen_y, screen_w, screen_h)
-            box.show()
+            box.setVisible(is_visible)
 
             # Position the label (if exists)
             label = self._label_widgets[i]
@@ -312,7 +343,7 @@ class FaceOverlayWidget(QWidget):
                     label_x = screen_x + screen_w - label_w - 4
 
                 label.move(label_x, label_y)
-                label.show()
+                label.setVisible(is_visible)
 
     def resizeEvent(self, event):
         """Handle resize to reposition overlays."""
@@ -322,6 +353,47 @@ class FaceOverlayWidget(QWidget):
     def has_detections(self) -> bool:
         """Check if there are any active detections."""
         return len(self._detections) > 0
+
+    def get_people_names(self) -> list[str]:
+        """Return list of people names from detections (only named faces)."""
+        return [det[4] for det in self._detections if det[4]]
+
+    # === Highlight/Toggle Support for DialogPeople ===
+
+    def highlight_person(self, index: int):
+        """
+        Highlight a specific person (full opacity), dim all others.
+        Used for hover effect in DialogPeople.
+        """
+        for i, (box, label) in enumerate(zip(self._box_widgets, self._label_widgets)):
+            if i == index:
+                box.set_opacity(1.0)
+                if label:
+                    label.set_opacity(1.0)
+            else:
+                box.set_opacity(0.25)
+                if label:
+                    label.set_opacity(0.25)
+
+    def clear_highlight(self):
+        """Reset all detections to full opacity."""
+        for box, label in zip(self._box_widgets, self._label_widgets):
+            box.set_opacity(1.0)
+            if label:
+                label.set_opacity(1.0)
+
+    def set_visible_people(self, indices: set[int]):
+        """
+        Show only specific people by index. Empty set = show all.
+        Used for toggle effect in DialogPeople.
+        """
+        self._visible_indices = indices.copy()
+        show_all = len(indices) == 0
+        for i, (box, label) in enumerate(zip(self._box_widgets, self._label_widgets)):
+            visible = show_all or i in indices
+            box.setVisible(visible)
+            if label:
+                label.setVisible(visible)
 
     # === Interactive Drawing Support ===
 

@@ -344,6 +344,9 @@ class MainWindow(QMainWindow):
         # Create persistent people dialog (hidden initially)
         self.dialog_people = DialogPeople(parent=self)
         self.dialog_people.closed_by_user.connect(self._on_dialog_people_closed)
+        self.dialog_people.person_hovered.connect(self._on_person_hovered)
+        self.dialog_people.person_unhovered.connect(self._on_person_unhovered)
+        self.dialog_people.person_toggled.connect(self._on_person_toggled)
 
         # Set callback for zoom operations
         self.image_label.on_size_changed = self._on_image_size_changed
@@ -724,8 +727,9 @@ class MainWindow(QMainWindow):
         self.face_overlay.raise_()
         self.face_overlay.update_positions()
 
-        # Update and show dialog
-        self.dialog_people.set_people(people or "")
+        # Update and show dialog with people names from overlay
+        people_names = self.face_overlay.get_people_names()
+        self.dialog_people.set_people(people_names)
         self.dialog_people.show_at_position()
 
     def _hide_people_overlay_and_dialog(self):
@@ -733,13 +737,32 @@ class MainWindow(QMainWindow):
         self.face_overlay_visible = False
         self.face_overlay.clear_overlays()
         self.face_overlay.hide()
+        self.dialog_people.reset_state()
         self.dialog_people.close_programmatically()
 
     def _on_dialog_people_closed(self):
         """Handle when user closes the dialog via X button."""
-        # Sync the system: turn off overlay and uncheck button
+        # Reset overlay state and sync the system
+        self.face_overlay.clear_highlight()
+        self.face_overlay.set_visible_people(set())
+        self.dialog_people.reset_state()
         self._hide_people_overlay_and_dialog()
         self.frame_bottom.button_people.setChecked(False)
+
+    def _on_person_hovered(self, index: int):
+        """Handle hover on a person in the dialog list."""
+        self.face_overlay.highlight_person(index)
+
+    def _on_person_unhovered(self):
+        """Handle hover leave from person list."""
+        self.face_overlay.clear_highlight()
+
+    def _on_person_toggled(self, toggled_indices: set):
+        """Handle toggle of people in the dialog list."""
+        self.face_overlay.set_visible_people(toggled_indices)
+        # When toggles change, clear any highlight
+        if toggled_indices:
+            self.face_overlay.clear_highlight()
 
     def on_button_notes_clicked(self, checked):
         if checked:
@@ -793,11 +816,19 @@ class MainWindow(QMainWindow):
 
             # Update face overlay and dialog if visible (when switching media)
             if self.face_overlay_visible:
+                # Reset state first (clears toggles/highlights)
+                self.dialog_people.reset_state()
+                self.face_overlay.clear_highlight()
+
+                # Update with new media's people
                 people = self.displayed_media.people
                 people_detect = self.displayed_media.people_detect
                 self.face_overlay.set_detections(people_detect, people)
                 self.face_overlay.update_positions()
-                self.dialog_people.set_people(people or "")
+
+                # Update dialog with people names from overlay
+                people_names = self.face_overlay.get_people_names()
+                self.dialog_people.set_people(people_names)
 
     def load_media_metadata(self):
         self.frame_bottom.set_media_info(self.displayed_media)
