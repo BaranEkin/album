@@ -3,7 +3,7 @@ import os
 import platform
 from multiprocessing import freeze_support
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QTranslator, QLibraryInfo
+from PyQt5.QtCore import Qt, QTranslator, QLibraryInfo
 from data.display_history_manager import DisplayHistoryManager
 from data.media_list_manager import MediaListManager
 from gui.main.MainWindow import MainWindow
@@ -36,6 +36,9 @@ if __name__ == "__main__":
 
     # Apply theme based on settings
     current_theme = Config.THEME
+
+    # Disable the "?" help button on all dialog title bars
+    QApplication.setAttribute(Qt.AA_DisableWindowContextHelpButton)
 
     # Initialize QApplication with OS-specific settings
     if current_os == "Windows":
