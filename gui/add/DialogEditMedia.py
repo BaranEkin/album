@@ -21,7 +21,8 @@ class DialogEditMedia(DialogAddMedia):
 
         self.media = media
         self.media_loader = media_loader
-        self.setFixedSize(1100, 900)
+        self.setMinimumSize(1100, 900)
+        self.resize(1100, 900)
 
         self.frame_navigation.hide()
         self.frame_add_info.radio_label.hide()
@@ -52,12 +53,12 @@ class DialogEditMedia(DialogAddMedia):
 
         if self.media.type == 1:
             self.frame_add_info.set_people_enable(False)
-            self.draw_identifications()
-            self.image_label.detections_with_names = self.detections_with_names
-            self.image_label.set_image("temp/detections.jpg")
+            self._load_image_to_viewer(self.selected_media_path)
+            self._update_overlay()
 
         else:
             self.image_label.clear()
+            self.face_overlay.clear_overlays()
             self.frame_add_info.set_people_enable(True)
 
     def set_media_data(self):

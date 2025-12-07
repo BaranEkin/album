@@ -21,10 +21,10 @@ class FrameAction(QFrame):
         # Main layout for the frame
         self.layout = QVBoxLayout(self)
 
-        # Scrollable area for checkboxes
+        # Scrollable area for checkboxes (expands vertically)
         self.scroll_area_albums = QScrollArea()
-        self.scroll_area_albums.setFixedHeight(500)
-        self.scroll_area_albums.setWidgetResizable(False)
+        self.scroll_area_albums.setMinimumHeight(200)
+        self.scroll_area_albums.setWidgetResizable(True)
 
         # Container for the checkboxes
         self.container_albums = QWidget()
@@ -77,8 +77,8 @@ class FrameAction(QFrame):
         self.bottom_layout.addWidget(self.button_upload)
 
         # Add scrollable area and bottom frame to main layout
-        self.layout.addWidget(self.scroll_area_albums)
-        self.layout.addWidget(bottom_frame)
+        self.layout.addWidget(self.scroll_area_albums, stretch=1)  # Expands
+        self.layout.addWidget(bottom_frame, stretch=0)  # Fixed at bottom
 
     def get_selected_album_tags(self):
         selected_album_tags = []

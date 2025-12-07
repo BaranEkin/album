@@ -10,7 +10,6 @@ from typing import Literal, Union
 from datetime import datetime
 from PIL import Image
 from PIL.ExifTags import TAGS
-from pathlib import Path
 
 from config.config import Config
 from logger import log
@@ -196,7 +195,7 @@ def get_date_from_file_metadata(file_path: Union[str, bytes, os.PathLike]):
                         exif_date = value
                         return convert_exif_date_to_date_text(exif_date)
         return ""
-    except Exception as e:
+    except Exception:
         return ""
 
 
