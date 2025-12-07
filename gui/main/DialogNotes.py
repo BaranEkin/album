@@ -1,39 +1,60 @@
 from PyQt5.QtWidgets import QDialog, QTextBrowser, QVBoxLayout, QApplication
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 import platform
 
 
 class DialogNotes(QDialog):
-    def __init__(self, notes: str, parent=None):
-        # For Wayland compatibility, set the right window flags from the beginning
+    # Signal emitted when dialog is closed by user (X button)
+    closed_by_user = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Use Tool flag for non-blocking floating window
         if platform.system() == "Linux":
-            # Use Popup type which has better positioning behavior on Wayland
-            super().__init__(parent, Qt.Popup)
+            # Wayland needs different flags
+            self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint)
         else:
-            super().__init__(parent)
+            self.setWindowFlags(Qt.Tool | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
 
         self.setWindowTitle("Notlar")
         self.setFixedSize(500, 250)
 
-        self.notes = notes
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
 
         # Create a QTextBrowser for displaying text
-        text_browser = QTextBrowser()
-        text_browser.setObjectName("notesBrowser")  # Set object name for styling
+        self.text_browser = QTextBrowser()
+        self.text_browser.setObjectName("notesBrowser")  # Set object name for styling
 
         # Set custom font - color will be handled by theme
-        text_browser.setStyleSheet("font-family: Arial; font-size: 18px;")
-
-        text_browser.setText(self.notes.replace("\\n", "\n"))
+        self.text_browser.setStyleSheet("font-family: Arial; font-size: 18px;")
 
         # Add the text browser to the layout
-        layout.addWidget(text_browser)
-        self.setLayout(layout)
+        layout.addWidget(self.text_browser)
 
-        # Position first, then show
+        # Track if close was triggered programmatically
+        self._closing_programmatically = False
+
+    def set_notes(self, notes: str):
+        """Update the displayed notes."""
+        self.text_browser.setText(notes.replace("\\n", "\n") if notes else "")
+
+    def show_at_position(self):
+        """Show the dialog at its calculated position."""
         self.calculate_position()
         self.show()
+
+    def close_programmatically(self):
+        """Close the dialog without emitting closed_by_user signal."""
+        self._closing_programmatically = True
+        self.close()
+        self._closing_programmatically = False
+
+    def closeEvent(self, event):
+        """Handle close event - emit signal if closed by user (X button)."""
+        if not self._closing_programmatically:
+            self.closed_by_user.emit()
+        super().closeEvent(event)
 
     def calculate_position(self):
         """Calculate and set the position of the dialog at the bottom right of the parent or screen."""

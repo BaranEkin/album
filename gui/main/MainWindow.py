@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
     QApplication,
 )
 from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer, QItemSelectionModel
-from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QImage
+from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon
 from PIL import Image
 from datetime import datetime
 
@@ -347,6 +347,11 @@ class MainWindow(QMainWindow):
         self.dialog_people.person_hovered.connect(self._on_person_hovered)
         self.dialog_people.person_unhovered.connect(self._on_person_unhovered)
         self.dialog_people.person_toggled.connect(self._on_person_toggled)
+
+        # Create persistent notes dialog (hidden initially)
+        self.dialog_notes = DialogNotes(parent=self)
+        self.dialog_notes.closed_by_user.connect(self._on_dialog_notes_closed)
+        self.notes_dialog_visible = False
 
         # Set callback for zoom operations
         self.image_label.on_size_changed = self._on_image_size_changed
@@ -766,9 +771,25 @@ class MainWindow(QMainWindow):
 
     def on_button_notes_clicked(self, checked):
         if checked:
-            dialog_notes = DialogNotes(self.displayed_media.notes or "", parent=self)
-            dialog_notes.exec_()
-            self.frame_bottom.button_notes.setChecked(False)
+            self._show_notes_dialog()
+        else:
+            self._hide_notes_dialog()
+
+    def _show_notes_dialog(self):
+        """Show notes dialog for current media."""
+        self.notes_dialog_visible = True
+        self.dialog_notes.set_notes(self.displayed_media.notes or "")
+        self.dialog_notes.show_at_position()
+
+    def _hide_notes_dialog(self):
+        """Hide notes dialog."""
+        self.notes_dialog_visible = False
+        self.dialog_notes.close_programmatically()
+
+    def _on_dialog_notes_closed(self):
+        """Handle when user closes the notes dialog via X button."""
+        self._hide_notes_dialog()
+        self.frame_bottom.button_notes.setChecked(False)
 
     def update_thumbnail_highlights(self):
         self.thumbnail_model.dataChanged.emit(
@@ -829,6 +850,10 @@ class MainWindow(QMainWindow):
                 # Update dialog with people names from overlay
                 people_names = self.face_overlay.get_people_names()
                 self.dialog_people.set_people(people_names)
+
+            # Update notes dialog if visible (when switching media)
+            if self.notes_dialog_visible:
+                self.dialog_notes.set_notes(self.displayed_media.notes or "")
 
     def load_media_metadata(self):
         self.frame_bottom.set_media_info(self.displayed_media)
