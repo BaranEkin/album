@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
-        self.setWindowTitle("Albüm (v1.3.0)")
+        self.setWindowTitle("Albüm (v1.3.1)")
         self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
 
@@ -726,14 +726,20 @@ class MainWindow(QMainWindow):
         people = self.displayed_media.people
         people_detect = self.displayed_media.people_detect
 
-        # Update and show overlay
+        # Update and show overlay (only if there are detections)
         self.face_overlay.set_detections(people_detect, people)
-        self.face_overlay.show()
-        self.face_overlay.raise_()
-        self.face_overlay.update_positions()
+        if people_detect:
+            self.face_overlay.show()
+            self.face_overlay.raise_()
+            self.face_overlay.update_positions()
+        else:
+            self.face_overlay.hide()
 
-        # Update and show dialog with people names from overlay
+        # Get names from overlay if available, otherwise from media.people directly
         people_names = self.face_overlay.get_people_names()
+        if not people_names and people:
+            # No detections but have people names - show them from media.people
+            people_names = [name.strip() for name in people.split(",") if name.strip()]
         self.dialog_people.set_people(people_names)
         self.dialog_people.show_at_position()
 
@@ -845,10 +851,20 @@ class MainWindow(QMainWindow):
                 people = self.displayed_media.people
                 people_detect = self.displayed_media.people_detect
                 self.face_overlay.set_detections(people_detect, people)
-                self.face_overlay.update_positions()
 
-                # Update dialog with people names from overlay
+                # Show/hide overlay based on whether there are detections
+                if people_detect:
+                    self.face_overlay.show()
+                    self.face_overlay.update_positions()
+                else:
+                    self.face_overlay.hide()
+
+                # Get names from overlay if available, otherwise from media.people directly
                 people_names = self.face_overlay.get_people_names()
+                if not people_names and people:
+                    people_names = [
+                        name.strip() for name in people.split(",") if name.strip()
+                    ]
                 self.dialog_people.set_people(people_names)
 
             # Update notes dialog if visible (when switching media)

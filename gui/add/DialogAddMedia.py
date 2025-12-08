@@ -280,7 +280,10 @@ class DialogAddMedia(QDialog):
     def _update_overlay(self):
         """Update the face overlay with current detections."""
         self.face_overlay.set_detections_list(self.detections_with_names)
-        self.frame_add_info.set_people(self.get_people())
+        # Update people field from detections, but preserve existing names if no detections
+        people_from_detections = self.get_people()
+        if people_from_detections:
+            self.frame_add_info.set_people(people_from_detections)
 
     def detect_people(self):
         """Run face detection on the current image."""
