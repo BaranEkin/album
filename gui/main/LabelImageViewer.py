@@ -98,8 +98,7 @@ class LabelImageViewer(QLabel):
                 if time_diff < 200:
                     self.zoom_in(event.pos())
 
-                elif self.is_panning:
-                    self.is_panning = False
+                self.is_panning = False
 
     def zoom_in(self, click_pos):
         if self.scale_modifier < 6:

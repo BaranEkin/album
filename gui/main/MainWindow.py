@@ -14,8 +14,17 @@ from PyQt5.QtWidgets import (
     QGroupBox,
     QApplication,
 )
-from PyQt5.QtCore import Qt, QModelIndex, QSize, QTimer, QItemSelectionModel
-from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon
+from PyQt5.QtCore import (
+    Qt,
+    QModelIndex,
+    QSize,
+    QTimer,
+    QItemSelectionModel,
+    QPropertyAnimation,
+    QRect,
+    QEasingCurve,
+)
+from PyQt5.QtGui import QPixmap, QPalette, QKeyEvent, QIcon, QCursor
 from PIL import Image
 from datetime import datetime
 
@@ -88,6 +97,11 @@ class MainWindow(QMainWindow):
         self.mode = ""
         self.write_permissions = False
         self.is_first_selection = True  # Flag to track first selection after startup
+
+        # Fullscreen state
+        self.is_fullscreen = False
+        self.fullscreen_edge_trigger_px = 10
+        self.fullscreen_retract_delay_ms = 300
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
@@ -388,6 +402,9 @@ class MainWindow(QMainWindow):
         # Apply theme-specific styling
         self.apply_theme_styling()
 
+        # FULLSCREEN SETUP__________________________________________________________________
+        self.setup_fullscreen()
+
         # LOAD DATA AND SETUP_______________________________________________________________
         self.update_db()
         self.check_write_permissions()
@@ -468,10 +485,13 @@ class MainWindow(QMainWindow):
             self.write_permissions = False
 
     def keyPressEvent(self, event):
-        """
-        Handle key press events for navigating the thumbnails using the arrow keys.
-        """
-        if event.key() == Qt.Key_Right:
+        if event.key() == Qt.Key_F11:
+            self.toggle_fullscreen()
+
+        elif event.key() == Qt.Key_Escape and self.is_fullscreen:
+            self.exit_fullscreen()
+
+        elif event.key() == Qt.Key_Right:
             self.go_to_next_media()
 
         elif event.key() == Qt.Key_Left:
@@ -1497,3 +1517,180 @@ class MainWindow(QMainWindow):
 
         # No additional styling needed here as it's handled by the ThemeManager
         pass
+
+    def setup_fullscreen(self):
+        self.menu_animation = QPropertyAnimation(self.frame_menu, b"geometry")
+        self.menu_animation.setDuration(200)
+        self.menu_animation.setEasingCurve(QEasingCurve.OutCubic)
+
+        self.bottom_animation = QPropertyAnimation(self.frame_bottom, b"geometry")
+        self.bottom_animation.setDuration(200)
+        self.bottom_animation.setEasingCurve(QEasingCurve.OutCubic)
+
+        self.menu_retract_timer = QTimer(self)
+        self.menu_retract_timer.setSingleShot(True)
+        self.menu_retract_timer.timeout.connect(self.hide_menu_panel)
+
+        self.bottom_retract_timer = QTimer(self)
+        self.bottom_retract_timer.setSingleShot(True)
+        self.bottom_retract_timer.timeout.connect(self.hide_bottom_panel)
+
+        self.fullscreen_mouse_timer = QTimer(self)
+        self.fullscreen_mouse_timer.setInterval(50)
+        self.fullscreen_mouse_timer.timeout.connect(
+            self.check_fullscreen_mouse_position
+        )
+
+        self.menu_panel_visible = False
+        self.bottom_panel_visible = False
+
+    def toggle_fullscreen(self):
+        if self.is_fullscreen:
+            self.exit_fullscreen()
+        else:
+            self.enter_fullscreen()
+
+    def enter_fullscreen(self):
+        self.is_fullscreen = True
+        self.showFullScreen()
+
+        QTimer.singleShot(100, self.setup_fullscreen_panels)
+
+    def setup_fullscreen_panels(self):
+        screen_width = self.width()
+        screen_height = self.height()
+        menu_width = 170
+        bottom_height = 110
+
+        self.menu_hidden_geometry = QRect(-menu_width, 0, menu_width, screen_height)
+        self.menu_visible_geometry = QRect(0, 0, menu_width, screen_height)
+
+        self.bottom_hidden_geometry = QRect(
+            0, screen_height, screen_width, bottom_height
+        )
+        self.bottom_visible_geometry = QRect(
+            0, screen_height - bottom_height, screen_width, bottom_height
+        )
+
+        self.frame_menu.setParent(self)
+        self.frame_bottom.setParent(self)
+
+        self.frame_menu.setGeometry(self.menu_hidden_geometry)
+        self.frame_bottom.setGeometry(self.bottom_hidden_geometry)
+
+        self.frame_menu.show()
+        self.frame_bottom.show()
+        self.frame_menu.raise_()
+        self.frame_bottom.raise_()
+
+        self.menu_panel_visible = False
+        self.bottom_panel_visible = False
+
+        self.fullscreen_mouse_timer.start()
+
+    def exit_fullscreen(self):
+        self.is_fullscreen = False
+
+        self.fullscreen_mouse_timer.stop()
+        self.menu_retract_timer.stop()
+        self.bottom_retract_timer.stop()
+        self.menu_animation.stop()
+        self.bottom_animation.stop()
+
+        self.showMaximized()
+
+        central = self.centralWidget()
+        main_layout = central.layout()
+
+        horizontal_layout = main_layout.itemAt(0).layout()
+        horizontal_layout.insertWidget(0, self.frame_menu)
+
+        main_layout.addWidget(self.frame_bottom)
+
+        self.frame_menu.setFixedWidth(170)
+        self.frame_bottom.setFixedHeight(110)
+
+        self.menu_panel_visible = False
+        self.bottom_panel_visible = False
+
+    def show_menu_panel(self):
+        if not self.is_fullscreen or self.menu_panel_visible:
+            return
+
+        self.menu_retract_timer.stop()
+        self.menu_panel_visible = True
+
+        self.frame_menu.raise_()
+        self.menu_animation.stop()
+        self.menu_animation.setStartValue(self.frame_menu.geometry())
+        self.menu_animation.setEndValue(self.menu_visible_geometry)
+        self.menu_animation.start()
+
+    def hide_menu_panel(self):
+        if not self.is_fullscreen or not self.menu_panel_visible:
+            return
+
+        self.menu_panel_visible = False
+
+        self.menu_animation.stop()
+        self.menu_animation.setStartValue(self.frame_menu.geometry())
+        self.menu_animation.setEndValue(self.menu_hidden_geometry)
+        self.menu_animation.start()
+
+    def show_bottom_panel(self):
+        if not self.is_fullscreen or self.bottom_panel_visible:
+            return
+
+        self.bottom_retract_timer.stop()
+        self.bottom_panel_visible = True
+
+        self.frame_bottom.raise_()
+        self.bottom_animation.stop()
+        self.bottom_animation.setStartValue(self.frame_bottom.geometry())
+        self.bottom_animation.setEndValue(self.bottom_visible_geometry)
+        self.bottom_animation.start()
+
+    def hide_bottom_panel(self):
+        if not self.is_fullscreen or not self.bottom_panel_visible:
+            return
+
+        self.bottom_panel_visible = False
+
+        self.bottom_animation.stop()
+        self.bottom_animation.setStartValue(self.frame_bottom.geometry())
+        self.bottom_animation.setEndValue(self.bottom_hidden_geometry)
+        self.bottom_animation.start()
+
+    def schedule_menu_retract(self):
+        if (
+            self.is_fullscreen
+            and self.menu_panel_visible
+            and not self.menu_retract_timer.isActive()
+        ):
+            self.menu_retract_timer.start(self.fullscreen_retract_delay_ms)
+
+    def schedule_bottom_retract(self):
+        if (
+            self.is_fullscreen
+            and self.bottom_panel_visible
+            and not self.bottom_retract_timer.isActive()
+        ):
+            self.bottom_retract_timer.start(self.fullscreen_retract_delay_ms)
+
+    def check_fullscreen_mouse_position(self):
+        if not self.is_fullscreen:
+            return
+
+        global_pos = QCursor.pos()
+        local_pos = self.mapFromGlobal(global_pos)
+        screen_height = self.height()
+
+        if local_pos.x() <= self.fullscreen_edge_trigger_px:
+            self.show_menu_panel()
+        elif self.menu_panel_visible and local_pos.x() > 180:
+            self.schedule_menu_retract()
+
+        if local_pos.y() >= screen_height - self.fullscreen_edge_trigger_px:
+            self.show_bottom_panel()
+        elif self.bottom_panel_visible and local_pos.y() < screen_height - 120:
+            self.schedule_bottom_retract()
