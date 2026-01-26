@@ -44,6 +44,7 @@ from gui.add.DialogAddMedia import DialogAddMedia
 from gui.main.DialogPeople import DialogPeople
 from gui.main.DialogNotes import DialogNotes
 from gui.main.FaceOverlayWidget import FaceOverlayWidget
+from config import __version__
 from config.config import Config
 
 import face_detection
@@ -90,7 +91,7 @@ class MainWindow(QMainWindow):
 
         # GUI ELEMENTS______________________________________________________________________
         # Set window title and initial dimensions
-        self.setWindowTitle("Albüm (v1.3.1)")
+        self.setWindowTitle(f"Albüm ({__version__})")
         self.setWindowIcon(QIcon("res/icons/album_icon_small.png"))
         self.setGeometry(100, 100, 1280, 720)
 
