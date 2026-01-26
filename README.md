@@ -8,6 +8,10 @@
 
 Desktop application for managing family digital media (photos, videos, audio) with AWS S3/CloudFront integration and YOLOv8 face detection.
 
+---
+<img width="1520" height="1065" alt="resim" src="https://github.com/user-attachments/assets/75a55876-4e6d-42d2-82d8-feffcf693475" />
+
+
 ## Tech Stack
 
 - **GUI**: PyQt5
@@ -19,14 +23,19 @@ Desktop application for managing family digital media (photos, videos, audio) wi
 
 ## Features
 
+### Viewing
+- Dynamic resizing image viewer area that supports zoom, pan and face tag overlays
+- Media metadata displays
+- Slideshow with forward/backward/random modes (5s interval)
+- Three themes: Light, Dark, Classic
+
 ### Media Management
-- Supported formats: Images (.jpg, .jpeg, .png), Videos (.mp4, .avi, .mov, .mpg, .wmv, .3gp, .asf), Audio (.mp3, .wav)
-- Automatic thumbnail generation for images and video frames (frame 30)
 - Hybrid local/cloud storage with automatic caching
 - Offline mode using local cache when cloud unavailable
-- Metadata: topic, title, location (required), date (DD.MM.YYYY, required), tags, notes, albums, privacy level
-- Date precision tracking: day (7), month (3), year (1)
-- Media sorted by Julian day number + rank within date
+- Extensive media metadata: topic, title, location, date, people face tags, notes, tags, albums, privacy level
+- Automatic thumbnail generation for images and video frames
+- Date precision tracking
+- Supported formats: Images (.jpg, .jpeg, .png), Videos (.mp4, .avi, .mov, .mpg, .wmv, .3gp, .asf), Audio (.mp3, .wav)
 
 ### Face Detection & Tagging
 - Automatic face detection via YOLOv8 when adding images
@@ -56,15 +65,9 @@ Desktop application for managing family digital media (photos, videos, audio) wi
 - **Today in History**: Same day/month from previous years
 - **Forgotten**: Random 100 from 5000 least-recently-viewed media (tracked via display history)
 
-### Viewing
-- Slideshow with forward/backward/random modes (5s interval)
-- Mouse wheel zoom, middle-click pan
-- Arrow keys for navigation, Ctrl+Click for multi-select
-- Three themes: Light (Açık), Dark (Koyu), Classic (Albüm Klasik)
-
 ### Multi-User
-- User identification via AWS IAM (`sts.get_caller_identity`)
-- Write permission check via test object PUT/DELETE
+- User identification via AWS IAM
+- Write permission check
 - Tracks created_by/modified_by per media
 
 ## Project Structure
