@@ -394,10 +394,17 @@ class DataManager:
             .where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
         )
 
-        if media_filter.albums[0]:
-            selection = selection.where(
-                or_(*[Media.albums.contains(album) for album in media_filter.albums])
-            )
+        if media_filter.album_groups[0][0]:
+            if media_filter.albums_mode == "and":
+                for group in media_filter.album_groups:
+                    selection = selection.where(
+                        or_(*[Media.albums.contains(tag) for tag in group])
+                    )
+            else:
+                all_tags = [tag for group in media_filter.album_groups for tag in group]
+                selection = selection.where(
+                    or_(*[Media.albums.contains(tag) for tag in all_tags])
+                )
 
         created_at_start, created_at_end = media_filter.created_at_range
 

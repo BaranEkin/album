@@ -1,101 +1,148 @@
 from typing import Sequence
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QFrame, QVBoxLayout
+from PyQt5.QtWidgets import (
+    QTreeWidget,
+    QTreeWidgetItem,
+    QFrame,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+)
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from data.orm import Album
+from gui.constants import Constants
+
+ALBUM_TAG_ROLE = Qt.UserRole
 
 
 class FrameTreeAlbums(QFrame):
-    def __init__(self, albums: Sequence[Album], parent=None):
+    selection_changed = pyqtSignal()
+
+    def __init__(self, albums: Sequence[Album], include_children: bool = True):
         super().__init__()
-        self.parent = parent
 
         self.setFixedSize(600, 300)
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self._include_children = include_children
 
-        self.albums = albums
-        self.selected_album_tags = []
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+
+        button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setAlignment(Qt.AlignLeft)
+
+        self._button_select_all = QPushButton(Constants.FILTER_SELECT_ALL_ALBUMS)
+        self._button_select_all.setFixedSize(110, 22)
+        self._button_select_all.clicked.connect(self._select_all)
+
+        self._button_deselect_all = QPushButton(Constants.FILTER_DESELECT_ALL_ALBUMS)
+        self._button_deselect_all.setFixedSize(140, 22)
+        self._button_deselect_all.clicked.connect(self.clear_selection)
+
+        button_layout.addWidget(self._button_select_all)
+        button_layout.addWidget(self._button_deselect_all)
+
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
+        self.tree.setSelectionMode(QTreeWidget.NoSelection)
+        self._build_tree(albums)
+        self.tree.itemChanged.connect(self._on_item_changed)
 
-        # Create a dictionary to store the QTreeWidgetItem references by their tags
-        node_items = {}
+        self._layout.addLayout(button_layout)
+        self._layout.addWidget(self.tree)
 
-        # Iterate over the data sorted by path length to ensure parents are added before children
-        sorted_data = sorted(self.albums, key=lambda x: len(x.path))
+    def _build_tree(self, albums: Sequence[Album]):
+        node_items: dict[str, QTreeWidgetItem] = {}
+        sorted_albums = sorted(albums, key=lambda x: len(x.path))
 
-        for item in sorted_data:
-            tag = item.tag
-            name = item.name
-            path = item.path
+        for album in sorted_albums:
+            item = QTreeWidgetItem([album.name])
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(0, Qt.Unchecked)
+            item.setData(0, ALBUM_TAG_ROLE, album.tag)
 
-            # Create a new tree item for this node (displaying only the name)
-            tree_item = QTreeWidgetItem([name])
-
-            # Determine the parent tag by taking the path excluding the last 3 characters (last node tag)
-            parent_path = path[: -len(tag)]
+            parent_path = album.path[: -len(album.tag)]
             parent_tag = parent_path[-3:] if parent_path else None
 
-            # If a parent exists, add this as a child of the parent; otherwise, add as a root node
             if parent_tag and parent_tag in node_items:
-                parent_item = node_items[parent_tag]
-                parent_item.addChild(tree_item)
+                node_items[parent_tag].addChild(item)
             else:
-                self.tree.addTopLevelItem(tree_item)
+                self.tree.addTopLevelItem(item)
 
-            # Store this item in the dictionary for potential child nodes
-            node_items[tag] = tree_item
+            node_items[album.tag] = item
 
         self.tree.collapseAll()
-        self.expand_tree_default()
-        self.tree.itemSelectionChanged.connect(self.on_select_albums)
-        self.layout.addWidget(self.tree)
+        self._expand_top_level()
+
+    def _expand_top_level(self):
+        for i in range(self.tree.topLevelItemCount()):
+            self.tree.topLevelItem(i).setExpanded(True)
+
+    def _on_item_changed(self, item: QTreeWidgetItem, column: int):
+        self.selection_changed.emit()
+
+    def set_include_children(self, enabled: bool):
+        self._include_children = enabled
+        self.selection_changed.emit()
+
+    def get_checked_count(self) -> int:
+        return len(self._get_checked_items())
+
+    def get_selected_album_groups(self) -> tuple[tuple[str, ...], ...]:
+        checked_items = self._get_checked_items()
+        if not checked_items:
+            return (("",),)
+
+        groups = []
+        for item in checked_items:
+            tags = [item.data(0, ALBUM_TAG_ROLE)]
+            if self._include_children:
+                self._collect_descendant_tags(item, tags)
+            groups.append(tuple(tags))
+        return tuple(groups)
+
+    def _get_checked_items(self) -> list[QTreeWidgetItem]:
+        checked = []
+        iterator = self.tree.invisibleRootItem()
+        self._walk_checked(iterator, checked)
+        return checked
+
+    def _walk_checked(
+        self, parent: QTreeWidgetItem, result: list[QTreeWidgetItem]
+    ):
+        for i in range(parent.childCount()):
+            child = parent.child(i)
+            if child.checkState(0) == Qt.Checked:
+                result.append(child)
+            self._walk_checked(child, result)
+
+    @staticmethod
+    def _collect_descendant_tags(item: QTreeWidgetItem, tags: list[str]):
+        for i in range(item.childCount()):
+            child = item.child(i)
+            tags.append(child.data(0, ALBUM_TAG_ROLE))
+            FrameTreeAlbums._collect_descendant_tags(child, tags)
+
+    def _select_all(self):
+        self.tree.blockSignals(True)
+        self._set_all_check_state(Qt.Checked)
+        self.tree.blockSignals(False)
+        self.selection_changed.emit()
 
     def clear_selection(self):
-        self.selected_album_tags = []
-        self.parent.checkbox_include_child.setChecked(True)
+        self.tree.blockSignals(True)
+        self._set_all_check_state(Qt.Unchecked)
         self.tree.collapseAll()
-        self.expand_tree_default()
+        self._expand_top_level()
+        self.tree.blockSignals(False)
+        self.selection_changed.emit()
 
-    def get_selected_albums(self):
-        return tuple(self.selected_album_tags) if self.selected_album_tags else ("",)
+    def _set_all_check_state(self, state):
+        root = self.tree.invisibleRootItem()
+        self._walk_set_check(root, state)
 
-    def expand_tree_default(self):
-        # Iterate over all top-level items (root items)
-        for i in range(self.tree.topLevelItemCount()):
-            root_item = self.tree.topLevelItem(i)
-            root_item.setExpanded(True)
-
-            # Collapse all children of this root item
-            for j in range(root_item.childCount()):
-                child_item = root_item.child(j)
-                child_item.setExpanded(False)
-
-    def on_select_albums(self):
-        selected_items = self.tree.selectedItems()
-        if selected_items:
-            selected_item = selected_items[0]
-            if not self.parent.checkbox_include_child.isChecked():
-                self.selected_album_tags = [self.get_album_tag(selected_item.text(0))]
-                return
-
-            # Gather text for the selected item and its children
-            with_children = [selected_item.text(0)]
-
-            def collect_children(item):
-                for i in range(item.childCount()):
-                    child = item.child(i)
-                    with_children.append(child.text(0))
-                    collect_children(child)  # Recursive call to collect nested children
-
-            # Start collecting children from the selected item
-            collect_children(selected_item)
-
-            self.selected_album_tags = [
-                self.get_album_tag(album_name) for album_name in with_children
-            ]
-
-    def get_album_tag(self, album_name):
-        for album in self.albums:
-            if album.name == album_name:
-                return album.tag
+    def _walk_set_check(self, parent: QTreeWidgetItem, state):
+        for i in range(parent.childCount()):
+            child = parent.child(i)
+            child.setCheckState(0, state)
+            self._walk_set_check(child, state)

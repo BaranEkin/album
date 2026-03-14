@@ -53,6 +53,20 @@ class Constants:
     WINDOW_DIALOG_ASSIGN_PERSON = "Kişiyi Ekle"
     WINDOW_DIALOG_ASSIGN_LOCATION = "Yer Seç"
 
+    # Filter Dialog
+    FILTER_WINDOW_TITLE = "Süzgeç"
+    FILTER_QUICK = "Hızlı Süzme"
+    FILTER_DETAILED = "Detaylı Süzme"
+    FILTER_QUICK_LABEL = "Hepsinde:"
+    FILTER_INCLUDE_CHILDREN = "Alt albümleri dahil et"
+    FILTER_CREATED_AT = "Eklenme Tarihi:"
+    FILTER_BUTTON_SEARCH = "Süz"
+    FILTER_BUTTON_CLEAR = "Süzmeyi Temizle"
+    FILTER_MODE_AND = "VE"
+    FILTER_MODE_OR = "VEYA"
+    FILTER_SELECT_ALL_ALBUMS = "Tüm Albümleri Seç"
+    FILTER_DESELECT_ALL_ALBUMS = "Seçilen Albümleri Temizle"
+
     # Settings Dialog Constants
     SETTINGS_DIALOG_TITLE = "Ayarlar"
     SETTINGS_TAB_GENERAL = "Genel"
