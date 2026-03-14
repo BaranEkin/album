@@ -1,0 +1,11 @@
+[project]
+name = "album"
+requires-python = ">=3.11,<3.12"
+
+[tool.pyright]
+include = ["."]
+exclude = ["**/__pycache__", ".git", ".ruff_cache", "temp"]
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonVersion = "3.11"
