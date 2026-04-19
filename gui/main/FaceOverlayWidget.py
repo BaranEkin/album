@@ -15,7 +15,7 @@ class FaceNameLabel(QLabel):
         name: str,
         detection_index: int = -1,
         interactive: bool = False,
-        font_size: int = 18,
+        font_size: int = 12,
         parent=None,
     ):
         super().__init__(parent)
@@ -170,7 +170,7 @@ class FaceOverlayWidget(QWidget):
         self,
         parent=None,
         interactive: bool = False,
-        font_size: int = 18,
+        font_size: int = 12,
         border_width: int = 3,
     ):
         super().__init__(parent)
