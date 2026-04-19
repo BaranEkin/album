@@ -11,10 +11,8 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QSpacerItem,
-    QSizePolicy,
+    QSpinBox,
 )
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from data.helpers import is_valid_people
 from data.orm import Media
@@ -48,6 +46,7 @@ class DialogEditBulk(QDialog):
             "tags": ["overwrite", "replace", "add", "remove"],
             "notes": ["overwrite", "replace"],
             "date": None,  # No edit modes for Date
+            "private": None,  # No edit modes for Private
         }
         # Turkish translations for display
         self.translations = {
@@ -67,7 +66,8 @@ class DialogEditBulk(QDialog):
         """Create the metadata frames."""
         grid_layout = QGridLayout()  # Use a grid layout for alignment
 
-        for row, (field, modes) in enumerate(self.fields.items()):
+        row = 0
+        for field, modes in self.fields.items():
             # Checkbox
             checkbox = QCheckBox()
             checkbox.stateChanged.connect(self.toggle_groupbox)
@@ -81,6 +81,7 @@ class DialogEditBulk(QDialog):
                 "tags": Constants.LABEL_TAGS,
                 "notes": Constants.LABEL_NOTES,
                 "date": Constants.LABEL_DATE,
+                "private": Constants.LABEL_PRIVATE,
             }
             groupbox = QGroupBox(groupbox_titles[field])
             groupbox.setDisabled(True)
@@ -88,7 +89,6 @@ class DialogEditBulk(QDialog):
             if field == "date":
                 # Special layout for "Date" field
                 groupbox_layout = QHBoxLayout()
-                groupbox_layout.setAlignment(Qt.AlignLeft)  # Align contents to the left
 
                 # Custom Combobox
                 custom_combobox = QComboBox()
@@ -96,15 +96,10 @@ class DialogEditBulk(QDialog):
                 groupbox_layout.addWidget(QLabel(Constants.LABEL_DATE_EST))
                 groupbox_layout.addWidget(custom_combobox)
 
-                # Input field
+                # Input field stretches to fill the remaining width
                 input_lineedit = QLineEdit()
-                input_lineedit.setMaximumWidth(100)  # Restrict width for date format
                 groupbox_layout.addWidget(QLabel("Tarih:"))
-                groupbox_layout.addWidget(input_lineedit)
-
-                # Spacer to push contents to the left
-                spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-                groupbox_layout.addSpacerItem(spacer)
+                groupbox_layout.addWidget(input_lineedit, stretch=1)
 
                 groupbox.setLayout(groupbox_layout)
 
@@ -119,6 +114,35 @@ class DialogEditBulk(QDialog):
                         None,
                         None,
                         custom_combobox,
+                        None,
+                    )
+                )
+            elif field == "private":
+                # Special layout for "Private" field: single spinbox 0-9.
+                # Tight, right-side group; the group title already says GİZLİLİK
+                # so no inner label is needed.
+                groupbox.setFixedWidth(70)
+                groupbox_layout = QHBoxLayout()
+
+                custom_spinbox = QSpinBox()
+                custom_spinbox.setRange(0, 9)
+                custom_spinbox.setValue(0)
+                custom_spinbox.setToolTip(Constants.TOOLTIP_PRIVATE)
+                groupbox_layout.addWidget(custom_spinbox)
+
+                groupbox.setLayout(groupbox_layout)
+
+                self.frames.append(
+                    (
+                        field,
+                        checkbox,
+                        groupbox,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        custom_spinbox,
                     )
                 )
             else:
@@ -160,12 +184,25 @@ class DialogEditBulk(QDialog):
                         input_lineedit2,
                         input_arrow_label,
                         None,
+                        None,
                     )
                 )
 
             # Add to grid layout
-            grid_layout.addWidget(checkbox, row, 0)  # Checkbox in the first column
-            grid_layout.addWidget(groupbox, row, 1)  # GroupBox in the second column
+            if field == "private":
+                # Place beside the date row (date was the previous row processed),
+                # in columns 2-3 so date and private share the same row.
+                grid_layout.addWidget(checkbox, row - 1, 2)
+                grid_layout.addWidget(groupbox, row - 1, 3)
+            elif field == "date":
+                grid_layout.addWidget(checkbox, row, 0)
+                grid_layout.addWidget(groupbox, row, 1)
+                row += 1
+            else:
+                grid_layout.addWidget(checkbox, row, 0)
+                # Span columns 1-3 so other rows fill the full width
+                grid_layout.addWidget(groupbox, row, 1, 1, 3)
+                row += 1
 
         self.main_layout.addLayout(grid_layout)
 
@@ -176,7 +213,7 @@ class DialogEditBulk(QDialog):
 
     def update_input_mode(self, groupbox, index):
         """Update input layout based on selected mode."""
-        for _, _, grp, combobox, input1, input2, arrow_label, _ in self.frames:
+        for _, _, grp, combobox, input1, input2, arrow_label, _, _ in self.frames:
             if grp == groupbox:
                 mode = combobox.currentData()  # Get the internal (English) mode
                 if mode == "replace":
@@ -216,6 +253,7 @@ class DialogEditBulk(QDialog):
             input2,
             arrow_label,
             custom_combobox,
+            custom_spinbox,
         ) in self.frames:
             checkbox.setChecked(False)
             groupbox.setDisabled(True)
@@ -230,6 +268,8 @@ class DialogEditBulk(QDialog):
                 arrow_label.hide()
             if custom_combobox:
                 custom_combobox.setCurrentIndex(0)
+            if custom_spinbox:
+                custom_spinbox.setValue(0)
 
     def get_edit_data(self):
         """Retrieve data from enabled elements."""
@@ -243,12 +283,17 @@ class DialogEditBulk(QDialog):
             input2,
             _,
             custom_combobox,
+            custom_spinbox,
         ) in self.frames:
             if checkbox.isChecked():
                 if field == "date":
                     data[field] = {
                         "option": custom_combobox.currentIndex(),
                         "input": input1.text(),
+                    }
+                elif field == "private":
+                    data[field] = {
+                        "value": custom_spinbox.value(),
                     }
                 else:
                     mode = combobox.currentData()
@@ -465,6 +510,10 @@ class DialogEditBulk(QDialog):
                 date_text = edit_data["date"]["input"]
                 date_est = 7 - edit_data["date"]["option"]
 
+            private = media.private
+            if edit_data.get("private"):
+                private = edit_data["private"]["value"]
+
             edited_media = Media()
             edited_media.media_uuid = media.media_uuid
             edited_media.topic = topic
@@ -477,6 +526,7 @@ class DialogEditBulk(QDialog):
             edited_media.date_text = date_text
             edited_media.date_est = date_est
             edited_media.albums = media.albums
+            edited_media.private = private
 
             self.edited_media_list.append(edited_media)
 

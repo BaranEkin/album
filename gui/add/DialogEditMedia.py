@@ -70,6 +70,7 @@ class DialogEditMedia(DialogAddMedia):
         self.frame_add_info.set_notes(self.media.notes or "")
         self.frame_add_info.set_tags(self.media.tags or "")
         self.frame_add_info.set_people(self.media.people or "")
+        self.frame_add_info.set_private(self.media.private)
         if self.media.albums:
             album_tags = re.findall(r"a\d{2}", self.media.albums)
             self.frame_action.set_selected_album_tags(album_tags)
@@ -99,7 +100,6 @@ class DialogEditMedia(DialogAddMedia):
         media.extension = self.media.extension
         media.type = self.media.type
         media.rank = self.media.rank
-        media.private = self.media.private
 
         # Modifiable fields
         media.topic = media_data["topic"]
@@ -113,6 +113,7 @@ class DialogEditMedia(DialogAddMedia):
         media.people = media_data["people"]
         media.people_detect = media_data["people_detect"]
         media.people_count = media_data["people_count"]
+        media.private = media_data["private"]
 
         edit_dialog = DialogProcess(
             operation=self.edit_procedure,

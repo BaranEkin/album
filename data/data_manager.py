@@ -123,6 +123,9 @@ class DataManager:
                 row.people = media.people or None
                 row.people_detect = media.people_detect or None
                 row.people_count = media.people_count or 0
+                row.private = (
+                    media.private if media.private is not None else row.private
+                )
 
                 new_date = date_to_julian(str(media.date_text))
                 if row.date != new_date:

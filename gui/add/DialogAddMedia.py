@@ -457,6 +457,7 @@ class DialogAddMedia(QDialog):
             "people_detect": self.get_people_detect() if is_image else None,
             "people_count": self.get_people_count(),
             "albums": "".join(self.frame_action.get_selected_album_tags()),
+            "private": self.frame_add_info.get_private(),
         }
 
         media_path = media_data["media_path"]
@@ -550,7 +551,7 @@ class DialogAddMedia(QDialog):
                 people=media_data["people"],
                 people_detect=media_data["people_detect"],
                 people_count=media_data["people_count"],
-                private=0,
+                private=media_data["private"],
             )
 
             self.media_to_be_uploaded.append(media)
@@ -596,6 +597,7 @@ class DialogAddMedia(QDialog):
         self.frame_add_info.set_people("")
         self.frame_add_info.set_notes("")
         self.frame_add_info.set_tags("")
+        self.frame_add_info.set_private(0)
         self.frame_action.clear_selected_album_tags()
 
     def delete_source_files(self):

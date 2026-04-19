@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QRadioButton,
     QButtonGroup,
     QSizePolicy,
+    QSpinBox,
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
@@ -128,6 +129,18 @@ class FrameAddInfo(QFrame):
         group_date.setLayout(date_layout)
         frame_date_and_tags_layout.addWidget(group_date)
 
+        # Privacy group between date and tags
+        group_private = QGroupBox(Constants.LABEL_PRIVATE)
+        group_private.setFixedWidth(60)
+        private_layout = QVBoxLayout()
+        self.input_private = QSpinBox()
+        self.input_private.setRange(0, 9)
+        self.input_private.setValue(0)
+        self.input_private.setToolTip(Constants.TOOLTIP_PRIVATE)
+        private_layout.addWidget(self.input_private)
+        group_private.setLayout(private_layout)
+        frame_date_and_tags_layout.addWidget(group_private)
+
         # Tags input on the right wrapped in a group box
         group_tags = QGroupBox(Constants.LABEL_TAGS)
         tags_layout = QVBoxLayout()
@@ -237,3 +250,9 @@ class FrameAddInfo(QFrame):
 
     def set_people_enable(self, enable: bool):
         self.input_people.setEnabled(enable)
+
+    def get_private(self) -> int:
+        return self.input_private.value()
+
+    def set_private(self, value: int):
+        self.input_private.setValue(int(value or 0))

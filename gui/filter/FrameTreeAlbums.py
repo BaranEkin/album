@@ -107,9 +107,7 @@ class FrameTreeAlbums(QFrame):
         self._walk_checked(iterator, checked)
         return checked
 
-    def _walk_checked(
-        self, parent: QTreeWidgetItem, result: list[QTreeWidgetItem]
-    ):
+    def _walk_checked(self, parent: QTreeWidgetItem, result: list[QTreeWidgetItem]):
         for i in range(parent.childCount()):
             child = parent.child(i)
             if child.checkState(0) == Qt.Checked:

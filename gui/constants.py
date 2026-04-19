@@ -49,6 +49,11 @@ class Constants:
     LABEL_TAGS_HELP = "Etiketleri virgül ile ayırın:"
     LABEL_NOTES = "NOTLAR"
     LABEL_PEOPLE = "KİŞİLER"
+    LABEL_PRIVATE = "GİZLİLİK"
+    TOOLTIP_PRIVATE = (
+        "Gizlilik seviyesi (0-9). Yüksek değer daha gizli demektir.\n"
+        "Sadece ayarlardaki gizlilik limitine eşit veya altında olan medyalar görüntülenir."
+    )
 
     WINDOW_DIALOG_ASSIGN_PERSON = "Kişiyi Ekle"
     WINDOW_DIALOG_ASSIGN_LOCATION = "Yer Seç"

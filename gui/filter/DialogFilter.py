@@ -54,8 +54,12 @@ class ToggleSwitch(QFrame):
         self.set_left_active(False)
 
     def _update_styles(self):
-        active = "background-color: #4a90d9; color: white; border-radius: 3px; padding: 2px;"
-        inactive = "background-color: #d0d0d0; color: #555; border-radius: 3px; padding: 2px;"
+        active = (
+            "background-color: #4a90d9; color: white; border-radius: 3px; padding: 2px;"
+        )
+        inactive = (
+            "background-color: #d0d0d0; color: #555; border-radius: 3px; padding: 2px;"
+        )
         self._left_label.setStyleSheet(active if self._left_active else inactive)
         self._right_label.setStyleSheet(inactive if self._left_active else active)
 
@@ -79,11 +83,15 @@ class DialogFilter(QDialog):
         self.checkbox_include_child = QCheckBox(Constants.FILTER_INCLUDE_CHILDREN)
         self.checkbox_include_child.setChecked(True)
 
-        self.toggle_albums_mode = ToggleSwitch(Constants.FILTER_MODE_AND, Constants.FILTER_MODE_OR)
+        self.toggle_albums_mode = ToggleSwitch(
+            Constants.FILTER_MODE_AND, Constants.FILTER_MODE_OR
+        )
         self.toggle_albums_mode.setVisible(False)
 
         self.frame_tree = FrameTreeAlbums(self.albums)
-        self.checkbox_include_child.stateChanged.connect(self._on_include_children_changed)
+        self.checkbox_include_child.stateChanged.connect(
+            self._on_include_children_changed
+        )
         self.frame_tree.selection_changed.connect(self._on_album_selection_changed)
 
         self.group_box_quick = QGroupBox(Constants.FILTER_QUICK)
