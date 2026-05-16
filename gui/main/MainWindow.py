@@ -40,6 +40,7 @@ from gui.main.DialogProcess import DialogProcess
 from gui.main.DialogSettings import DialogSettings
 from gui.main.ListViewThumbnail import ListViewThumbnail
 from media_loader import MediaLoader
+from prefetch_manager import PrefetchManager
 from logger import log
 from data.helpers import get_unix_time_days_ago, generate_export_filename
 from data.media_filter import MediaFilter
@@ -92,6 +93,9 @@ class MainWindow(QMainWindow):
         self.previous_media_filter = None
         self.previous_mode_media_data = None
         self.previous_mode_media_filter = None
+
+        # Speculative pick for random slideshow (None outside random slideshow)
+        self._next_random_index = None
 
         # State variables
         self.mode = ""
@@ -405,10 +409,19 @@ class MainWindow(QMainWindow):
         # FULLSCREEN SETUP__________________________________________________________________
         self.setup_fullscreen()
 
+        # PREFETCH MANAGER__________________________________________________________________
+        self.prefetcher = PrefetchManager(
+            self.media_loader,
+            on_cloud_status_change=self.set_cloud_connected,
+            parent=self,
+        )
+        self.media_loader.prefetcher = self.prefetcher
+
         # LOAD DATA AND SETUP_______________________________________________________________
         self.update_db()
         self.check_write_permissions()
         self.media_data = self.data_manager.get_all_media()
+        self.prefetcher.set_media_list(self.media_data)
         self.update_frame_bottom_top_label()
         self.handle_selection_feature_buttons()
         self.update_local_storage_status()
@@ -609,8 +622,32 @@ class MainWindow(QMainWindow):
             self.try_select_item(self.media_index - 1)
 
     def go_to_random_media(self):
-        index = random.randint(0, len(self.media_data) - 1)
+        if self._next_random_index is not None and 0 <= self._next_random_index < len(
+            self.media_data
+        ):
+            index = self._next_random_index
+            self._next_random_index = None
+        else:
+            index = random.randint(0, len(self.media_data) - 1)
         self.try_select_item(index)
+
+    def _update_prefetch_window(self):
+        """Recompute the prefetch window around the current media; pre-pick next
+        random target when the random slideshow is active."""
+        direction = "F"
+        hint = None
+        if self.slideshow_timer.isActive():
+            direction = self.frame_bottom.get_slideway_direction() or "F"
+            if direction == "R" and len(self.media_data) > 0:
+                self._next_random_index = random.randint(0, len(self.media_data) - 1)
+                hint = self._next_random_index
+            else:
+                self._next_random_index = None
+        else:
+            self._next_random_index = None
+        self.prefetcher.set_current_index(
+            self.media_index, direction=direction, hint=hint
+        )
 
     def on_button_lists(self, checked):
         if checked:
@@ -730,6 +767,7 @@ class MainWindow(QMainWindow):
     def stop_slideshow(self):
         self.slideshow_timer.stop()
         self.frame_bottom.button_slideshow.setChecked(False)
+        self._next_random_index = None
 
     def on_button_people_clicked(self, checked):
         if checked:
@@ -857,6 +895,8 @@ class MainWindow(QMainWindow):
             # Video or Audio
             else:
                 self.load_video_audio_thumbnail()
+
+            self._update_prefetch_window()
 
             if self.is_first_selection:
                 self.is_first_selection = False
@@ -1365,6 +1405,8 @@ class MainWindow(QMainWindow):
 
         # Update media_data
         self.media_data = new_media_data
+        self._next_random_index = None
+        self.prefetcher.set_media_list(self.media_data)
 
         # Refresh the thumbnails and reset the index
         thumbnail_keys = [f"{media.media_uuid}.jpg" for media in self.media_data]

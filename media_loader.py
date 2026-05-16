@@ -1,4 +1,5 @@
 import os
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5.QtGui import QImage
 from PIL import Image
@@ -6,6 +7,9 @@ from PIL import Image
 from logger import log
 from config.config import Config
 from ops import cloud_ops, file_ops
+
+if TYPE_CHECKING:
+    from prefetch_manager import PrefetchManager
 
 
 class MediaLoader:
@@ -17,15 +21,36 @@ class MediaLoader:
         self.media_dir = Config.MEDIA_DIR
         self.thumbnails_dir = Config.THUMBNAILS_DIR
         self.local_storage_enabled = Config.LOCAL_STORAGE_ENABLED
+        self.prefetcher: Optional["PrefetchManager"] = None
 
     def get_image(self, image_key: str):
-        """Retrieve an image from local storage or cloud storage if not found locally.
+        """Retrieve an image, preferring the prefetch cache, then local disk, then cloud.
 
         Args:
             image_key (str): Key of the media.
 
         Returns:
-            QImage: The retrieved image, either from local storage or from AWS CloudFront.
+            QImage: The retrieved image, either from prefetch cache, local storage, or AWS CloudFront.
+        """
+
+        if self.prefetcher is not None:
+            cached = self.prefetcher.get(image_key)
+            if cached is not None:
+                return cached
+            if self.prefetcher.is_pending(image_key):
+                cached = self.prefetcher.await_pending(image_key)
+                if cached is not None:
+                    return cached
+
+        image = self._load_image_uncached(image_key)
+        if image is not None and self.prefetcher is not None:
+            self.prefetcher.insert(image_key, image)
+        return image
+
+    def _load_image_uncached(self, image_key: str):
+        """Load an image from local storage or cloud, bypassing the prefetch cache.
+
+        Returns None on failure.
         """
 
         if file_ops.check_file_exists(self.media_dir, image_key):
@@ -35,62 +60,58 @@ class MediaLoader:
 
             except OSError as e:
                 log(
-                    "MediaLoader.get_image",
+                    "MediaLoader._load_image_uncached",
                     f"Image {image_key} couldn't be retrieved from local storage: {e}",
                     level="error",
                 )
+                return None
 
-        else:
+        log(
+            "MediaLoader._load_image_uncached",
+            f"Image {image_key} is not found on local storage.",
+        )
+        try:
+            pil_image = cloud_ops.get_image_from_cloudfront(image_key, prefix="media/")
             log(
-                "MediaLoader.get_image",
-                f"Image {image_key} is not found on local storage.",
+                "MediaLoader._load_image_uncached",
+                f"Image {image_key} is retrieved from cloud storage.",
             )
-            try:
-                pil_image = cloud_ops.get_image_from_cloudfront(
-                    image_key, prefix="media/"
-                )
-                log(
-                    "MediaLoader.get_image",
-                    f"Image {image_key} is retrieved from cloud storage.",
-                )
 
-                if self.local_storage_enabled:
-                    try:
-                        self.save_image(pil_image, image_key)
-                        log(
-                            "MediaLoader.get_image",
-                            f"Image {image_key} is saved to local storage.",
-                        )
-
-                        image = QImage(os.path.join(self.media_dir, image_key))
-
-                    except OSError as e:
-                        log(
-                            "MediaLoader.get_image",
-                            f"Image {image_key} couldn't be retrieved from local storage for the first time: {e}",
-                            level="error",
-                        )
-
-                else:
-                    image = QImage(
-                        pil_image.tobytes(),
-                        pil_image.size[0],
-                        pil_image.size[1],
-                        QImage.Format_RGB888,
-                    )
+            if self.local_storage_enabled:
+                try:
+                    self.save_image(pil_image, image_key)
                     log(
-                        "MediaLoader.get_image",
-                        f"Image {image_key} is directed from cloud storage without saving.",
+                        "MediaLoader._load_image_uncached",
+                        f"Image {image_key} is saved to local storage.",
+                    )
+                    return QImage(os.path.join(self.media_dir, image_key))
+
+                except OSError as e:
+                    log(
+                        "MediaLoader._load_image_uncached",
+                        f"Image {image_key} couldn't be retrieved from local storage for the first time: {e}",
+                        level="error",
                     )
 
-                return image
+            image = QImage(
+                pil_image.tobytes(),
+                pil_image.size[0],
+                pil_image.size[1],
+                QImage.Format_RGB888,
+            )
+            log(
+                "MediaLoader._load_image_uncached",
+                f"Image {image_key} is directed from cloud storage without saving.",
+            )
+            return image
 
-            except Exception as e:
-                log(
-                    "MediaLoader.get_image",
-                    f"Image {image_key} couldn't be retrieved: {e}",
-                    level="error",
-                )
+        except Exception as e:
+            log(
+                "MediaLoader._load_image_uncached",
+                f"Image {image_key} couldn't be retrieved: {e}",
+                level="error",
+            )
+            return None
 
     def get_thumbnail(self, thumbnail_key: str):
         """Retrieve a thumbnail image from local storage or cloud storage if not found locally.
