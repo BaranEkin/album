@@ -1,8 +1,33 @@
+import os
+import re
 from typing import Literal
 from datetime import datetime
 
-LOG_FILE_PATH = "album.log"
+LOG_DIR = "logs"
+MAX_BYTES_PER_FILE = 2 * 1024 * 1024
+_LOG_FILE_PATTERN = re.compile(r"^(\d{3})\.log$")
+
 log_file = None
+
+
+def _resolve_log_file_path() -> str:
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    highest_index = 0
+    highest_name = ""
+    for name in os.listdir(LOG_DIR):
+        match = _LOG_FILE_PATTERN.match(name)
+        if match and int(match.group(1)) > highest_index:
+            highest_index = int(match.group(1))
+            highest_name = name
+
+    if highest_index == 0:
+        return os.path.join(LOG_DIR, "001.log")
+
+    current_path = os.path.join(LOG_DIR, highest_name)
+    if os.path.getsize(current_path) >= MAX_BYTES_PER_FILE:
+        return os.path.join(LOG_DIR, f"{highest_index + 1:03d}.log")
+    return current_path
 
 
 def _get_log_file():
@@ -10,7 +35,7 @@ def _get_log_file():
 
     global log_file
     if log_file is None:
-        log_file = open(LOG_FILE_PATH, "a")
+        log_file = open(_resolve_log_file_path(), "a", encoding="utf-8")
     return log_file
 
 
@@ -29,19 +54,14 @@ def log(
             Must be one of "debug", "info", "warning", "error". Defaults to "info".
     """
 
-    # Get the current timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Pad to 7 characters for alignment
     level_str = level.upper().ljust(7)
 
-    # Format the log message
     if details:
         log_message = f"{timestamp} | {level_str} | {headline} | {details}"
     else:
         log_message = f"{timestamp} | {level_str} | {headline}"
 
-    # Write the log message to the log file
     _get_log_file().write(log_message + "\n")
 
 

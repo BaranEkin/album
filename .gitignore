@@ -11,5 +11,6 @@ dist/
 *.bat
 *.lnk
 album.log
+logs/
 _internal/
 venv/
