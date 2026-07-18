@@ -85,6 +85,39 @@ def is_valid_people(people_str: str) -> bool:
     return True
 
 
+def _replace_people_token_sequence(person: str, old: str, new: str) -> str:
+    old_parts = old.split()
+    new_parts = new.split()
+    person_parts = person.split()
+    if not old_parts or not person_parts:
+        return person
+
+    result: list[str] = []
+    i = 0
+    n_old = len(old_parts)
+    while i < len(person_parts):
+        if person_parts[i : i + n_old] == old_parts:
+            result.extend(new_parts)
+            i += n_old
+        else:
+            result.append(person_parts[i])
+            i += 1
+    return " ".join(result)
+
+
+def replace_in_people_field(people_str: str, old: str, new: str) -> str | None:
+    if not people_str or not old:
+        return None
+
+    people_list = [person.strip() for person in people_str.split(",")]
+    replaced = [
+        _replace_people_token_sequence(person, old, new) for person in people_list
+    ]
+    if replaced == people_list:
+        return None
+    return ",".join(replaced)
+
+
 def date_to_julian(date_str: str) -> float:
     date_obj = datetime.strptime(date_str, "%d.%m.%Y")
     julian_day = date_obj.toordinal() + 1721424.5

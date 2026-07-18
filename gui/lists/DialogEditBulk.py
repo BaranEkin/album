@@ -14,11 +14,10 @@ from PyQt5.QtWidgets import (
     QSpinBox,
 )
 from PyQt5.QtGui import QIcon
-from data.helpers import is_valid_people
+from data.helpers import is_valid_people, replace_in_people_field, turkish_upper
 from data.orm import Media
 from gui.constants import Constants
 from gui.message import show_message
-from data.helpers import turkish_upper
 from logger import log
 
 
@@ -42,7 +41,7 @@ class DialogEditBulk(QDialog):
             "topic": ["overwrite", "replace"],
             "title": ["overwrite", "replace"],
             "location": ["overwrite", "replace"],
-            "people": ["overwrite", "replace", "add", "remove"],
+            "people": ["replace"],
             "tags": ["overwrite", "replace", "add", "remove"],
             "notes": ["overwrite", "replace"],
             "date": None,  # No edit modes for Date
@@ -173,6 +172,10 @@ class DialogEditBulk(QDialog):
                 input_layout.addWidget(input_lineedit2)
                 groupbox_layout.addLayout(input_layout)
 
+                if modes and modes[0] == "replace":
+                    input_lineedit2.show()
+                    input_arrow_label.show()
+
                 # Store frame components for future reference
                 self.frames.append(
                     (
@@ -263,13 +266,17 @@ class DialogEditBulk(QDialog):
                 input1.clear()
             if input2:
                 input2.clear()
-                input2.hide()
-            if arrow_label:
-                arrow_label.hide()
             if custom_combobox:
                 custom_combobox.setCurrentIndex(0)
             if custom_spinbox:
                 custom_spinbox.setValue(0)
+            if combobox and input2 and arrow_label:
+                if combobox.currentData() == "replace":
+                    input2.show()
+                    arrow_label.show()
+                else:
+                    input2.hide()
+                    arrow_label.hide()
 
     def get_edit_data(self):
         """Retrieve data from enabled elements."""
@@ -307,8 +314,8 @@ class DialogEditBulk(QDialog):
                         else:
                             data[field] = {
                                 "mode": mode,
-                                "from": input1.text(),
-                                "to": input2.text(),
+                                "from": input1.text().strip(),
+                                "to": input2.text().strip(),
                             }
                     else:
                         if field in ["topic", "title", "location"]:
@@ -331,26 +338,81 @@ class DialogEditBulk(QDialog):
 
     def is_valid_edit_data(self, edit_data):
         if edit_data.get("people"):
-            people_input = edit_data["people"]["input"]
-            if edit_data["people"]["mode"] == "replace":
-                if people_input.find(",") != -1:
-                    show_message(
-                        "Kişiler alanı, değiştir modunda virgül içeremez.",
-                        level="warning",
-                    )
-                    return False
-            else:
-                if not is_valid_people(people_input):
+            people_from = edit_data["people"]["from"].strip()
+            people_to = edit_data["people"]["to"].strip()
+
+            if not people_from or not people_to:
+                show_message(
+                    "Kişiler değiştirme işlemi için eski ve yeni isim alanlarını doldurun.",
+                    level="warning",
+                )
+                return False
+
+            if "," in people_from or "," in people_to:
+                show_message(
+                    "Kişiler alanı, değiştir modunda virgül içeremez.",
+                    level="warning",
+                )
+                return False
+
+            for media in self.media_list:
+                if not media.people:
+                    continue
+
+                people_result = replace_in_people_field(
+                    media.people, people_from, people_to
+                )
+                if people_result is None:
+                    continue
+
+                if not is_valid_people(people_result):
+                    people_log = people_result.replace("\n", "\\n")
                     log(
                         "DialogEditBulk.is_valid_edit_data",
-                        f"People '{people_input}' is incorrectly formatted.",
+                        f"People result '{people_log}' is incorrectly formatted.",
                         level="warning",
                     )
                     show_message(
-                        "Kişiler alanını formatı hatalı. Şunlara dikkat edin:\nİsimlerin baş harflerini ve soyisimlerin tüm harflerini büyük yazın.\nBirden fazla kişiyi virgül ile ayırın.",
+                        f"Değiştirme sonucu geçersiz kişi formatı:\n{people_result}\n\n"
+                        "Şunlara dikkat edin:\n"
+                        "Noktalama işaretleri, semboller veya rakamlar kullanmayın.\n"
+                        "İsimlerin baş harflerini ve soyisimlerin tüm harflerini büyük yazın.",
                         level="warning",
                     )
                     return False
+
+                original_count = len(media.people.split(","))
+                result_count = len(people_result.split(","))
+                if original_count != result_count:
+                    log(
+                        "DialogEditBulk.is_valid_edit_data",
+                        f"People count changed for {media.media_uuid}: "
+                        f"{original_count} -> {result_count}.",
+                        level="warning",
+                    )
+                    show_message(
+                        f"Değiştirme kişi sayısını değiştirdi:\n{media.people}\n->\n{people_result}",
+                        level="warning",
+                    )
+                    return False
+
+                if media.people_detect:
+                    detect_count = len(
+                        [box for box in media.people_detect.split(",") if box.strip()]
+                    )
+                    if result_count != detect_count:
+                        log(
+                            "DialogEditBulk.is_valid_edit_data",
+                            f"People/detect count mismatch for {media.media_uuid}: "
+                            f"{result_count} names vs {detect_count} boxes.",
+                            level="warning",
+                        )
+                        show_message(
+                            "Bazı medyalarda kişi sayısı ile yüz kutusu sayısı uyuşmuyor.\n"
+                            "Bu medyaları tek tek düzenleyerek düzeltin.",
+                            level="warning",
+                        )
+                        return False
 
         if edit_data.get("tags"):
             tags_input = edit_data["tags"]["input"]
@@ -429,42 +491,14 @@ class DialogEditBulk(QDialog):
                         )
 
             people = media.people
-            if edit_data.get("people"):
-                if edit_data["people"]["mode"] == "overwrite":
-                    people = edit_data["people"]["input"]
-
-                elif edit_data["people"]["mode"] == "replace":
-                    if people:
-                        people_list = media.people.split(",")
-                        people_list_replaced = [
-                            p.replace(
-                                edit_data["people"]["from"], edit_data["people"]["to"]
-                            )
-                            for p in people_list
-                        ]
-                        people_new = ", ".join(people_list_replaced)
-                        people = people_new
-
-                elif edit_data["people"]["mode"] == "add":
-                    people_to_add = edit_data["people"]["input"]
-                    if people:
-                        people_to_add_list = people_to_add.split(",")
-                        people_list = media.people.split(", ")
-                        people_list.extend(people_to_add_list)
-                        people = ",".join(people_list)
-                    else:
-                        people = people_to_add
-
-                elif edit_data["people"]["mode"] == "remove":
-                    if people:
-                        people_to_remove = edit_data["people"]["input"]
-                        people_to_remove_list = people_to_remove.split(",")
-                        people_list = media.people.split(",")
-                        for p in people_to_remove_list:
-                            if p in people_list:
-                                people_list.remove(p)
-
-                        people = ",".join(people_list)
+            if edit_data.get("people") and people:
+                people_replaced = replace_in_people_field(
+                    people,
+                    edit_data["people"]["from"],
+                    edit_data["people"]["to"],
+                )
+                if people_replaced is not None:
+                    people = people_replaced
 
             tags = media.tags
             if edit_data.get("tags"):
@@ -523,6 +557,7 @@ class DialogEditBulk(QDialog):
             edited_media.notes = notes
             edited_media.people = people
             edited_media.people_count = len(people.split(",")) if people else 0
+            edited_media.people_detect = media.people_detect
             edited_media.date_text = date_text
             edited_media.date_est = date_est
             edited_media.albums = media.albums
