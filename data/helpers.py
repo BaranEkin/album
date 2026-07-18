@@ -85,6 +85,54 @@ def is_valid_people(people_str: str) -> bool:
     return True
 
 
+def build_frequency_priority_list(
+    all_items: list[str], occurrence_items: list[str]
+) -> list[str]:
+    counts: dict[str, int] = {}
+    for item in occurrence_items:
+        item = item.strip()
+        if item:
+            counts[item] = counts.get(item, 0) + 1
+
+    frequent = sorted(counts.keys(), key=lambda name: (-counts[name], name))
+    frequent_set = set(frequent)
+
+    rest: list[str] = []
+    seen_rest: set[str] = set()
+    for item in sorted(value.strip() for value in all_items if value and value.strip()):
+        if item in frequent_set or item in seen_rest:
+            continue
+        seen_rest.add(item)
+        rest.append(item)
+
+    return frequent + rest
+
+
+def build_assign_people_list(
+    all_people: list[str], people_fields: list[str | None]
+) -> list[str]:
+    occurrence_items: list[str] = []
+    for people_str in people_fields:
+        if not people_str:
+            continue
+        for person in people_str.split(","):
+            person = person.strip()
+            if person:
+                occurrence_items.append(person)
+    return build_frequency_priority_list(all_people, occurrence_items)
+
+
+def build_assign_location_list(
+    all_locations: list[str], location_fields: list[str | None]
+) -> list[str]:
+    occurrence_items = [
+        location.strip()
+        for location in location_fields
+        if location and location.strip()
+    ]
+    return build_frequency_priority_list(all_locations, occurrence_items)
+
+
 def _replace_people_token_sequence(person: str, old: str, new: str) -> str:
     old_parts = old.split()
     new_parts = new.split()

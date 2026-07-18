@@ -19,7 +19,11 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PIL import Image
 
 from logger import log
-from data.helpers import is_valid_people
+from data.helpers import (
+    build_assign_location_list,
+    build_assign_people_list,
+    is_valid_people,
+)
 from gui.message import show_message
 from gui.add.FrameAddInfo import FrameAddInfo
 from gui.add.FrameAction import FrameAction
@@ -148,7 +152,11 @@ class DialogAddMedia(QDialog):
         )  # Expands vertically
 
         # Create the frame_details (bottom part of frame_media, sticks to bottom)
-        self.frame_add_info = FrameAddInfo(locations=self.locations_list, parent=self)
+        self.frame_add_info = FrameAddInfo(
+            locations=self.locations_list,
+            parent=self,
+            get_assign_locations=self._get_assign_locations_list,
+        )
         self.frame_add_info.setFrameStyle(QFrame.StyledPanel)
         self.frame_add_info.radio_date_from_filename.toggled.connect(self.set_auto_date)
         self.frame_add_info.radio_date_from_filedate.toggled.connect(self.set_auto_date)
@@ -297,11 +305,25 @@ class DialogAddMedia(QDialog):
         )
         self._update_overlay()
 
+    def _get_assign_people_list(self) -> list[str]:
+        people_fields = self.data_manager.get_recent_people_fields(10)
+        people_fields.extend(
+            media_data.get("people") for media_data in self.media_data_to_be_uploaded
+        )
+        return build_assign_people_list(self.people_list, people_fields)
+
+    def _get_assign_locations_list(self) -> list[str]:
+        location_fields = self.data_manager.get_recent_location_fields(10)
+        location_fields.extend(
+            media_data.get("location") for media_data in self.media_data_to_be_uploaded
+        )
+        return build_assign_location_list(self.locations_list, location_fields)
+
     def _on_face_box_clicked(self, detection_index: int, global_pos: QPoint):
         """Handle click on a face detection box - open dialog to edit name."""
         current_name = self.detections_with_names[detection_index][4]
 
-        dialog = DialogAssignPerson(current_name, self.people_list, self)
+        dialog = DialogAssignPerson(current_name, self._get_assign_people_list(), self)
         dialog.move(global_pos)
         previous_name = dialog.input_field.text()
 
@@ -312,7 +334,7 @@ class DialogAddMedia(QDialog):
 
     def _on_face_box_drawn(self, x: int, y: int, w: int, h: int, global_pos: QPoint):
         """Handle drawing a new face detection box."""
-        dialog = DialogAssignPerson("", self.people_list, self)
+        dialog = DialogAssignPerson("", self._get_assign_people_list(), self)
         dialog.move(global_pos)
 
         if dialog.exec_() != 0:
@@ -572,6 +594,9 @@ class DialogAddMedia(QDialog):
 
             self.media_paths_to_be_uploaded = []
             self.media_data_to_be_uploaded = []
+            self.people_list = self.data_manager.get_list_people()
+            self.locations_list = self.data_manager.get_list_locations()
+            self.frame_add_info.locations = self.locations_list
 
         self.media_to_be_uploaded = []
         self.clear_fields_for_new_media()

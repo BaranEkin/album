@@ -227,26 +227,80 @@ class DataManager:
 
             return media_list
 
+    def get_recent_people_fields(self, limit: int = 10) -> list[str | None]:
+        with self.get_session() as session:
+            return list(
+                session.execute(
+                    select(Media.people)
+                    .where(Media.status != 0)
+                    .where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
+                    .order_by(Media.created_at.desc())
+                    .limit(limit)
+                )
+                .scalars()
+                .all()
+            )
+
     def get_list_people(self) -> list[str]:
-        media_list = self.get_all_media()
-        list_people = []
-        for media in media_list:
-            if media.people is not None:
-                people = media.people.split(",")
-                if people[0] != "":
-                    for person in people:
-                        if person not in list_people:
-                            list_people.append(person)
+        with self.get_session() as session:
+            people_fields = (
+                session.execute(
+                    select(Media.people)
+                    .where(Media.status != 0)
+                    .where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
+                    .where(Media.people.is_not(None))
+                    .where(Media.people != "")
+                )
+                .scalars()
+                .all()
+            )
+
+        list_people: set[str] = set()
+        for people_str in people_fields:
+            if not people_str:
+                continue
+            for person in people_str.split(","):
+                person = person.strip()
+                if person:
+                    list_people.add(person)
 
         return sorted(list_people)
 
+    def get_recent_location_fields(self, limit: int = 10) -> list[str | None]:
+        with self.get_session() as session:
+            return list(
+                session.execute(
+                    select(Media.location)
+                    .where(Media.status != 0)
+                    .where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
+                    .order_by(Media.created_at.desc())
+                    .limit(limit)
+                )
+                .scalars()
+                .all()
+            )
+
     def get_list_locations(self) -> list[str]:
-        media_list = self.get_all_media()
-        list_locations = []
-        for media in media_list:
-            location = media.location
-            if location not in list_locations:
-                list_locations.append(location)
+        with self.get_session() as session:
+            location_fields = (
+                session.execute(
+                    select(Media.location)
+                    .where(Media.status != 0)
+                    .where(Media.private <= Config.MEDIA_PRIVACY_LEVEL)
+                    .where(Media.location.is_not(None))
+                    .where(Media.location != "")
+                )
+                .scalars()
+                .all()
+            )
+
+        list_locations: set[str] = set()
+        for location in location_fields:
+            if not location:
+                continue
+            location = location.strip()
+            if location:
+                list_locations.add(location)
 
         return sorted(list_locations)
 

@@ -14,6 +14,8 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QSpinBox,
 )
+from collections.abc import Callable
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 from data.helpers import turkish_upper
@@ -22,9 +24,15 @@ from gui.add.DialogAssignLocation import DialogAssignLocation
 
 
 class FrameAddInfo(QFrame):
-    def __init__(self, locations, parent=None):
+    def __init__(
+        self,
+        locations,
+        parent=None,
+        get_assign_locations: Callable[[], list[str]] | None = None,
+    ):
         super().__init__()
         self.locations = locations
+        self.get_assign_locations = get_assign_locations
 
         # Main vertical layout
         main_layout = QVBoxLayout(self)
@@ -178,8 +186,11 @@ class FrameAddInfo(QFrame):
         self.setLayout(main_layout)
 
     def show_location_dialog(self):
+        location_list = (
+            self.get_assign_locations() if self.get_assign_locations else self.locations
+        )
         dialog = DialogAssignLocation(
-            location=self.get_location(), location_list=self.locations, parent=self
+            location=self.get_location(), location_list=location_list, parent=self
         )
         if dialog.exec_() == QDialog.Accepted:
             self.set_location(dialog.input_field.text())
