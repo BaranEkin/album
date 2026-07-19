@@ -19,6 +19,10 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PIL import Image
 
 from logger import log
+from data.album_auto import (
+    MANAGED_AUTO_ALBUM_TAGS,
+    auto_album_tags_from_people,
+)
 from data.helpers import (
     build_assign_location_list,
     build_assign_people_list,
@@ -170,6 +174,9 @@ class DialogAddMedia(QDialog):
 
         # Create right frame: frame_action
         self.frame_action = FrameAction(self.album_list, parent=self)
+        self.frame_add_info.input_people.textChanged.connect(
+            self._sync_albums_from_people
+        )
         self.frame_action.button_add.clicked.connect(self.on_media_add)
         self.frame_action.button_upload.clicked.connect(self.on_media_upload)
         self.frame_action.setFixedWidth(250)  # Fixed width, sticks to right
@@ -246,6 +253,7 @@ class DialogAddMedia(QDialog):
             self.image_label.clear()
             self.face_overlay.clear_overlays()
             self.frame_add_info.set_people_enable(True)
+            self._sync_albums_from_people()
             file_ops.open_with_default_app(self.selected_media_path)
 
     def select_next_media(self):
@@ -293,6 +301,16 @@ class DialogAddMedia(QDialog):
         people_from_detections = self.get_people()
         if people_from_detections:
             self.frame_add_info.set_people(people_from_detections)
+        self._sync_albums_from_people()
+
+    def _sync_albums_from_people(self):
+        people = self.frame_add_info.get_people()
+        is_photo = (
+            bool(self.selected_media_path)
+            and file_ops.get_file_type(self.selected_media_path) == 1
+        )
+        active = auto_album_tags_from_people(people, is_photo=is_photo)
+        self.frame_action.apply_managed_album_tags(set(MANAGED_AUTO_ALBUM_TAGS), active)
 
     def detect_people(self):
         """Run face detection on the current image."""
@@ -314,7 +332,7 @@ class DialogAddMedia(QDialog):
                     self,
                     auto_name_detections,
                     operation_args=(image_copy, detections_copy),
-                    message="Yüzler tanıma çalışmaya devam ediyor, lütfen biraz daha bekleyin...",
+                    message="Yüz tanıma çalışmaya devam ediyor, lütfen biraz daha bekleyin...",
                     title="Yüz Tanıma",
                     delay_ms=2000,
                 )

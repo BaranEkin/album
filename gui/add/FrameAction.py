@@ -100,6 +100,11 @@ class FrameAction(QFrame):
         for checkbox, tag in self.checkbox_to_album_tag.items():
             checkbox.setChecked(False)
 
+    def apply_managed_album_tags(self, managed_tags: set[str], active_tags: set[str]):
+        for checkbox, tag in self.checkbox_to_album_tag.items():
+            if tag in managed_tags:
+                checkbox.setChecked(tag in active_tags)
+
     def update_button_upload(self, media_count: int):
         self.button_upload.setText(f"{media_count} {Constants.LABEL_BUTTON_UPLOAD}")
         self.button_upload.setEnabled(True if media_count > 0 else False)
