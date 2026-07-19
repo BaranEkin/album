@@ -55,8 +55,13 @@ class MediaLoader:
 
         if file_ops.check_file_exists(self.media_dir, image_key):
             try:
-                image = QImage(os.path.join(self.media_dir, image_key))
-                return image
+                pil_image = file_ops.open_image_upright(
+                    os.path.join(self.media_dir, image_key)
+                )
+                try:
+                    return file_ops.pil_to_qimage(pil_image)
+                finally:
+                    pil_image.close()
 
             except OSError as e:
                 log(
@@ -84,7 +89,7 @@ class MediaLoader:
                         "MediaLoader._load_image_uncached",
                         f"Image {image_key} is saved to local storage.",
                     )
-                    return QImage(os.path.join(self.media_dir, image_key))
+                    return file_ops.pil_to_qimage(pil_image)
 
                 except OSError as e:
                     log(
@@ -93,12 +98,7 @@ class MediaLoader:
                         level="error",
                     )
 
-            image = QImage(
-                pil_image.tobytes(),
-                pil_image.size[0],
-                pil_image.size[1],
-                QImage.Format_RGB888,
-            )
+            image = file_ops.pil_to_qimage(pil_image)
             log(
                 "MediaLoader._load_image_uncached",
                 f"Image {image_key} is directed from cloud storage without saving.",

@@ -105,6 +105,9 @@ def get_image_from_cloudfront(image_key: str, prefix: str) -> Image:
         with request.urlopen(signed_url) as response:
             image_data = response.read()
             image = Image.open(BytesIO(image_data))
+            from ops.file_ops import apply_exif_orientation
+
+            image = apply_exif_orientation(image)
             image = image.convert("RGB") if image.mode != "RGB" else image
             return image
     except Exception as e:

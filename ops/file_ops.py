@@ -8,11 +8,33 @@ import subprocess
 
 from typing import Literal, Union
 from datetime import datetime
-from PIL import Image
+from PIL import Image, ImageOps
 from PIL.ExifTags import TAGS
+from PyQt5.QtGui import QImage
 
 from config.config import Config
 from logger import log
+
+
+def open_image_upright(path: Union[str, bytes, os.PathLike]) -> Image.Image:
+    """Open an image and apply EXIF orientation so pixels match upright display."""
+    image = Image.open(path)
+    transposed = ImageOps.exif_transpose(image)
+    return transposed if transposed is not None else image
+
+
+def apply_exif_orientation(image: Image.Image) -> Image.Image:
+    """Return an upright copy of a PIL image using its EXIF orientation tag."""
+    transposed = ImageOps.exif_transpose(image)
+    return transposed if transposed is not None else image
+
+
+def pil_to_qimage(image: Image.Image) -> QImage:
+    """Convert a PIL image to a QImage (RGB888)."""
+    rgb = image.convert("RGB")
+    data = rgb.tobytes("raw", "RGB")
+    q_image = QImage(data, rgb.width, rgb.height, 3 * rgb.width, QImage.Format_RGB888)
+    return q_image.copy()
 
 
 def check_file_exists(directory: str, key: str) -> bool:
@@ -48,18 +70,46 @@ def add_media(media_uuid: str, media_path: Union[str, bytes, os.PathLike]):
     os.makedirs(Config.MEDIA_DIR, exist_ok=True)
     destination_path = os.path.join(Config.MEDIA_DIR, media_key)
 
-    shutil.copy2(media_path, destination_path)
+    file_type = get_file_type(media_path)
+    if file_type == 1:
+        _copy_image_upright(media_path, destination_path, extension)
+    else:
+        shutil.copy2(media_path, destination_path)
 
     thumbnail_key = f"{media_uuid}.jpg"
 
     # Ensure thumbnails directory exists
     os.makedirs(Config.THUMBNAILS_DIR, exist_ok=True)
 
-    file_type = get_file_type(media_path)
     if file_type == 1:
         create_image_thumbnail(media_key, thumbnail_key)
     elif file_type == 2:
         create_video_thumbnail(media_key, thumbnail_key)
+
+
+def _copy_image_upright(
+    source_path: str, destination_path: str, extension: str
+) -> None:
+    """Copy an image with EXIF orientation baked into pixel data."""
+    image = open_image_upright(source_path)
+    ext = extension.lower()
+    try:
+        if ext in {".jpg", ".jpeg"}:
+            image = image.convert("RGB")
+            image.save(destination_path, format="JPEG", quality=95)
+        elif ext == ".png":
+            image.save(destination_path, format="PNG")
+        else:
+            image.save(destination_path)
+    except Exception:
+        log(
+            "file_ops._copy_image_upright",
+            f"Upright save failed for '{source_path}', falling back to copy.",
+            level="warning",
+        )
+        shutil.copy2(source_path, destination_path)
+    finally:
+        image.close()
 
 
 def create_image_thumbnail(media_key: str, thumbnail_key: str):
@@ -70,13 +120,14 @@ def create_image_thumbnail(media_key: str, thumbnail_key: str):
         thumbnail_key (str): Key for the thumbnail to be saved.
     """
 
-    img = Image.open(os.path.join(Config.MEDIA_DIR, media_key))
+    img = open_image_upright(os.path.join(Config.MEDIA_DIR, media_key))
     img.thumbnail((160, 160))
 
     thumbnail_path = os.path.join(Config.THUMBNAILS_DIR, thumbnail_key)
 
     img = img.convert("RGB")
     img.save(thumbnail_path, "JPEG")
+    img.close()
 
 
 def create_video_thumbnail(media_key: str, thumbnail_key: str):

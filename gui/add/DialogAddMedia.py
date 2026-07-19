@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QDir, Qt, QPoint
 from PyQt5.QtGui import QIcon, QPixmap, QImage
-from PIL import Image
 
 from logger import log
 from data.album_auto import (
@@ -265,7 +264,12 @@ class DialogAddMedia(QDialog):
 
     def _load_image_to_viewer(self, image_path: str):
         """Load image into the viewer and set up scaling."""
-        q_image = QImage(image_path)
+        try:
+            pil_image = file_ops.open_image_upright(image_path)
+            q_image = file_ops.pil_to_qimage(pil_image)
+            pil_image.close()
+        except OSError:
+            q_image = QImage(image_path)
         if q_image.isNull():
             return
 
@@ -314,7 +318,7 @@ class DialogAddMedia(QDialog):
 
     def detect_people(self):
         """Run face detection on the current image."""
-        image = Image.open(self.selected_media_path)
+        image = file_ops.open_image_upright(self.selected_media_path)
         self.detections_with_names = face_detection.detect_people(image)
         if self.detections_with_names:
             try:
