@@ -57,7 +57,7 @@ from gui.main.FaceOverlayWidget import FaceOverlayWidget
 from config import __version__
 from config.config import Config
 
-import face_detection
+from faces import detection as face_detection
 from ops import cloud_ops, file_ops
 
 
@@ -474,13 +474,21 @@ class MainWindow(QMainWindow):
                         "Veri tabanı güncellenemedi. Yerel veri tabanı kullanılacak.",
                         level="error",
                     )
+                try:
+                    from faces.service import reset_matcher
+                    from faces.sync import sync_face_recognition_gallery
+
+                    if sync_face_recognition_gallery():
+                        reset_matcher()
+                except Exception:
+                    pass
             else:
                 show_message(
                     "Bulut sistemi bağlantısı sağlanamadı. Uygulama çevrimdışı olarak çalışacak.",
                     level="warning",
                 )
                 self.set_cloud_connected(False)
-        except:
+        except Exception:
             show_message(
                 "Veri tabanı güncellenemedi. Yerel veri tabanı kullanılacak.",
                 level="error",
@@ -996,7 +1004,7 @@ class MainWindow(QMainWindow):
 
         try:
             file_ops.open_with_default_app(media_path)
-        except:
+        except Exception:
             show_message("Medya dosyası açılamadı.", level="error")
 
     def on_delete_media(self):
@@ -1093,6 +1101,18 @@ class MainWindow(QMainWindow):
 
     def show_add_media_dialog(self):
         if self.check_cloud_connected():
+            try:
+                from faces.service import needs_warmup, warm_recognition
+
+                if needs_warmup():
+                    warmup = DialogProcess(
+                        operation=warm_recognition,
+                        message="Yüz tanıma algoritması yükleniyor, lütfen bekleyin...\n\nBu işlem tek seferlik bir dakika kadar sürebilir.",
+                        title="Yüz Tanıma",
+                    )
+                    warmup.exec_()
+            except Exception:
+                pass
             dialog = DialogAddMedia(self.data_manager)
             dialog.exec_()
             if dialog.an_upload_completed:

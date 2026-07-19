@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QWidget, QFrame, QLabel
 from PyQt5.QtCore import Qt, pyqtSignal, QRect, QPoint
 from PyQt5.QtGui import QFont, QPainter, QPen, QColor
 
-import face_detection
+from faces import detection as face_detection
 
 
 class FaceNameLabel(QLabel):

@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QThread, pyqtSignal, Qt
+from PyQt5.QtCore import QEventLoop, QThread, QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QMessageBox
 
@@ -36,6 +36,101 @@ class ProcessThread(QThread):
 
     def stop(self):
         self._is_running = False
+
+
+class ResultThread(QThread):
+    finished_ok = pyqtSignal(object)
+    finished_error = pyqtSignal(str)
+
+    def __init__(self, operation, operation_args=None):
+        super().__init__()
+        self.operation = operation
+        self.operation_args = operation_args or ()
+
+    def run(self):
+        try:
+            result = self.operation(*self.operation_args)
+            self.finished_ok.emit(result)
+        except Exception as exc:
+            self.finished_error.emit(str(exc))
+
+
+def _make_wait_dialog(parent, message, title):
+    dialog = QDialog(parent)
+    dialog.setWindowTitle(title)
+    dialog.setWindowIcon(
+        QIcon("res/icons/Chat-Bubble-Square-Warning--Streamline-Core.png")
+    )
+    dialog.setWindowFlags(
+        dialog.windowFlags()
+        & ~Qt.WindowCloseButtonHint
+        & ~Qt.WindowContextHelpButtonHint
+    )
+    dialog.setFixedSize(400, 100)
+    layout = QVBoxLayout(dialog)
+    layout.addWidget(QLabel(message))
+    dialog.setModal(True)
+    return dialog
+
+
+def run_with_delayed_wait(
+    parent,
+    operation,
+    operation_args=None,
+    message="",
+    title="",
+    delay_ms=2000,
+):
+    """
+    Run operation in a worker thread. If it still runs after delay_ms,
+    show a non-closable wait dialog. Returns the operation result.
+    """
+    operation_args = operation_args or ()
+    loop = QEventLoop(parent)
+    state = {"result": None, "error": None, "dialog": None, "finished": False}
+
+    thread = ResultThread(operation=operation, operation_args=operation_args)
+
+    def finish_ok(value):
+        state["result"] = value
+        state["finished"] = True
+        timer.stop()
+        if state["dialog"] is not None:
+            state["dialog"].accept()
+        loop.quit()
+
+    def finish_error(error_message):
+        state["error"] = error_message
+        state["finished"] = True
+        timer.stop()
+        if state["dialog"] is not None:
+            state["dialog"].reject()
+        loop.quit()
+
+    def show_wait_dialog():
+        if state["finished"] or state["dialog"] is not None:
+            return
+        state["dialog"] = _make_wait_dialog(parent, message, title)
+        state["dialog"].show()
+
+    thread.finished_ok.connect(finish_ok)
+    thread.finished_error.connect(finish_error)
+
+    timer = QTimer(parent)
+    timer.setSingleShot(True)
+    timer.timeout.connect(show_wait_dialog)
+
+    thread.start()
+    timer.start(delay_ms)
+    loop.exec_()
+    thread.wait()
+
+    if state["dialog"] is not None:
+        state["dialog"].deleteLater()
+
+    if state["error"] is not None:
+        raise RuntimeError(state["error"])
+    return state["result"]
 
 
 class DialogProcess(QDialog):

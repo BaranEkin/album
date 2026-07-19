@@ -29,11 +29,12 @@ from gui.add.FrameAddInfo import FrameAddInfo
 from gui.add.FrameAction import FrameAction
 from gui.add.DialogUpload import DialogUpload
 from gui.add.DialogAssignPerson import DialogAssignPerson
+from gui.main.DialogProcess import run_with_delayed_wait
 from gui.main.FaceOverlayWidget import FaceOverlayWidget
 from data.data_manager import DataManager
 from config.config import Config
 
-import face_detection
+from faces import detection as face_detection
 from ops import file_ops
 
 
@@ -297,6 +298,28 @@ class DialogAddMedia(QDialog):
         """Run face detection on the current image."""
         image = Image.open(self.selected_media_path)
         self.detections_with_names = face_detection.detect_people(image)
+        if self.detections_with_names:
+            try:
+                from faces.service import (
+                    auto_name_detections,
+                    is_database_ready,
+                )
+
+                if not is_database_ready():
+                    return
+
+                image_copy = image.copy()
+                detections_copy = [list(det) for det in self.detections_with_names]
+                self.detections_with_names = run_with_delayed_wait(
+                    self,
+                    auto_name_detections,
+                    operation_args=(image_copy, detections_copy),
+                    message="Yüzler tanıma çalışmaya devam ediyor, lütfen biraz daha bekleyin...",
+                    title="Yüz Tanıma",
+                    delay_ms=2000,
+                )
+            except Exception:
+                pass
 
     def update_identifications(self, detections_with_names):
         """Update detections and refresh the overlay."""
@@ -325,7 +348,6 @@ class DialogAddMedia(QDialog):
 
         dialog = DialogAssignPerson(current_name, self._get_assign_people_list(), self)
         dialog.move(global_pos)
-        previous_name = dialog.input_field.text()
 
         if dialog.exec_() != 0:
             new_name = dialog.input_field.text()
