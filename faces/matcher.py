@@ -10,10 +10,20 @@ from PIL import Image
 from deepface import DeepFace
 from deepface.commons.logger import Logger as DeepFaceLogger
 
+from faces.boxes import eligible_for_recognition, face_side_px
 from faces.config import load_recognition_config
 from faces.crops import crop_face
+from faces.frequency import (
+    frequency_weight,
+    load_person_frequencies,
+    threshold_for_count,
+)
 from faces.identity import load_identity_map
-from faces.paths import FACE_RECOGNITION_DIR, IDENTITY_MAP_PATH
+from faces.paths import (
+    FACE_RECOGNITION_DIR,
+    IDENTITY_MAP_PATH,
+    PERSON_FREQUENCIES_PATH,
+)
 
 
 @contextmanager
@@ -32,6 +42,7 @@ class FaceMatcher:
         self,
         db_path: Path = FACE_RECOGNITION_DIR,
         identity_map_path: Path = IDENTITY_MAP_PATH,
+        frequencies_path: Path = PERSON_FREQUENCIES_PATH,
         config: dict[str, Any] | None = None,
     ):
         self.db_path = Path(db_path)
@@ -43,6 +54,8 @@ class FaceMatcher:
             if meta.get("display_name")
         }
         self.known_names = set(self._folder_by_name)
+        self.frequencies = load_person_frequencies(frequencies_path)
+        self._max_frequency = max(self.frequencies.values()) if self.frequencies else 0
         self._db_ready = False
 
     def warm_database(self, force_refresh: bool = False, silent: bool = False) -> None:
@@ -61,11 +74,40 @@ class FaceMatcher:
             enforce_detection=False,
             detector_backend=self.settings.get("find_detector_backend", "skip"),
             align=bool(self.settings.get("align_recognition", True)),
-            threshold=self.settings.get("distance_threshold"),
+            threshold=self._search_threshold(),
             silent=silent,
             refresh_database=True,
         )
         self._db_ready = True
+
+    def _search_threshold(self) -> float:
+        return float(
+            self.settings.get("distance_threshold")
+            or self.settings.get("distance_threshold_max")
+            or 0.45
+        )
+
+    def _threshold_min(self) -> float:
+        value = self.settings.get("distance_threshold_min")
+        if value is None:
+            return min(0.32, self._search_threshold())
+        return float(value)
+
+    def threshold_for_name(self, name: str) -> float:
+        threshold_max = self._search_threshold()
+        if not self.settings.get("use_frequency_prior", True):
+            return threshold_max
+        if self._max_frequency <= 0:
+            return threshold_max
+        count = int(self.frequencies.get(name, 0))
+        gamma = float(self.settings.get("frequency_prior_gamma", 2.0))
+        return threshold_for_count(
+            count,
+            self._max_frequency,
+            threshold_min=self._threshold_min(),
+            threshold_max=threshold_max,
+            gamma=gamma,
+        )
 
     def find_for_crop(
         self, crop_rgb: Image.Image, allowed_names: set[str]
@@ -82,7 +124,7 @@ class FaceMatcher:
                 ),
                 detector_backend=self.settings.get("find_detector_backend", "skip"),
                 align=bool(self.settings.get("align_recognition", True)),
-                threshold=self.settings.get("distance_threshold"),
+                threshold=self._search_threshold(),
                 silent=True,
                 refresh_database=False,
             )
@@ -103,6 +145,8 @@ class FaceMatcher:
             if display_name not in allowed_names:
                 continue
             distance = float(row["distance"])
+            if distance > self.threshold_for_name(display_name):
+                continue
             hits.append((display_name, distance, identity_folder, str(identity_path)))
         hits.sort(key=lambda item: item[1])
         return hits
@@ -133,6 +177,11 @@ class FaceMatcher:
         if not blank_indexes:
             return detections
 
+        sides = [face_side_px(det) for det in detections]
+        largest_side = max(sides) if sides else 0
+        min_side_px = self.settings.get("min_face_side_px")
+        min_side_ratio = self.settings.get("min_face_side_ratio")
+
         pad_ratio = float(self.settings.get("crop_pad_ratio", 0.15))
         candidates: list[tuple[int, str, float]] = []
         for index in blank_indexes:
@@ -142,6 +191,13 @@ class FaceMatcher:
                 int(detections[index][2]),
                 int(detections[index][3]),
             )
+            if not eligible_for_recognition(
+                face_side_px(box),
+                largest_side_px=largest_side,
+                min_side_px=min_side_px,
+                min_side_ratio=min_side_ratio,
+            ):
+                continue
             crop = crop_face(image, box, pad_ratio=pad_ratio)
             try:
                 hits = self.find_for_crop(crop, self.known_names)
@@ -164,3 +220,26 @@ class FaceMatcher:
             used_names.add(name)
             updated[index][4] = name
         return updated
+
+    def frequency_debug_rows(self) -> list[dict[str, Any]]:
+        rows = []
+        for name in sorted(self.known_names):
+            count = int(self.frequencies.get(name, 0))
+            rows.append(
+                {
+                    "name": name,
+                    "count": count,
+                    "weight": round(
+                        frequency_weight(
+                            count,
+                            self._max_frequency,
+                            gamma=float(
+                                self.settings.get("frequency_prior_gamma", 2.0)
+                            ),
+                        ),
+                        4,
+                    ),
+                    "threshold": round(self.threshold_for_name(name), 4),
+                }
+            )
+        return rows

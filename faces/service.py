@@ -65,8 +65,20 @@ def needs_warmup() -> bool:
     return not is_database_ready()
 
 
+def refresh_frequencies() -> bool:
+    try:
+        from faces.frequency import build_person_frequencies_file
+
+        build_person_frequencies_file()
+        return True
+    except Exception:
+        return False
+
+
 def warm_recognition() -> None:
-    matcher = get_matcher()
+    refresh_frequencies()
+    reset_matcher()
+    matcher = get_matcher(force_reload=True)
     if matcher is None:
         return
     matcher.warm_database(force_refresh=False, silent=True)
