@@ -2,9 +2,45 @@ from PIL import Image
 import numpy as np
 from deepface.modules.detection import detect_faces
 
+_device_logged = False
+
+
+def get_torch_device() -> str:
+    """Return ultralytics/torch device: cuda:0 when available, otherwise cpu."""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            return "cuda:0"
+        return "cpu"
+    except Exception:
+        return "cpu"
+
+
+def _log_torch_device_once() -> None:
+    global _device_logged
+    if _device_logged:
+        return
+    _device_logged = True
+    try:
+        from logger import log
+
+        device = get_torch_device()
+        detail = device
+        if device.startswith("cuda"):
+            import torch
+
+            detail = f"{device} ({torch.cuda.get_device_name(0)})"
+        log("faces.detection", f"Torch device for YOLO: {detail}")
+    except Exception:
+        pass
+
 
 def detect_people(image: Image.Image):
-    """Detect and return bounding boxes for faces in an image using the YOLOv8 backend.
+    """Detect and return bounding boxes for faces in an image using the YOLOv8n backend.
+
+    Uses GPU automatically when CUDA PyTorch is installed and a GPU is present;
+    otherwise runs on CPU. No GPU is required.
 
     Args:
         image (PIL.Image): The image in which to detect faces.
@@ -18,9 +54,13 @@ def detect_people(image: Image.Image):
     """
 
     try:
+        _log_torch_device_once()
         image_array = np.array(image)
         detection_results = detect_faces(
-            detector_backend="yolov8", img=image_array, align=False, expand_percentage=0
+            detector_backend="yolov8n",
+            img=image_array,
+            align=False,
+            expand_percentage=0,
         )
 
         detections = []
@@ -47,14 +87,12 @@ def preprocess_detections(detections_with_names):
         list: Filtered and sorted detections, with unnamed manual entries removed and ordered by x-coordinate.
     """
 
-    # Remove manually added detections with no name
     detections_with_names = [
         det
         for det in detections_with_names
         if not (det[4] == "" and det[5] == "manual")
     ]
 
-    # Sort detections on x
     detections_with_names = sorted(detections_with_names, key=lambda x: x[0])
     return detections_with_names
 

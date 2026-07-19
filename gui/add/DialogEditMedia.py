@@ -9,7 +9,7 @@ from gui.add.DialogAddMedia import DialogAddMedia
 from data.data_manager import DataManager
 from data.orm import Media
 
-import face_detection
+from faces import detection as face_detection
 from ops import cloud_ops
 
 

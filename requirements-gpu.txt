@@ -1,0 +1,11 @@
+# Optional GPU acceleration for YOLO face detection (PyTorch / ultralytics).
+# Install on top of requirements.txt when an NVIDIA GPU is available:
+#
+#   python -m pip install -r requirements-gpu.txt
+#
+# CUDA wheels still run on CPU-only machines (slower, larger install).
+# Users without a GPU can skip this file; plain requirements.txt is enough.
+
+--index-url https://download.pytorch.org/whl/cu128
+torch==2.9.1
+torchvision==0.24.1

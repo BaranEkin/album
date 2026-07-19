@@ -132,7 +132,6 @@ class FrameDetailedFilter(QFrame):
         date_group_box.setLayout(date_layout)
 
         # Extras
-        layout_extras = QHBoxLayout()
         self.type_dropdown = QComboBox()
         self.type_dropdown.addItems(["Tümü", "Fotoğraf", "Video", "Ses"])
         self.type_dropdown.setFixedWidth(80)

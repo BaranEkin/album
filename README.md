@@ -6,7 +6,7 @@
 ![SQLite](https://img.shields.io/badge/SQLite-Database-lightgrey.svg)
 ![AWS](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront-yellow.svg)
 
-Desktop application for managing family digital media (photos, videos, audio) with AWS S3/CloudFront integration and YOLOv8 face detection.
+Desktop application for managing family digital media (photos, videos, audio) with AWS S3/CloudFront integration and face tagging.
 
 ---
 <img width="1520" height="1065" alt="resim" src="https://github.com/user-attachments/assets/75a55876-4e6d-42d2-82d8-feffcf693475" />
@@ -17,7 +17,7 @@ Desktop application for managing family digital media (photos, videos, audio) wi
 - **GUI**: PyQt5
 - **Database**: SQLite + SQLAlchemy ORM
 - **Cloud**: AWS S3 (storage), CloudFront (CDN with signed URLs)
-- **Face Detection**: DeepFace with YOLOv8 backend
+- **Face tagging**: DeepFace (YOLOv8 detection; optional recognition on add)
 - **Image Processing**: Pillow, OpenCV
 - **Python**: 3.11+
 
@@ -38,7 +38,8 @@ Desktop application for managing family digital media (photos, videos, audio) wi
 - Supported formats: Images (.jpg, .jpeg, .png), Videos (.mp4, .avi, .mov, .mpg, .wmv, .3gp, .asf), Audio (.mp3, .wav)
 
 ### Face Detection & Tagging
-- Automatic face detection via YOLOv8 when adding images
+- Automatic face detection when adding images
+- Optional auto-naming for known people from a small local gallery (synced from S3 when updated)
 - Detection data stored as comma-separated `x-y-w-h` bounding boxes
 - Left-click face box to assign/edit name
 - Right-click + drag to manually draw new face region
@@ -104,12 +105,13 @@ album/
 ├── ops/
 │   ├── cloud_ops.py            # S3 upload/download, CloudFront signed URLs
 │   └── file_ops.py             # Local file ops, thumbnail creation
-├── face_detection.py           # YOLOv8 wrapper via deepface
+├── faces/                      # Face detection, recognition, gallery sync
 ├── media_loader.py             # Retrieves media from local or cloud
 ├── logger.py                   # File-based logging
 └── res/
     ├── config.json             # Runtime config
     ├── database/               # album.db, display_history.json, media_lists.json
+    ├── face_recognition/       # Local face gallery (from S3)
     ├── icons/                  # 40+ PNG icons
     ├── keys/                   # CloudFront private key
     ├── media/                  # Local media cache
@@ -158,18 +160,23 @@ album/
 
 ```
 bucket/
-├── media/           # {uuid}{extension}
-├── thumbnails/      # {uuid}.jpg
-└── album_cloud.db   # Synchronized database
+├── media/              # {uuid}{extension}
+├── thumbnails/         # {uuid}.jpg
+├── face_recognition/   # Face gallery (VERSION + identity folders)
+└── album_cloud.db      # Synchronized database
 ```
+
+`face_recognition/` is mirrored under `res/face_recognition/`. On startup, if the S3 `VERSION` is newer than local, the app downloads the updated gallery.
 
 ## Dependencies
 
 ```
 boto3, botocore, cryptography    # AWS
-deepface, ultralytics, tf-keras  # Face detection
+deepface, ultralytics, tf-keras  # Face detection / recognition
 numpy, opencv_python, Pillow     # Image processing
 PyQt5, PyQt5_sip                 # GUI
 SQLAlchemy                       # ORM
 pandas, tqdm                     # Utilities
 ```
+
+Detection uses the GPU when CUDA PyTorch is installed (`requirements-gpu.txt`); otherwise it runs on CPU via `requirements.txt`. Recognition embeddings use TensorFlow and stay on CPU in the current Windows setup.
